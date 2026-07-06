@@ -31,6 +31,54 @@ const recommendationSubjectCategories = [
   { key: "other", label: "기타 선택과목", keywords: [] }
 ];
 
+const additionalCourseCatalogSeed = [
+  { name: "경제 수학", area: "수학", category: "진로선택" },
+  { name: "인공지능 수학", area: "수학", category: "진로선택" },
+  { name: "직무 수학", area: "수학", category: "진로선택" },
+  { name: "실용 통계", area: "수학", category: "융합선택" },
+  { name: "수학적 모델링", area: "수학", category: "융합선택" },
+  { name: "자료와 통계", area: "수학", category: "융합선택" },
+  { name: "직무 의사소통", area: "국어", category: "진로선택" },
+  { name: "고전 읽기", area: "국어", category: "진로선택" },
+  { name: "심화 국어", area: "국어", category: "진로선택" },
+  { name: "기본 영어", area: "영어", category: "일반선택" },
+  { name: "직무 영어", area: "영어", category: "진로선택" },
+  { name: "영어권 문화", area: "영어", category: "진로선택" },
+  { name: "국제 관계의 이해", area: "사회", category: "진로선택" },
+  { name: "비교 문화", area: "사회", category: "진로선택" },
+  { name: "국제 경제", area: "사회", category: "진로선택" },
+  { name: "국제 정치", area: "사회", category: "진로선택" },
+  { name: "법과 사회", area: "사회", category: "진로선택" },
+  { name: "금융과 경제생활", area: "사회", category: "융합선택" },
+  { name: "전자기와 양자", area: "과학", category: "진로선택" },
+  { name: "화학 반응의 세계", area: "과학", category: "진로선택" },
+  { name: "세포와 물질대사", area: "과학", category: "진로선택" },
+  { name: "생물의 유전", area: "과학", category: "진로선택" },
+  { name: "행성우주과학", area: "과학", category: "진로선택" },
+  { name: "과학의 역사와 문화", area: "과학", category: "융합선택" },
+  { name: "생활과학 탐구", area: "기술·가정", category: "융합선택" },
+  { name: "로봇과 공학세계", area: "기술·가정", category: "진로선택" },
+  { name: "창의 공학 설계", area: "기술·가정", category: "진로선택" },
+  { name: "데이터 과학", area: "정보", category: "진로선택" },
+  { name: "소프트웨어와 생활", area: "정보", category: "융합선택" },
+  { name: "인공지능과 미래사회", area: "정보", category: "융합선택" },
+  { name: "음악 감상과 비평", area: "예술", category: "진로선택" },
+  { name: "미술 감상과 비평", area: "예술", category: "진로선택" },
+  { name: "연극", area: "예술", category: "일반선택" },
+  { name: "무용", area: "예술", category: "일반선택" },
+  { name: "스포츠 과학", area: "체육", category: "진로선택" },
+  { name: "체육 전공 실기 기초", area: "체육", category: "진로선택" },
+  { name: "일본어", area: "제2외국어·한문", category: "일반선택" },
+  { name: "중국어", area: "제2외국어·한문", category: "일반선택" },
+  { name: "스페인어", area: "제2외국어·한문", category: "일반선택" },
+  { name: "프랑스어", area: "제2외국어·한문", category: "일반선택" },
+  { name: "독일어", area: "제2외국어·한문", category: "일반선택" },
+  { name: "한문", area: "제2외국어·한문", category: "일반선택" },
+  { name: "심리학", area: "교양", category: "일반선택" },
+  { name: "교육학", area: "교양", category: "일반선택" },
+  { name: "철학", area: "교양", category: "일반선택" }
+];
+
 const majorOptionGroups = [
   {
     label: "공학·AI·자연",
@@ -1363,7 +1411,8 @@ function createEmptyPlan() {
     ["1", "2"].forEach((semester) => {
       plan[grade][semester] = {
         regular: [],
-        joint: []
+        joint: [],
+        additional: []
       };
     });
   });
@@ -3230,6 +3279,64 @@ function getPlannerSectionLabel(section = "") {
   return section || "선택과목";
 }
 
+function getAdditionalCourseCategoryLabel(category = "") {
+  const value = String(category || "").trim();
+  if (!value) return "선택과목";
+  if (value.includes("선택") || value === "공통") return value;
+  if (["일반", "진로", "융합"].includes(value)) return `${value}선택`;
+  return value;
+}
+
+function getAdditionalCourseCatalog() {
+  const coursesFromCurriculum = Object.values(curriculumData.plans || {})
+    .flatMap((plan) => plan.courses || [])
+    .filter((course) => course.name)
+    .filter((course) => !commonRecommendationSubjects.some((subject) => normalizeText(subject) === normalizeText(course.name)))
+    .filter((course) => !String(course.category || "").includes("공통"))
+    .map((course) => ({
+      name: course.name,
+      area: course.area || "기타",
+      category: getAdditionalCourseCategoryLabel(course.category || course.section)
+    }));
+
+  const merged = [...coursesFromCurriculum, ...additionalCourseCatalogSeed];
+  const seen = new Map();
+
+  merged.forEach((course) => {
+    const name = String(course.name || "").trim();
+    if (!name) return;
+    const item = {
+      name,
+      area: String(course.area || "기타").trim(),
+      category: getAdditionalCourseCategoryLabel(course.category)
+    };
+    const key = normalizeText(`${item.name}|${item.area}|${item.category}`);
+    if (!seen.has(key)) seen.set(key, item);
+  });
+
+  return [...seen.values()].sort((a, b) => {
+    const areaCompare = a.area.localeCompare(b.area, "ko");
+    if (areaCompare) return areaCompare;
+    const categoryCompare = a.category.localeCompare(b.category, "ko");
+    if (categoryCompare) return categoryCompare;
+    return a.name.localeCompare(b.name, "ko");
+  });
+}
+
+function getAdditionalCourseByName(name) {
+  const target = normalizeText(name);
+  if (!target) return null;
+  return getAdditionalCourseCatalog().find((course) => normalizeText(course.name) === target) || null;
+}
+
+function renderAdditionalCourseOptions() {
+  return getAdditionalCourseCatalog()
+    .map((course) => `
+      <option value="${escapeAttribute(course.name)}" label="${escapeAttribute(`${course.area} · ${course.category}`)}"></option>
+    `)
+    .join("");
+}
+
 function getPlannerChoiceGroupsForGrade(grade) {
   const plan = getPlannerCurriculumPlan();
   return ["1", "2"].flatMap((semester) => buildCurriculumChoiceGroupsForSemester(plan.courses || [], `${grade}-${semester}`));
@@ -3347,6 +3454,9 @@ function renderPlannerMineView() {
       <div class="mine-curriculum-grid">
         ${["1", "2", "3"].map((grade) => renderMineGradeBlock(fixedCourses, grade)).join("")}
       </div>
+      <datalist id="additionalCourseOptions">
+        ${renderAdditionalCourseOptions()}
+      </datalist>
       <div class="mine-export-actions">
         <button class="ghost-button" id="mineSaveButton" type="button">저장하기</button>
         <button class="primary-button" id="minePdfButton" type="button">PDF 내보내기</button>
@@ -3356,6 +3466,7 @@ function renderPlannerMineView() {
 
   $("#mineSaveButton")?.addEventListener("click", () => saveState(true));
   $("#minePdfButton")?.addEventListener("click", exportMineCurriculumPdf);
+  bindAdditionalCourseControls();
 }
 
 function renderMineGradeBlock(fixedCourses, grade) {
@@ -3372,11 +3483,12 @@ function renderMineGradeBlock(fixedCourses, grade) {
 function renderMineSemesterBlock(fixedCourses, grade, semester) {
   const semesterKey = `${grade}-${semester}`;
   const fixedSemesterCourses = fixedCourses.filter((course) => course.semesters.includes(semesterKey));
-  const semesterPlan = state.plan[grade]?.[semester] || { regular: [], joint: [] };
+  const semesterPlan = state.plan[grade]?.[semester] || { regular: [], joint: [], additional: [] };
   const selectedItems = [
     ...semesterPlan.regular.map((item) => ({ ...item, zone: "regular" })),
     ...semesterPlan.joint.map((item) => ({ ...item, zone: "joint" }))
   ];
+  const additionalItems = Array.isArray(semesterPlan.additional) ? semesterPlan.additional : [];
   const fixedCredits = fixedSemesterCourses.reduce((sum, course) => sum + getPlannerCourseCredits(course, grade, semester), 0);
   const selectedCredits = sumCredits(selectedItems);
   const totalCourses = fixedSemesterCourses.length + selectedItems.length;
@@ -3386,7 +3498,7 @@ function renderMineSemesterBlock(fixedCourses, grade, semester) {
     <div class="mine-semester-card">
       <div class="mine-semester-head">
         <b>${grade}학년 ${semester}학기</b>
-        <span>총 ${totalCourses}과목 · ${totalCredits}학점</span>
+        <span>기본·선택 ${totalCourses}과목 · ${totalCredits}학점${additionalItems.length ? ` · 추가 ${additionalItems.length}과목` : ""}</span>
       </div>
       <div class="mine-course-section">
         <span class="label">학교지정</span>
@@ -3403,6 +3515,18 @@ function renderMineSemesterBlock(fixedCourses, grade, semester) {
             ? `<div class="mine-course-list">${selectedItems.map((item) => renderMineSelectedCourseChip(item, grade, semester)).join("")}</div>`
             : `<p class="empty-note compact">아직 선택한 과목이 없습니다.</p>`
         }
+      </div>
+      <div class="mine-course-section additional-course-section">
+        <div class="additional-course-head">
+          <span class="label">추가 교육과정</span>
+          <small>온라인·오프라인 등 학기별 최대 2과목</small>
+        </div>
+        ${
+          additionalItems.length
+            ? `<div class="additional-course-list">${additionalItems.map((item, index) => renderAdditionalCourseItem(item, grade, semester, index)).join("")}</div>`
+            : `<p class="empty-note compact">학교 밖이나 온라인에서 추가로 듣고 싶은 과목이 있으면 아래에 적습니다.</p>`
+        }
+        ${renderAdditionalCourseForm(grade, semester, additionalItems.length)}
       </div>
     </div>
   `;
@@ -3434,6 +3558,55 @@ function renderMineCourseChip({ course, credit, label, type }) {
       ${renderCourseNameWithInfo(course)}
       <small>${escapeHtml(course.area)} · ${escapeHtml(label)} · ${credit}학점</small>
     </span>
+  `;
+}
+
+function renderAdditionalCourseItem(item, grade, semester, index) {
+  return `
+    <div class="additional-course-item">
+      <div>
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="additional-course-meta">
+          <span>${escapeHtml(item.area || "기타")}</span>
+          <span>${escapeHtml(item.category || "선택과목")}</span>
+        </div>
+        ${item.reason ? `<p class="additional-course-reason">${escapeHtml(item.reason)}</p>` : ""}
+      </div>
+      <button class="additional-course-remove" type="button"
+        data-remove-additional-course
+        data-grade="${grade}"
+        data-semester="${semester}"
+        data-index="${index}"
+        aria-label="${escapeAttribute(item.name)} 삭제">삭제</button>
+    </div>
+  `;
+}
+
+function renderAdditionalCourseForm(grade, semester, selectedCount) {
+  const isFull = selectedCount >= 2;
+  return `
+    <div class="additional-course-form ${isFull ? "is-full" : ""}" data-additional-form data-grade="${grade}" data-semester="${semester}">
+      <label>
+        과목 검색
+        <input type="search"
+          list="additionalCourseOptions"
+          placeholder="예: 경제 수학, 데이터 과학"
+          data-additional-course-name
+          ${isFull ? "disabled" : ""} />
+      </label>
+      <label class="additional-course-reason-field">
+        필요성
+        <input type="text"
+          maxlength="90"
+          placeholder="왜 듣고 싶은지 한 문장으로 적기"
+          data-additional-course-reason
+          ${isFull ? "disabled" : ""} />
+      </label>
+      <button class="ghost-button" type="button" data-add-additional-course ${isFull ? "disabled" : ""}>추가</button>
+      <p class="additional-course-preview" data-additional-course-preview>
+        ${isFull ? "이 학기에는 추가 교육과정을 2과목까지 입력했습니다." : "과목을 선택하면 교과군과 성격이 표시됩니다."}
+      </p>
+    </div>
   `;
 }
 
@@ -3894,7 +4067,8 @@ function renderPlannerSavedSummary() {
     ["1", "2"].forEach((semester) => {
       const semesterPlan = state.plan[grade][semester];
       const items = [...semesterPlan.regular, ...semesterPlan.joint];
-      if (!items.length) return;
+      const additionalItems = Array.isArray(semesterPlan.additional) ? semesterPlan.additional : [];
+      if (!items.length && !additionalItems.length) return;
       const names = items
         .map((item) => {
           const course = getPlannerCourse(item.id);
@@ -3902,10 +4076,14 @@ function renderPlannerSavedSummary() {
         })
         .filter(Boolean)
         .join(", ");
+      const additionalNames = additionalItems
+        .map((item) => `${escapeHtml(item.name)} <small>${escapeHtml(item.area)} · ${escapeHtml(item.category)} · 추가</small>`)
+        .join(", ");
+      const combinedNames = [names, additionalNames].filter(Boolean).join("<br>");
       rows.push(`
         <tr>
           <th>${grade}학년 ${semester}학기</th>
-          <td>${names}</td>
+          <td>${combinedNames}</td>
         </tr>
       `);
     });
@@ -3917,7 +4095,7 @@ function renderPlannerSavedSummary() {
         <tbody>${rows.join("")}</tbody>
       </table>
     `
-    : `<div class="empty-note">아직 선택한 과목이 없습니다. 왼쪽 선택 교과목에서 과목을 추가해 보세요.</div>`;
+    : `<div class="empty-note">아직 선택한 과목이 없습니다. 선택과목 또는 추가 교육과정을 입력해 보세요.</div>`;
 }
 
 function renderSemesterBoard(grade, semester) {
@@ -3992,6 +4170,92 @@ function bindRemoveButtons() {
       renderPlanner();
     });
   });
+}
+
+function bindAdditionalCourseControls() {
+  $all("[data-additional-form]").forEach((form) => {
+    const input = form.querySelector("[data-additional-course-name]");
+    const preview = form.querySelector("[data-additional-course-preview]");
+    if (!input || !preview) return;
+
+    const updatePreview = () => {
+      const course = getAdditionalCourseByName(input.value);
+      preview.classList.toggle("valid", Boolean(course));
+      preview.textContent = course
+        ? `${course.area} · ${course.category}`
+        : input.value.trim()
+          ? "목록에 있는 과목명을 정확히 선택해 주세요."
+          : "과목을 선택하면 교과군과 성격이 표시됩니다.";
+    };
+
+    input.addEventListener("input", updatePreview);
+    updatePreview();
+  });
+
+  $all("[data-add-additional-course]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const form = button.closest("[data-additional-form]");
+      if (!form) return;
+      addAdditionalCourseToPlan(form.dataset.grade, form.dataset.semester, form);
+    });
+  });
+
+  $all("[data-remove-additional-course]").forEach((button) => {
+    button.addEventListener("click", () => {
+      removeAdditionalCourseFromPlan(button.dataset.grade, button.dataset.semester, Number(button.dataset.index));
+    });
+  });
+}
+
+function addAdditionalCourseToPlan(grade, semester, form) {
+  const semesterPlan = state.plan[grade]?.[semester];
+  if (!semesterPlan) return;
+  if (!Array.isArray(semesterPlan.additional)) semesterPlan.additional = [];
+
+  if (semesterPlan.additional.length >= 2) {
+    showToast("추가 교육과정은 학기별 최대 2과목까지 입력합니다.");
+    return;
+  }
+
+  const nameInput = form.querySelector("[data-additional-course-name]");
+  const reasonInput = form.querySelector("[data-additional-course-reason]");
+  const selectedCourse = getAdditionalCourseByName(nameInput?.value || "");
+  const reason = String(reasonInput?.value || "").trim();
+
+  if (!selectedCourse) {
+    showToast("목록에서 과목명을 정확히 선택해 주세요.");
+    return;
+  }
+
+  if (!reason) {
+    showToast("그 과목이 필요한 이유를 한 문장으로 적어 주세요.");
+    return;
+  }
+
+  if (semesterPlan.additional.some((item) => normalizeText(item.name) === normalizeText(selectedCourse.name))) {
+    showToast("이미 이 학기에 추가한 과목입니다.");
+    return;
+  }
+
+  semesterPlan.additional.push({
+    name: selectedCourse.name,
+    area: selectedCourse.area,
+    category: selectedCourse.category,
+    reason
+  });
+
+  saveState(false);
+  renderPlannerMineView();
+  renderPlannerSavedSummary();
+}
+
+function removeAdditionalCourseFromPlan(grade, semester, index) {
+  const additional = state.plan[grade]?.[semester]?.additional;
+  if (!Array.isArray(additional) || !additional[index]) return;
+  additional.splice(index, 1);
+  saveState(false);
+  renderPlannerMineView();
+  renderPlannerSavedSummary();
 }
 
 function addCourseToPlan(courseId, grade, semester, zone) {
@@ -4104,7 +4368,35 @@ function rememberActivePlannerPlan() {
 }
 
 function clonePlannerPlan(plan) {
-  return JSON.parse(JSON.stringify(plan || createEmptyPlan()));
+  return normalizePlannerPlan(JSON.parse(JSON.stringify(plan || createEmptyPlan())));
+}
+
+function normalizePlannerPlan(plan) {
+  const normalized = createEmptyPlan();
+  ["1", "2", "3"].forEach((grade) => {
+    ["1", "2"].forEach((semester) => {
+      const semesterPlan = plan?.[grade]?.[semester] || {};
+      normalized[grade][semester] = {
+        regular: Array.isArray(semesterPlan.regular) ? semesterPlan.regular : [],
+        joint: Array.isArray(semesterPlan.joint) ? semesterPlan.joint : [],
+        additional: Array.isArray(semesterPlan.additional)
+          ? semesterPlan.additional.map(normalizeAdditionalCourseItem).filter(Boolean)
+          : []
+      };
+    });
+  });
+  return normalized;
+}
+
+function normalizeAdditionalCourseItem(item) {
+  if (!item || !item.name) return null;
+  const matchedCourse = getAdditionalCourseByName(item.name);
+  return {
+    name: matchedCourse?.name || String(item.name).trim(),
+    area: matchedCourse?.area || String(item.area || "기타").trim(),
+    category: matchedCourse?.category || getAdditionalCourseCategoryLabel(item.category),
+    reason: String(item.reason || "").trim()
+  };
 }
 
 function switchPlannerPlan(planKey) {
