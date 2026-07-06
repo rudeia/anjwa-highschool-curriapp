@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>권장과목 심화자료 | 진로진학 플랫폼</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="advanced-page-body">
+    <div class="app-shell advanced-page" id="advancedRecommendationPage">
+      <main class="main-content">
+        <section class="advanced-hero">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">상담·자료 검토용</p>
+              <h1>권장과목 심화자료</h1>
+            </div>
+            <a class="ghost-button page-link-button" href="./index.html">플랫폼으로 돌아가기</a>
+          </div>
+          <p>
+            이 페이지는 학과별 핵심·권장·추천 과목을 더 자세히 살펴보는 공간입니다.
+            학과를 고르면 관련 과목을, 과목을 고르면 연결되는 학과·계열을 확인할 수 있습니다.
+          </p>
+        </section>
+
+        <section class="content-block">
+          <h2>학과·과목 심화 조회</h2>
+          <p>
+            메인 화면보다 자세하게 과목 연결을 확인합니다.
+            핵심과목과 권장과목은 자료 기반으로만 표시하고, 자료에 직접 나오지 않았지만 학과 탐색에 도움이 되는 과목은 추천과목으로 따로 표시합니다.
+          </p>
+          <div class="recommendation-tool advanced-recommendation-tool">
+            <div class="recommendation-controls">
+              <label class="recommendation-major-control">
+                학과·계열 고르기
+                <select id="majorRecommendationSelect"></select>
+              </label>
+              <label class="recommendation-major-control">
+                학과·계열 검색
+                <input id="majorRecommendationSearch" type="search" list="majorSuggestionList" placeholder="예: 간호, 기계, 컴퓨터, 경영" />
+                <datalist id="majorSuggestionList"></datalist>
+              </label>
+              <label class="recommendation-subject-control">
+                과목으로 찾기
+                <select id="subjectRecommendationSelect"></select>
+              </label>
+              <label class="recommendation-plan-control">
+                교육과정 기준
+                <select id="recommendationPlanFilter">
+                  <option value="all">전체 학년</option>
+                  <option value="incoming2026">1학년(2026 신입)</option>
+                  <option value="incoming2025">2학년(2025 신입)</option>
+                  <option value="incoming2024">3학년(2024 신입)</option>
+                </select>
+              </label>
+            </div>
+            <div class="quick-major-row" id="quickMajorButtons"></div>
+            <div class="recommendation-results" id="majorRecommendationResults"></div>
+            <div class="recommendation-results" id="subjectRecommendationResults"></div>
+          </div>
+        </section>
+
+        <section class="content-block">
+          <h2>심화자료 읽는 기준</h2>
+          <div class="type-grid">
+            <div>
+              <b>핵심 과목</b>
+              <span>자료에서 직접 중요하게 제시된 과목입니다. 필수 이수로 단정하지 말고, 최종 지원 전 모집요강과 함께 확인합니다.</span>
+            </div>
+            <div>
+              <b>권장 과목</b>
+              <span>학과 공부를 준비하는 데 도움이 되는 과목입니다. 여러 자료에서 반복되면 학생 상담에서 우선순위가 높아집니다.</span>
+            </div>
+            <div>
+              <b>추천과목</b>
+              <span>공식 핵심·권장 과목은 아니지만 학과 탐색과 세특 주제 확장에 도움이 되는 학교 안내용 과목입니다.</span>
+            </div>
+            <div>
+              <b>수학·과학 분리</b>
+              <span>자연계열은 수학 계열과 과학 계열의 의미가 다르므로 따로 봅니다. 미적분·기하는 수학, 물리·화학·생명·지구는 과학 흐름으로 확인합니다.</span>
+            </div>
+            <div>
+              <b>공통과목 제외</b>
+              <span>모두가 배우는 공통국어, 공통수학, 공통영어, 통합사회, 통합과학, 한국사는 특정 학과 추천 연결에서 제외합니다.</span>
+            </div>
+            <div>
+              <b>미개설 표시</b>
+              <span>우리학교 교육과정에서 확인되지 않는 과목입니다. 미개설(22)은 2022 개정, 미개설(15)은 2015 개정 기준입니다.</span>
+            </div>
+            <div>
+              <b>최종 확인</b>
+              <span>권장과목 자료는 진로·과목 선택 참고자료입니다. 실제 지원 전에는 대학 입학처와 최종 모집요강을 다시 확인해야 합니다.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-block">
+          <h2>심화자료 활용 순서</h2>
+          <div class="type-grid">
+            <div>
+              <b>1. 학과·계열 선택</b>
+              <span>희망 학과가 정해졌다면 먼저 학과·계열로 찾습니다. 핵심과목과 권장과목이 비어 있으면 추천과목을 참고합니다.</span>
+            </div>
+            <div>
+              <b>2. 과목으로 역조회</b>
+              <span>관심 과목을 골라 그 과목과 연결되는 학과·계열을 확인합니다. 이 기능은 진로가 아직 넓은 학생에게 유용합니다.</span>
+            </div>
+            <div>
+              <b>3. 우리학교 개설 여부 확인</b>
+              <span>녹색, 파랑, 보라 배지를 보고 자기 학년도 교육과정에서 실제로 들을 수 있는지 확인합니다.</span>
+            </div>
+            <div>
+              <b>4. 자기평가서로 연결</b>
+              <span>과목 선택이 끝이 아닙니다. 수업 속 질문, 탐구 과정, 결과, 후속 활동을 자기평가서에 남겨 세특 상담 자료로 연결합니다.</span>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./curriculum-data.js"></script>
+    <script src="./recommendation-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
