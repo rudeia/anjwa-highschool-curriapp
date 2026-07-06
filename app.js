@@ -10,6 +10,17 @@ const curriculumPlanLabels = {
   incoming2025: "2학년(2025학년도 신입생)",
   incoming2024: "3학년(2024학년도 신입생)"
 };
+const choiceGroupStartOverrides = {
+  incoming2026: {
+    "3-1": [75]
+  },
+  incoming2025: {
+    "3-1": [76]
+  },
+  incoming2024: {
+    "3-1": [58]
+  }
+};
 const recommendationCurriculumPlans = [
   { key: "incoming2026", label: "1학년(2026 신입)", shortLabel: "26신입", standard: "2022", className: "grade-1" },
   { key: "incoming2025", label: "2학년(2025 신입)", shortLabel: "25신입", standard: "2022", className: "grade-2" },
@@ -1874,6 +1885,17 @@ function buildCurriculumChoiceGroups(allCourses, semesterKeys) {
   return semesterKeys.flatMap((semesterKey) => buildCurriculumChoiceGroupsForSemester(allCourses, semesterKey));
 }
 
+function getPlanKeyForCourseList(allCourses) {
+  return Object.entries(curriculumData.plans || {})
+    .find(([, plan]) => plan.courses === allCourses)?.[0] || "";
+}
+
+function isChoiceGroupStartOverride(allCourses, semesterKey, course) {
+  const planKey = getPlanKeyForCourseList(allCourses);
+  const startRows = choiceGroupStartOverrides[planKey]?.[semesterKey] || [];
+  return startRows.includes(course.row);
+}
+
 function buildCurriculumChoiceGroupsForSemester(allCourses, semesterKey) {
   const semesterCourses = allCourses
     .filter((course) => course.semesters.includes(semesterKey))
@@ -1893,7 +1915,8 @@ function buildCurriculumChoiceGroupsForSemester(allCourses, semesterKey) {
     }
     const key = `${marker} · ${course.section}`;
     const isSeparated = previousRow !== null && course.row !== previousRow + 1;
-    if (!currentGroup || key !== previousKey || isSeparated) {
+    const isOverrideStart = isChoiceGroupStartOverride(allCourses, semesterKey, course);
+    if (!currentGroup || key !== previousKey || isSeparated || isOverrideStart) {
       currentGroup = {
         label: key,
         marker,
