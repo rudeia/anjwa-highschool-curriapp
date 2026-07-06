@@ -36,8 +36,13 @@
             </button>
             <button class="launch-card tone-amber" data-view="planner">
               <span class="launch-icon planner-icon" aria-hidden="true"></span>
-              <strong>나의 생기부 구성하기</strong>
-              <span>과목, 창체, 탐구활동을 상담 자료로 정리합니다.</span>
+              <strong>나의 학생부 구성하기</strong>
+              <span>내 학년도 교육과정에서 수강하고 싶은 선택과목을 저장합니다.</span>
+            </button>
+            <button class="launch-card tone-violet" data-view="selfEvaluation">
+              <span class="launch-icon self-eval-icon" aria-hidden="true"></span>
+              <strong>자기평가서 구상하기</strong>
+              <span>과목별 세특 자기평가서를 작성하고 상담용 PDF로 저장합니다.</span>
             </button>
           </div>
         </section>
@@ -961,7 +966,7 @@
               <article><span>01</span><b>전형 방식 확인</b><p>서류형, 면접형, 수능최저 적용 여부를 먼저 봅니다.</p></article>
               <article><span>02</span><b>학생부 항목 확인</b><p>출결, 창체, 교과학습발달상황, 행동특성을 봅니다.</p></article>
               <article><span>03</span><b>평가역량 이해</b><p>학업역량, 진로역량, 공동체역량이 무엇인지 잡습니다.</p></article>
-              <article><span>04</span><b>과목 선택 점검</b><p>희망 학과의 핵심·권장 과목과 학교 교육과정을 연결합니다.</p></article>
+              <article><span>04</span><b>과목 선택 점검</b><p>희망 학과의 핵심·권장·추천 과목과 학교 교육과정을 연결합니다.</p></article>
               <article><span>05</span><b>세특·탐구 연결</b><p>동기, 질문, 개념, 과정, 결과, 후속 활동을 남깁니다.</p></article>
               <article><span>06</span><b>면접 대비</b><p>기록의 이유와 배운 점을 학생 자신의 말로 설명합니다.</p></article>
             </div>
@@ -987,28 +992,37 @@
           </div>
 
           <div class="content-block" id="holistic-subjects">
-            <h3>학과별 핵심·권장 과목 찾기</h3>
+            <h3>학과별 핵심·권장·추천 과목 찾기</h3>
             <p>
-              자료집과 강의 자료에서 대학이 명시했거나 반복적으로 확인되는 과목만 우선 표시합니다.
+              학과·계열을 선택하면 관련 핵심·권장·추천 과목을 확인할 수 있고, 과목을 선택하면 그 과목과 연결되는 학과·계열을 확인할 수 있습니다.
               모두가 듣는 공통과목은 제외하고, 서울대·고려대·연세대·동국대·건국대·광운대 등에서 근거가 확인된 선택과목을 중심으로 정리했습니다.
-              학과를 고르거나 검색하면 과목이 나오고, 과목을 고르면 연결되는 학과·계열을 확인할 수 있습니다.
             </p>
+            <div class="recommendation-view-panel">
+              <div class="recommendation-view-tabs" aria-label="추천 과목 보기 방식">
+                <button class="active" type="button" data-recommendation-mode="major">학과·계열로 찾기</button>
+                <button type="button" data-recommendation-mode="subject">과목으로 찾기</button>
+                <a class="recommendation-deep-link" href="./advanced-recommendations.html">심화자료</a>
+              </div>
+              <p id="recommendationModeHelp">
+                희망 학과나 계열을 고르면 핵심과목, 권장과목, 학교 안내용 추천과목을 나누어 보여줍니다.
+              </p>
+            </div>
             <div class="recommendation-tool">
               <div class="recommendation-controls">
-                <label>
+                <label class="recommendation-major-control">
                   학과·계열 고르기
                   <select id="majorRecommendationSelect"></select>
                 </label>
-                <label>
+                <label class="recommendation-major-control">
                   학과·계열 검색
-                  <input id="majorRecommendationSearch" type="search" list="majorSuggestionList" placeholder="예: 간호, 기계, 미디어, 사관학교" />
+                  <input id="majorRecommendationSearch" type="search" list="majorSuggestionList" placeholder="예: 간호, 기계, 미디어, 경영" />
                   <datalist id="majorSuggestionList"></datalist>
                 </label>
-                <label>
+                <label class="recommendation-subject-control">
                   과목으로 찾기
                   <select id="subjectRecommendationSelect"></select>
                 </label>
-                <label>
+                <label class="recommendation-plan-control">
                   교육과정 기준
                   <select id="recommendationPlanFilter">
                     <option value="all">전체 학년</option>
@@ -1022,14 +1036,13 @@
               <div class="recommendation-results" id="majorRecommendationResults"></div>
               <div class="recommendation-results" id="subjectRecommendationResults"></div>
             </div>
-            <p class="table-caption">
-              녹색은 26신입, 파랑은 25신입, 보라는 24신입 교육과정에서 확인되는 과목입니다.
-              배지의 26신입 · 3학년은 2026학년도 신입생이 3학년에 듣는 과목이라는 뜻입니다.
-              26·25신입은 22 개정, 24신입은 15 개정 교육과정이므로 같은 학문 흐름이라도 실제 교육과정의 과목명으로 나누어 표시합니다.
-              같은 과목명처럼 보여도 교육과정이 다르면 별도 과목 배지로 표시합니다.
-              예를 들어 22 개정의 생명과학은 3학년 기준에서 생명과학Ⅰ·생명과학Ⅱ로 확인합니다.
-              미개설 과목만 미개설(22), 미개설(15)처럼 표시합니다. 붉은색 미개설은 핵심 과목, 주황색 미개설은 권장 과목입니다.
-            </p>
+            <div class="recommendation-legend" aria-label="추천 과목 배지 범례">
+              <span><b class="legend-chip grade-1"></b> 1학년 교육과정</span>
+              <span><b class="legend-chip grade-2"></b> 2학년 교육과정</span>
+              <span><b class="legend-chip grade-3"></b> 3학년 교육과정</span>
+              <span><b class="legend-chip missing-core"></b> 핵심 과목 미개설</span>
+              <span><b class="legend-chip missing-recommended"></b> 권장 과목 미개설</span>
+            </div>
           </div>
 
           <div class="content-block" id="holistic-sechuk">
@@ -1184,7 +1197,7 @@
               <p>종합전형을 준비할 때 아래 항목을 스스로 점검합니다.</p>
             </div>
             <div class="checklist">
-              <label><input type="checkbox" /> 희망 학과와 관련된 핵심·권장 과목을 확인했다.</label>
+              <label><input type="checkbox" /> 희망 학과와 관련된 핵심·권장·추천 과목을 확인했다.</label>
               <label><input type="checkbox" /> 학교 교육과정에서 실제로 들을 수 있는 과목을 확인했다.</label>
               <label><input type="checkbox" /> 세특이 수업 개념에서 출발하도록 탐구 질문을 만들었다.</label>
               <label><input type="checkbox" /> 창체 활동이 수업·탐구와 이어지는지 확인했다.</label>
@@ -1194,7 +1207,7 @@
           </div>
 
           <div class="next-action-row">
-            <button class="primary-button" data-view="planner">나의 생기부 구성하기로 이동</button>
+            <button class="primary-button" data-view="planner">나의 학생부 구성하기로 이동</button>
           </div>
 
           <p class="source-note">
@@ -1208,35 +1221,45 @@
         </section>
 
         <section class="view" id="planner" aria-labelledby="planner-title">
-          <div class="section-head">
-            <div>
-              <h2 id="planner-title">나의 생기부 구성하기</h2>
-              <p>과목을 선택하고 학점 기준을 확인한 뒤 상담용 자료로 출력합니다.</p>
+          <div class="section-head planner-head">
+            <div class="section-title-wrap">
+              <div class="section-title-row">
+                <h2 id="planner-title">나의 학생부 구성하기</h2>
+                <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
+              </div>
+              <p>학교지정 과목을 먼저 확인하고, 선택과목 창에서 수강하고 싶은 과목을 저장합니다.</p>
             </div>
-            <div class="control-row">
-              <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
+            <div class="control-row planner-control-row">
+              <label>
+                내 학년도
+                <select id="plannerPlanSelect"></select>
+              </label>
               <button class="ghost-button" id="savePlanButton">저장</button>
-              <button class="primary-button" id="printButton">상담용 출력</button>
-              <label>
-                희망 계열
-                <select id="majorTrackSelect">
-                  <option value="engineering">공학</option>
-                  <option value="medical">의학·보건</option>
-                  <option value="humanities">인문·사회</option>
-                  <option value="media">국어·미디어</option>
-                </select>
-              </label>
-              <label>
-                희망 학과
-                <input id="targetMajorInput" type="text" placeholder="예: 기계공학과" />
-              </label>
+              <button class="primary-button" id="loadPlanButton">저장 내용 불러오기</button>
             </div>
           </div>
 
-          <div class="planner-layout">
+          <div class="planner-mode-panel">
+            <div>
+              <span class="label">진행 순서</span>
+              <h3>기본 과목을 확인하고 선택과목을 담아 내 교육과정으로 확인합니다</h3>
+              <p>학교지정 과목은 기본으로 확인하고, 선택과목은 별도 화면에서 담은 뒤 내 교육과정에서 함께 봅니다.</p>
+            </div>
+            <div class="planner-mode-buttons">
+              <button class="active" type="button" id="plannerFixedModeButton">기본 교육과정 보기</button>
+              <button type="button" id="plannerChoiceModeButton">선택과목 고르기</button>
+              <button type="button" id="plannerMineModeButton">내 교육과정 보기</button>
+            </div>
+          </div>
+
+          <div class="planner-fixed-view" id="plannerFixedView"></div>
+
+          <div class="planner-mine-view" id="plannerMineView" hidden></div>
+
+          <div class="planner-layout" id="plannerChoiceView" hidden>
             <aside class="course-palette">
               <div class="palette-head">
-                <h3>과목 목록</h3>
+                <h3>선택 교과목</h3>
                 <input id="courseSearch" type="search" placeholder="과목 검색" />
               </div>
               <div class="recommend-box" id="recommendBox"></div>
@@ -1244,61 +1267,134 @@
             </aside>
 
             <div class="planning-workspace">
+              <div class="planner-choice-head">
+                <div>
+                  <span class="label">선택과목 저장</span>
+                  <h3>내가 수강하고 싶은 과목을 담습니다</h3>
+                </div>
+                <button class="ghost-button" id="returnFixedButton" type="button">기본 교육과정으로 돌아가기</button>
+              </div>
+
+              <section class="planner-summary-panel">
+                <div>
+                  <span class="label">저장된 선택 결과</span>
+                  <h3>내가 수강하고 싶은 선택과목</h3>
+                </div>
+                <div id="plannerSavedSummary"></div>
+              </section>
+
               <div class="year-tabs" id="yearTabs">
-                <button class="year-tab active" data-grade="1">1학년</button>
-                <button class="year-tab" data-grade="2">2학년</button>
-                <button class="year-tab" data-grade="3">3학년</button>
+                <button class="year-tab active" data-grade="1">1학년 과정</button>
+                <button class="year-tab" data-grade="2">2학년 과정</button>
+                <button class="year-tab" data-grade="3">3학년 과정</button>
               </div>
 
               <div class="semester-grid" id="semesterGrid"></div>
-
-              <div class="activity-layout">
-                <section class="activity-panel">
-                  <h3>창체 자기기록</h3>
-                  <div class="field-grid">
-                    <label>
-                      자율활동
-                      <textarea id="creativeAutonomy" placeholder="학급, 학교 활동에서 맡은 역할과 배운 점"></textarea>
-                    </label>
-                    <label>
-                      진로활동
-                      <textarea id="creativeCareer" placeholder="진로 탐색, 상담, 발표, 체험 내용"></textarea>
-                    </label>
-                    <label>
-                      동아리활동
-                      <textarea id="creativeClub" placeholder="동아리 활동과 탐구 주제"></textarea>
-                    </label>
-                  </div>
-                </section>
-
-                <section class="activity-panel">
-                  <h3>탐구활동 빌더</h3>
-                  <div class="field-grid">
-                    <label>
-                      탐구 동기
-                      <textarea id="inquiryMotivation" placeholder="왜 이 주제가 궁금했나요?"></textarea>
-                    </label>
-                    <label>
-                      탐구 질문
-                      <textarea id="inquiryQuestion" placeholder="해결하고 싶은 질문을 적어보세요."></textarea>
-                    </label>
-                    <label>
-                      과정과 결과
-                      <textarea id="inquiryResult" placeholder="어떤 자료를 활용했고 무엇을 알게 되었나요?"></textarea>
-                    </label>
-                    <label>
-                      후속 활동
-                      <textarea id="inquiryFollowUp" placeholder="다음 과목, 창체, 독서, 프로젝트와 어떻게 연결할까요?"></textarea>
-                    </label>
-                  </div>
-                </section>
-              </div>
             </div>
           </div>
         </section>
 
-        <section class="print-report" id="printReport" aria-label="상담용 출력 자료"></section>
+        <section class="view" id="selfEvaluation" aria-labelledby="self-eval-title">
+          <div class="section-head self-eval-head">
+            <div class="section-title-wrap">
+              <div class="section-title-row">
+                <h2 id="self-eval-title">자기평가서 구상하기</h2>
+                <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
+              </div>
+              <p>
+                과목별로 수업 속 호기심, 탐구 과정, 독서 연결, 후속 활동을 정리합니다.
+                이 자료는 세특 문장을 대신 쓰는 것이 아니라 상담과 자기 점검을 위한 초안입니다.
+              </p>
+            </div>
+            <div class="control-row self-eval-control-row">
+              <label>
+                내 학년도
+                <select id="selfEvalPlanSelect"></select>
+              </label>
+              <label>
+                학년·학기
+                <select id="selfEvalSemesterSelect"></select>
+              </label>
+              <label>
+                과목
+                <select id="selfEvalSubjectSelect"></select>
+              </label>
+              <button class="ghost-button" id="loadSelfEvalButton" type="button">저장 내용 불러오기</button>
+            </div>
+          </div>
+
+          <div class="self-eval-guide">
+            <article>
+              <span class="label">작성 원칙</span>
+              <h3>모든 과목은 학업역량을 보여줄 기회입니다</h3>
+              <p>
+                희망 진로와 직접 연결되는 과목은 진로역량을 보여주기 좋습니다.
+                하지만 다른 과목도 질문 만들기, 자료 해석, 토론, 발표, 협업, 피드백 반영을 통해
+                학업역량과 공동체역량을 충분히 보여줄 수 있습니다.
+              </p>
+            </article>
+            <article>
+              <span class="label">좋은 흐름</span>
+              <h3>동기 → 질문 → 개념 → 과정 → 결과 → 한계 → 후속 탐구</h3>
+              <p>
+                좋은 자기평가서는 활동 이름을 나열하지 않습니다.
+                수업과 수행평가에서 진행한 내용을 먼저 바탕으로 삼고,
+                시간이 부족하거나 더 깊이 알고 싶은 주제가 있다면 교과 선생님과 이야기해 개별 탐구 질문을 정리할 수 있습니다.
+              </p>
+            </article>
+            <article>
+              <span class="label">심화 도움말</span>
+              <h3>좋은 세특으로 바뀌는 과정을 봅니다</h3>
+              <p>
+                아쉬운 자기평가 문장이 수업 기반 탐구, 과정, 결과, 후속 활동이 보이는 세특형 표현으로 어떻게 바뀌는지 확인합니다.
+              </p>
+              <button class="ghost-button self-eval-guide-button" type="button" data-self-help="advanced">심화 도움말 보기</button>
+            </article>
+          </div>
+
+          <div class="self-eval-layout">
+            <aside class="self-eval-side-panel">
+              <span class="label">현재 작성 과목</span>
+              <h3 id="selfEvalCurrentSubject">과목을 선택하세요</h3>
+              <p id="selfEvalCurrentMeta">학년도와 과목을 선택하면 과목별 자기평가서를 작성할 수 있습니다.</p>
+              <div class="self-eval-status" id="selfEvalSaveStatus">로컬 브라우저 저장 방식입니다.</div>
+              <div class="self-eval-competency-box">
+                <b>강조하고 싶은 역량</b>
+                <label><input type="checkbox" value="학업역량" data-self-eval-competency /> 학업역량</label>
+                <label><input type="checkbox" value="진로역량" data-self-eval-competency /> 진로역량</label>
+                <label><input type="checkbox" value="공동체역량" data-self-eval-competency /> 공동체역량</label>
+                <label class="self-eval-competency-note-label" for="selfEvalCompetencyNote">강조하고 싶은 장면 <span>선택</span></label>
+                <input id="selfEvalCompetencyNote" class="self-eval-competency-note" type="text" placeholder="예: 자료를 다시 분석하며 질문을 수정한 과정" />
+              </div>
+            </aside>
+
+            <form class="self-eval-form" id="selfEvalForm">
+              <div id="selfEvalFields"></div>
+              <div class="self-eval-submit-row">
+                <button class="ghost-button" id="saveSelfEvalButton" type="button">작성 내용 저장</button>
+                <button class="primary-button" id="exportSelfEvalButton" type="button">PDF 내보내기</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="self-eval-print-view" id="selfEvalPrintView" hidden></div>
+
+          <div class="next-action-row bottom-actions">
+            <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
+          </div>
+        </section>
+
       </main>
+    </div>
+
+    <div class="subject-info-modal" id="subjectInfoModal" hidden>
+      <div class="subject-info-backdrop" data-close-subject-info></div>
+      <section class="subject-info-dialog" role="dialog" aria-modal="true" aria-labelledby="subjectInfoTitle">
+        <button class="subject-info-close" type="button" aria-label="닫기" data-close-subject-info>×</button>
+        <span class="label" id="subjectInfoLabel">관련 학과 예시</span>
+        <h3 id="subjectInfoTitle">과목명</h3>
+        <div id="subjectInfoContent"></div>
+      </section>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
