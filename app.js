@@ -2,6 +2,8 @@ const STORAGE_KEY = "anjwa-career-platform-plan-v1";
 const SELF_EVAL_STORAGE_KEY = "anjwa-career-platform-self-eval-v1";
 const curriculumData = window.ANJWA_CURRICULUM_DATA || { plans: {} };
 const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [], sources: [] };
+const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA || { records: [] };
+const topicData = window.ANJWA_TOPIC_DATA || { topics: [] };
 const curriculumPlanOrder = ["current2026", "incoming2026", "incoming2025", "incoming2024"];
 const plannerPlanOrder = ["incoming2026", "incoming2025", "incoming2024"];
 const curriculumPlanLabels = {
@@ -35,6 +37,25 @@ const commonRecommendationSubjects = [
   "통합과학", "통합과학1", "통합과학2",
   "과학탐구실험", "과학탐구실험1", "과학탐구실험2",
   "한국사", "한국사1", "한국사2"
+];
+const genericRecommendationSubjectLabels = [
+  "국어", "영어", "수학", "과학", "사회", "일반사회", "역사", "지리", "윤리"
+];
+const genericRecommendationSubjectPhrases = [
+  "국어영어수학",
+  "국어수학영어",
+  "국어영어수학과학",
+  "교과군",
+  "과목군",
+  "다양한교과",
+  "다양한과목",
+  "여러교과",
+  "여러과목",
+  "계열구분없이",
+  "교과목선택이수",
+  "진로및적성",
+  "적성과진로",
+  "전공을고려"
 ];
 const recommendationSubjectCategories = [
   { key: "math", label: "수학 계열", keywords: ["수학", "대수", "미적분", "기하", "확률", "통계"] },
@@ -86,6 +107,7 @@ const additionalCourseCatalogSeed = [
   { name: "독일어", area: "제2외국어·한문", category: "일반선택" },
   { name: "한문", area: "제2외국어·한문", category: "일반선택" },
   { name: "심리학", area: "교양", category: "일반선택" },
+  { name: "교육의 이해", area: "교양", category: "일반선택" },
   { name: "교육학", area: "교양", category: "일반선택" },
   { name: "철학", area: "교양", category: "일반선택" }
 ];
@@ -93,19 +115,19 @@ const additionalCourseCatalogSeed = [
 const majorOptionGroups = [
   {
     label: "공학·AI·자연",
-    options: ["공학계열", "기계공학", "전기전자공학", "반도체공학", "화학공학", "컴퓨터공학", "인공지능", "정보보안", "물리학", "화학", "신소재", "지구과학", "천문우주"]
+    options: ["공학계열", "기계공학", "전기전자공학", "반도체공학", "화학공학", "컴퓨터공학", "인공지능", "정보보안", "물리학", "화학", "신소재", "지구과학", "천문우주", "대기과학", "해양학"]
   },
   {
     label: "생명·의학·보건",
-    options: ["의학·보건계열", "의예", "약학", "치의예", "수의예", "간호학과", "보건", "물리치료", "작업치료", "임상병리", "생명과학", "생명공학", "식품공학", "환경생태"]
+    options: ["의학·보건계열", "의예", "약학", "치의예", "한의예", "수의예", "간호학과", "보건관리학과", "물리치료학과", "작업치료학과", "임상병리학과", "방사선학과", "응급구조학과", "치위생학과", "생명과학", "생명공학", "식품공학", "환경생태"]
   },
   {
     label: "인문·사회·상경",
-    options: ["인문·사회계열", "국어국문", "정치외교", "사회학", "사회복지", "행정", "법학", "경영", "경제", "국제통상", "빅데이터경영"]
+    options: ["인문·사회계열", "국어국문학과", "영어영문학과", "문헌정보학과", "문화콘텐츠학과", "정치외교학과", "사회학과", "사회복지학과", "심리학과", "행정학과", "법학과", "경영학과", "경제학과", "국제통상학과", "빅데이터경영", "지리학과"]
   },
   {
     label: "교육",
-    options: ["교육", "수학교육", "과학교육", "사범대"]
+    options: ["교육계열", "교육학과", "초등교육과", "유아교육과", "국어교육과", "영어교육과", "사회교육과", "일반사회교육과", "역사교육과", "지리교육과", "윤리교육과", "수학교육과", "과학교육과", "물리교육과", "화학교육과", "생물교육과", "지구과학교육과", "환경교육과"]
   },
   {
     label: "미디어·어문·문화",
@@ -1392,6 +1414,10 @@ const state = {
   activeCurriculumScope: "semester",
   curriculumSorts: [],
   recommendationMode: "major",
+  topicArea: "all",
+  topicSubject: "all",
+  topicLevel: "all",
+  topicQuery: "",
   plannerMode: "fixed",
   plannerPlan: "incoming2026",
   plannerPlans: {},
@@ -1456,6 +1482,8 @@ function init() {
   renderCompetencies();
   renderCurriculum();
   renderRecommendationExplorer();
+  renderTopicExplorerOptions();
+  renderTopicExplorer();
   renderPlannerPlanOptions();
   renderSelfEvaluationPlanOptions();
   renderSelfEvaluationSemesterOptions();
@@ -1464,7 +1492,7 @@ function init() {
   renderPlanner();
   renderSelfEvaluation();
   updateFormValues();
-  setView("home");
+  setView(getInitialViewFromHash() || "home");
 }
 
 function bindNavigation() {
@@ -1484,6 +1512,15 @@ function setView(viewId) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function getInitialViewFromHash() {
+  const hash = decodeURIComponent(window.location.hash || "").replace(/^#/, "");
+  if (!hash) return "";
+  if ($(`#${hash}`)?.classList.contains("view")) return hash;
+  if (hash.startsWith("subject-")) return "subjectAdmission";
+  if (hash.startsWith("holistic-")) return "holisticAdmission";
+  return "";
+}
+
 function bindControls() {
   $("#curriculumPlan").addEventListener("change", (event) => {
     state.activeCurriculumPlan = event.target.value;
@@ -1500,6 +1537,7 @@ function bindControls() {
   $("#curriculumSearch").addEventListener("input", renderCurriculum);
 
   bindRecommendationControls();
+  bindTopicExplorerControls();
 
   const plannerPlanSelect = $("#plannerPlanSelect");
   if (plannerPlanSelect) {
@@ -1633,6 +1671,8 @@ function bindRecommendationControls() {
   const majorSearch = $("#majorRecommendationSearch");
   const subjectSelect = $("#subjectRecommendationSelect");
   const planFilter = $("#recommendationPlanFilter");
+  const universitySearch = $("#universityRecommendationSearch");
+  const universityMajorSearch = $("#universityMajorSearch");
 
   if (majorSelect && majorSelect.dataset.bound !== "true") {
     majorSelect.addEventListener("change", (event) => {
@@ -1655,6 +1695,16 @@ function bindRecommendationControls() {
     subjectSelect.dataset.bound = "true";
   }
 
+  if (universitySearch && universitySearch.dataset.bound !== "true") {
+    universitySearch.addEventListener("input", renderRecommendationExplorer);
+    universitySearch.dataset.bound = "true";
+  }
+
+  if (universityMajorSearch && universityMajorSearch.dataset.bound !== "true") {
+    universityMajorSearch.addEventListener("input", renderRecommendationExplorer);
+    universityMajorSearch.dataset.bound = "true";
+  }
+
   if (planFilter && planFilter.dataset.bound !== "true") {
     planFilter.addEventListener("change", renderRecommendationExplorer);
     planFilter.dataset.bound = "true";
@@ -1669,6 +1719,188 @@ function bindRecommendationControls() {
     });
     button.dataset.bound = "true";
   });
+}
+
+function bindTopicExplorerControls() {
+  const areaFilter = $("#topicAreaFilter");
+  const subjectFilter = $("#topicSubjectFilter");
+  const levelFilter = $("#topicLevelFilter");
+  const searchInput = $("#topicSearch");
+  const resetButton = $("#topicResetButton");
+  if (!areaFilter || !subjectFilter || !levelFilter || !searchInput) return;
+
+  areaFilter.addEventListener("change", (event) => {
+    state.topicArea = event.target.value;
+    state.topicSubject = "all";
+    renderTopicSubjectOptions();
+    renderTopicExplorer();
+  });
+
+  subjectFilter.addEventListener("change", (event) => {
+    state.topicSubject = event.target.value;
+    renderTopicExplorer();
+  });
+
+  levelFilter.addEventListener("change", (event) => {
+    state.topicLevel = event.target.value;
+    renderTopicExplorer();
+  });
+
+  searchInput.addEventListener("input", (event) => {
+    state.topicQuery = event.target.value;
+    renderTopicExplorer();
+  });
+
+  resetButton?.addEventListener("click", () => {
+    state.topicArea = "all";
+    state.topicSubject = "all";
+    state.topicLevel = "all";
+    state.topicQuery = "";
+    areaFilter.value = "all";
+    levelFilter.value = "all";
+    searchInput.value = "";
+    renderTopicSubjectOptions();
+    renderTopicExplorer();
+  });
+}
+
+function renderTopicExplorerOptions() {
+  const areaFilter = $("#topicAreaFilter");
+  const levelFilter = $("#topicLevelFilter");
+  const searchInput = $("#topicSearch");
+  if (!areaFilter) return;
+
+  const areas = getTopicAreas();
+  areaFilter.innerHTML = `
+    <option value="all">전체 교과군</option>
+    ${areas.map((area) => `<option value="${escapeAttribute(area)}">${escapeHtml(area)}</option>`).join("")}
+  `;
+  areaFilter.value = state.topicArea || "all";
+  if (levelFilter) levelFilter.value = state.topicLevel || "all";
+  if (searchInput) searchInput.value = state.topicQuery || "";
+  renderTopicSubjectOptions();
+}
+
+function renderTopicSubjectOptions() {
+  const subjectFilter = $("#topicSubjectFilter");
+  if (!subjectFilter) return;
+  const subjects = getTopicSubjects(state.topicArea);
+  if (!subjects.includes(state.topicSubject)) state.topicSubject = "all";
+  subjectFilter.innerHTML = `
+    <option value="all">전체 과목</option>
+    ${subjects.map((subject) => `<option value="${escapeAttribute(subject)}">${escapeHtml(subject)}</option>`).join("")}
+  `;
+  subjectFilter.value = state.topicSubject || "all";
+}
+
+function renderTopicExplorer() {
+  const resultList = $("#topicResultList");
+  const resultCount = $("#topicResultCount");
+  if (!resultList) return;
+
+  const areaFilter = $("#topicAreaFilter");
+  const subjectFilter = $("#topicSubjectFilter");
+  const levelFilter = $("#topicLevelFilter");
+  const searchInput = $("#topicSearch");
+  const area = areaFilter?.value || state.topicArea || "all";
+  const subject = subjectFilter?.value || state.topicSubject || "all";
+  const level = levelFilter?.value || state.topicLevel || "all";
+  const query = searchInput?.value || state.topicQuery || "";
+  state.topicArea = area;
+  state.topicSubject = subject;
+  state.topicLevel = level;
+  state.topicQuery = query;
+
+  const topics = getFilteredTopicRecords({ area, subject, level, query });
+  const emptyTopicMessage = level !== "all"
+    ? `${level} 난이도에 맞는 예시가 아직 없습니다. 과목을 넓히거나 전체 난이도로 다시 확인해 보세요.`
+    : "검색 조건에 맞는 탐구 주제를 찾지 못했습니다. 과목을 넓히거나 검색어를 짧게 입력해 보세요.";
+  if (resultCount) resultCount.textContent = `${topics.length}개`;
+  resultList.innerHTML = topics.length
+    ? topics.map((topic) => renderTopicCard(topic)).join("")
+    : `<div class="empty-note topic-empty">${escapeHtml(emptyTopicMessage)}</div>`;
+}
+
+function getTopicRecords() {
+  return Array.isArray(topicData.topics) ? topicData.topics : [];
+}
+
+function getTopicAreas() {
+  const preferredOrder = ["국어", "영어", "수학", "사회", "과학", "정보", "예술", "체육", "교양"];
+  const areas = [...new Set(getTopicRecords().map((topic) => topic.area).filter(Boolean))];
+  return areas.sort((a, b) => {
+    const aIndex = preferredOrder.indexOf(a);
+    const bIndex = preferredOrder.indexOf(b);
+    if (aIndex !== -1 || bIndex !== -1) {
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+    }
+    return a.localeCompare(b, "ko");
+  });
+}
+
+function getTopicSubjects(area = "all") {
+  const records = getTopicRecords().filter((topic) => area === "all" || topic.area === area);
+  return [...new Set(records.map((topic) => topic.subject).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "ko"));
+}
+
+function getFilteredTopicRecords({ area, subject, level, query }) {
+  const normalizedQuery = normalizeText(query);
+  return getTopicRecords().filter((topic) => {
+    if (area !== "all" && topic.area !== area) return false;
+    if (subject !== "all" && topic.subject !== subject) return false;
+    if (level !== "all" && topic.level !== level) return false;
+    if (!normalizedQuery) return true;
+    const haystack = normalizeText([
+      topic.area,
+      topic.subject,
+      topic.level,
+      topic.title,
+      topic.question,
+      topic.method,
+      topic.output,
+      ...(topic.keywords || []),
+      ...(topic.majors || [])
+    ].join(" "));
+    return haystack.includes(normalizedQuery);
+  });
+}
+
+function renderTopicCard(topic) {
+  const keywords = Array.isArray(topic.keywords) ? topic.keywords : [];
+  const majors = Array.isArray(topic.majors) ? topic.majors : [];
+  return `
+    <article class="topic-card">
+      <div class="topic-card-head">
+        <div>
+          <span class="topic-subject-badge">${escapeHtml(topic.area)} · ${escapeHtml(topic.subject)}</span>
+          <h4>${escapeHtml(topic.title)}</h4>
+        </div>
+        <span class="topic-level-badge ${topic.level === "심화" ? "advanced" : "basic"}">${escapeHtml(topic.level)}</span>
+      </div>
+      <div class="topic-card-section">
+        <b>탐구 질문</b>
+        <p>${escapeHtml(topic.question)}</p>
+      </div>
+      <div class="topic-card-section">
+        <b>진행 방법</b>
+        <p>${escapeHtml(topic.method)}</p>
+      </div>
+      <div class="topic-card-footer">
+        <div>
+          <b>결과물</b>
+          <p>${escapeHtml(topic.output)}</p>
+        </div>
+        <div>
+          <b>연결 학과 예시</b>
+          <p>${majors.map((major) => escapeHtml(major)).join(" · ")}</p>
+        </div>
+      </div>
+      <div class="topic-keyword-row">
+        ${keywords.map((keyword) => `<span>${escapeHtml(keyword)}</span>`).join("")}
+      </div>
+    </article>
+  `;
 }
 
 function bindCurriculumSortHeaders() {
@@ -2383,6 +2615,8 @@ function renderRecommendationExplorer() {
   const searchInput = $("#majorRecommendationSearch");
   const majorSelect = $("#majorRecommendationSelect");
   const subjectSelect = $("#subjectRecommendationSelect");
+  const universitySearchInput = $("#universityRecommendationSearch");
+  const universityMajorInput = $("#universityMajorSearch");
   if (!searchInput || !majorSelect) return;
 
   renderMajorRecommendationOptions(majorSelect);
@@ -2394,6 +2628,7 @@ function renderRecommendationExplorer() {
   const mode = state.recommendationMode || "major";
   const isSubjectMode = mode === "subject";
   const isAdvancedMode = mode === "advanced";
+  const isUniversityMode = mode === "university";
   const majorResultTarget = $("#majorRecommendationResults");
   const subjectResultTarget = $("#subjectRecommendationResults");
   const quickMajorTarget = $("#quickMajorButtons");
@@ -2406,19 +2641,26 @@ function renderRecommendationExplorer() {
 
   if (majorResultTarget) {
     majorResultTarget.hidden = isSubjectMode;
-    majorResultTarget.innerHTML = isSubjectMode
-      ? ""
-      : `
+    if (isSubjectMode) {
+      majorResultTarget.innerHTML = "";
+    } else if (isUniversityMode) {
+      majorResultTarget.innerHTML = renderUniversityRecommendationResults(
+        universitySearchInput?.value || "",
+        universityMajorInput?.value || ""
+      );
+    } else {
+      majorResultTarget.innerHTML = `
         <div class="recommendation-result-head">
           <h4>${query ? "학과·계열 검색 결과" : "먼저 보면 좋은 학과·계열 예시"}</h4>
           <span>${majorMatches.length}개</span>
         </div>
-        ${majorMatches.length ? majorMatches.map((record) => renderRecommendationCard(record)).join("") : renderEmptyRecommendation("검색어와 맞는 학과·계열을 찾지 못했습니다. 간호, 기계, 미디어처럼 넓게 입력해 보세요.")}
+        ${majorMatches.length ? majorMatches.map((record) => renderRecommendationCard(record)).join("") : renderEmptyRecommendation("검색어와 맞는 학과·계열을 찾지 못했습니다. 간호학과, 의학 보건계열, 지리교육과처럼 학과명 또는 넓은 계열명으로 다시 입력해 보세요.")}
       `;
+    }
   }
 
   if (quickMajorTarget) {
-    quickMajorTarget.hidden = isSubjectMode;
+    quickMajorTarget.hidden = isSubjectMode || isUniversityMode;
   }
 
   if (!subjectResultTarget) {
@@ -2458,6 +2700,7 @@ function renderRecommendationModeState() {
     tool.classList.toggle("major-mode", mode === "major");
     tool.classList.toggle("subject-mode", mode === "subject");
     tool.classList.toggle("advanced-mode", mode === "advanced");
+    tool.classList.toggle("university-mode", mode === "university");
   }
 
   $all("[data-recommendation-mode]").forEach((button) => {
@@ -2467,14 +2710,18 @@ function renderRecommendationModeState() {
   const help = $("#recommendationModeHelp");
   if (!help) return;
   if (mode === "subject") {
-    help.textContent = "과목을 고르면 그 과목을 핵심·권장·추천으로 연결한 학과·계열을 보여줍니다.";
+    help.textContent = "관심 과목을 고르면 그 과목과 연결해 생각해 볼 수 있는 학과·계열이 나타납니다.";
+    return;
+  }
+  if (mode === "university") {
+    help.textContent = "대학명과 학과명을 입력하면 대학별 권장과목 자료에서 확인되는 과목을 보여줍니다.";
     return;
   }
   if (mode === "advanced") {
-    help.textContent = "학과·계열 기준 조회와 과목 기준 역조회를 함께 확인합니다.";
+    help.textContent = "학과 기준 조회와 과목 기준 역조회를 함께 확인합니다.";
     return;
   }
-  help.textContent = "희망 학과나 계열을 고르면 핵심과목, 권장과목, 학교 안내용 추천과목을 나누어 보여줍니다.";
+  help.textContent = "희망 학과나 계열을 고르면 연결 과목과 우리학교 개설 여부를 함께 볼 수 있습니다.";
 }
 
 function renderMajorSuggestionList() {
@@ -2483,7 +2730,8 @@ function renderMajorSuggestionList() {
   const names = new Set();
   getRecommendationRecords().forEach((record) => {
     names.add(record.major);
-    record.aliases.forEach((alias) => names.add(alias));
+    (record.aliases || []).forEach((alias) => names.add(alias));
+    (record.departments || []).forEach((department) => names.add(department));
   });
   datalist.innerHTML = [...names].sort((a, b) => a.localeCompare(b, "ko")).map((name) => `<option value="${escapeHtml(name)}"></option>`).join("");
 }
@@ -2520,15 +2768,18 @@ function renderQuickMajorButtons() {
   if (!target || target.dataset.bound === "true") return;
   const quickQueries = [
     { label: "공학", query: "공학" },
-    { label: "의학·보건", query: "의학" },
-    { label: "간호", query: "간호" },
+    { label: "의학·보건", query: "의학 보건계열" },
+    { label: "간호", query: "간호학과" },
+    { label: "보건·재활", query: "물리치료학과" },
     { label: "컴퓨터·AI", query: "컴퓨터" },
     { label: "반도체", query: "반도체" },
     { label: "생명·바이오", query: "생명" },
     { label: "인문·사회", query: "인문" },
     { label: "경영·법·행정", query: "경영" },
+    { label: "지리·도시", query: "지리학과" },
     { label: "미디어·어문", query: "미디어" },
-    { label: "교육", query: "교육" }
+    { label: "교육", query: "교육학과" },
+    { label: "지리교육", query: "지리교육과" }
   ];
   target.innerHTML = `<span>주요 계열</span>${quickQueries.map((item) => `<button type="button" data-major-query="${escapeHtml(item.query)}">${escapeHtml(item.label)}</button>`).join("")}`;
   target.dataset.bound = "true";
@@ -2584,7 +2835,7 @@ function getRecordSuggestedSubjects(record) {
 function filterRecommendationDisplaySubjects(subjects) {
   const seen = new Set();
   return (subjects || [])
-    .filter((subject) => subject && !isCommonRecommendationSubject(subject))
+    .filter((subject) => subject && !isCommonRecommendationSubject(subject) && !isGenericRecommendationSubject(subject))
     .filter((subject) => {
       const key = normalizeText(subject);
       if (seen.has(key)) return false;
@@ -2598,6 +2849,13 @@ function isCommonRecommendationSubject(subject) {
   return commonRecommendationSubjects.some((commonSubject) => normalizeText(commonSubject) === target);
 }
 
+function isGenericRecommendationSubject(subject) {
+  const target = normalizeText(subject);
+  if (!target) return true;
+  if (genericRecommendationSubjectLabels.some((label) => normalizeText(label) === target)) return true;
+  return genericRecommendationSubjectPhrases.some((phrase) => target.includes(normalizeText(phrase)));
+}
+
 function getAllRecommendationSubjects() {
   const subjects = new Set();
   getRecommendationRecords().forEach((record) => {
@@ -2607,21 +2865,145 @@ function getAllRecommendationSubjects() {
 }
 
 function getFeaturedRecommendationRecords() {
-  const featuredIds = ["seoul_natural_science_engineering", "general_engineering", "medical_health_general", "english_media_language", "computer_ai_data_security"];
+  const featuredIds = ["engineering_general_2028", "nursing_2028", "computer_ai_data_2028", "business_economics_2028", "education_general_2028", "life_food_environment_2028"];
   const records = getRecommendationRecords();
   return featuredIds.map((id) => records.find((record) => record.id === id)).filter(Boolean);
 }
 
 function getRecommendationRecords() {
   return recommendationData.records.filter((record) => {
-    const haystack = normalizeText(`${record.id} ${record.major} ${record.field} ${record.aliases.join(" ")}`);
+    const haystack = normalizeText(getRecordMajorSearchTerms(record).join(" "));
     return !["사관", "육군사관", "국방", "군사"].some((word) => haystack.includes(normalizeText(word)));
   });
 }
 
+function getUniversityRecommendationRecords() {
+  return (universityRecommendationData.records || []).filter((record) => {
+    const hasSubjects = filterRecommendationDisplaySubjects([
+      ...(record.coreSubjects || []),
+      ...(record.recommendedSubjects || [])
+    ]).length > 0;
+    const haystack = normalizeText([record.university, record.department].join(" "));
+    return hasSubjects && !["사관", "육군사관", "국방", "군사"].some((word) => haystack.includes(normalizeText(word)));
+  });
+}
+
+function renderUniversityRecommendationResults(universityQuery, departmentQuery) {
+  const normalizedUniversityQuery = normalizeUniversitySearchTerm(universityQuery);
+  const normalizedDepartmentQuery = normalizeMajorSearchTerm(departmentQuery);
+  if (!normalizedUniversityQuery && !normalizedDepartmentQuery) {
+    return `
+      <div class="empty-note">
+        대학별 자료를 보려면 대학명과 학과명을 입력해 보세요. 예: 대학명 서울대 / 학과명 간호, 대학명 부산대 / 학과명 기계
+      </div>
+    `;
+  }
+
+  const matches = getUniversityRecommendationRecords()
+    .filter((record) => recordMatchesUniversity(record, normalizedUniversityQuery, normalizedDepartmentQuery))
+    .sort(compareUniversityRecommendationRecords);
+  const visibleMatches = matches.slice(0, 30);
+
+  return `
+    <div class="recommendation-result-head">
+      <h4>대학별 권장과목 검색 결과</h4>
+      <span>${matches.length}개</span>
+    </div>
+    ${matches.length ? visibleMatches.map((record) => renderUniversityRecommendationCard(record)).join("") : renderEmptyRecommendation("조건에 맞는 대학별 권장과목을 찾지 못했습니다. 대학명은 줄이고, 학과명은 간호·경영·기계처럼 짧게 입력해 보세요. 자료에 구체 과목이 없는 학과는 학과·계열로 찾기도 함께 확인합니다.")}
+    ${matches.length > visibleMatches.length ? `<div class="empty-note compact">결과가 많아 처음 ${visibleMatches.length}개만 보여줍니다. 대학명이나 학과명을 더 구체적으로 입력해 보세요.</div>` : ""}
+  `;
+}
+
+function normalizeUniversitySearchTerm(value) {
+  return normalizeText(value)
+    .replace(/대학교/g, "대")
+    .replace(/캠퍼스/g, "")
+    .replace(/[()]/g, "");
+}
+
+function recordMatchesUniversity(record, universityQuery, departmentQuery) {
+  const universityTarget = normalizeUniversitySearchTerm([record.university, record.local, record.region].join(" "));
+  const departmentTarget = normalizeMajorSearchTerm(record.department || "");
+  const combinedTarget = `${normalizeUniversitySearchTerm(record.university || "")}${departmentTarget}`;
+  if (universityQuery && !departmentQuery && combinedTarget.includes(universityQuery)) return true;
+  const universityMatch = !universityQuery || universityTarget.includes(universityQuery) || normalizeUniversitySearchTerm(record.university || "").includes(universityQuery);
+  const departmentMatch = !departmentQuery || departmentTarget.includes(departmentQuery) || departmentQuery.includes(departmentTarget);
+  return universityMatch && departmentMatch;
+}
+
+function compareUniversityRecommendationRecords(a, b) {
+  return String(a.university || "").localeCompare(String(b.university || ""), "ko")
+    || String(a.department || "").localeCompare(String(b.department || ""), "ko");
+}
+
+function renderUniversityRecommendationCard(record) {
+  const coreSubjects = filterRecommendationDisplaySubjects(record.coreSubjects || []);
+  const recommendedSubjects = filterRecommendationDisplaySubjects(record.recommendedSubjects || []);
+  const note = getUniversityRecommendationNote(record);
+  return `
+    <article class="recommendation-card university-recommendation-card">
+      <div class="recommendation-card-head">
+        <div>
+          <span class="label">${escapeHtml([record.region, record.local].filter(Boolean).join(" · "))}</span>
+          <h4>${escapeHtml(record.university)} <span>${escapeHtml(record.department)}</span></h4>
+        </div>
+      </div>
+      <div class="subject-badge-section">
+        <b>핵심 과목</b>
+        ${renderSubjectBadgeRow(coreSubjects, "core", "자료상 별도 핵심 과목이 확인되지 않았습니다.")}
+      </div>
+      <div class="subject-badge-section">
+        <b>권장 과목</b>
+        ${renderSubjectBadgeRow(recommendedSubjects, "recommended", "자료상 별도 권장 과목이 확인되지 않았습니다.")}
+      </div>
+      ${note ? `<p class="university-recommendation-note">${escapeHtml(note)}</p>` : ""}
+    </article>
+  `;
+}
+
+function getUniversityRecommendationNote(record) {
+  const note = String(record.note || "").trim();
+  if (!note || isGenericRecommendationSubject(note)) return "";
+  return note;
+}
+
 function recordMatchesMajor(record, query) {
-  const haystack = normalizeText(`${record.major} ${record.field} ${record.aliases.join(" ")}`);
-  return haystack.includes(query);
+  const rawQuery = normalizeText(query);
+  const normalizedQuery = normalizeMajorSearchTerm(query);
+  if (!rawQuery && !normalizedQuery) return false;
+
+  return getRecordMajorSearchTerms(record).some((term) => {
+    const rawTerm = normalizeText(term);
+    const normalizedTerm = normalizeMajorSearchTerm(term);
+    const reverseRawMatch = rawTerm.length >= 4 && rawQuery.includes(rawTerm);
+    const reverseNormalizedMatch = normalizedTerm.length >= 4 && normalizedQuery.includes(normalizedTerm);
+    const forwardNormalizedMatch = normalizedQuery.length >= 3 && normalizedTerm.includes(normalizedQuery);
+    return rawTerm.includes(rawQuery)
+      || reverseRawMatch
+      || (normalizedTerm && normalizedQuery && forwardNormalizedMatch)
+      || (normalizedTerm && normalizedQuery && reverseNormalizedMatch);
+  });
+}
+
+function getRecordMajorSearchTerms(record) {
+  return [
+    record.id,
+    record.major,
+    record.field,
+    ...(record.aliases || []),
+    ...(record.departments || [])
+  ].filter(Boolean);
+}
+
+function normalizeMajorSearchTerm(value) {
+  return normalizeText(value)
+    .replace(/학과/g, "")
+    .replace(/학부/g, "")
+    .replace(/전공/g, "")
+    .replace(/계열/g, "")
+    .replace(/대학/g, "")
+    .replace(/교육과/g, "교육")
+    .replace(/교과교육/g, "교육");
 }
 
 function recordHasSubject(record, subject) {
@@ -2981,11 +3363,23 @@ function renderRecommendationCard(record) {
         ${renderSubjectBadgeRow(getRecordRecommendedSubjects(record), "recommended", "자료상 별도 권장 과목이 확인되지 않았습니다.")}
       </div>
       <div class="subject-badge-section suggested">
-        <b>추천과목 <span>학교 안내용</span></b>
+        <b>추천과목 <span>참고 과목</span></b>
         ${renderSubjectBadgeRow(getRecordSuggestedSubjects(record), "suggested", "추가 추천과목은 상담 과정에서 보완합니다.")}
       </div>
+      ${renderRecommendationDepartmentExamples(record)}
       <p>${escapeHtml(record.note)}</p>
     </article>
+  `;
+}
+
+function renderRecommendationDepartmentExamples(record) {
+  const departments = (record.departments || []).filter(Boolean).slice(0, 8);
+  if (!departments.length) return "";
+  return `
+    <div class="recommendation-department-examples">
+      <b>조회 가능한 학과 예시</b>
+      <div>${departments.map((department) => `<span>${escapeHtml(department)}</span>`).join("")}</div>
+    </div>
   `;
 }
 
@@ -3007,7 +3401,7 @@ function renderSubjectBadgeRow(subjects, importance, emptyMessage) {
 function renderSubjectMatchCard(record, subject) {
   const type = getRecordSubjectMatchType(record, subject);
   const note = type === "추천과목"
-    ? `${subject}은 학교 안내용 추천 연결입니다. 대학 공식 핵심·권장 과목은 학과별 자료에서 따로 확인합니다.`
+    ? `${subject}은 학과 탐색을 넓혀 보기 위한 참고 연결입니다. 대학 공식 핵심·권장 과목은 학과별 자료에서 따로 확인합니다.`
     : record.note;
   return `
     <article class="subject-match-card">
@@ -4477,6 +4871,164 @@ function showToast(message) {
   window.setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
+function initAdmissionDetailPage() {
+  const root = $("#admissionDetailPage");
+  const pageKey = root?.dataset.admissionPage || "";
+  const admissionPages = window.ANJWA_ADMISSION_PAGES || { pages: {}, groups: {} };
+  const page = admissionPages.pages?.[pageKey];
+  if (!root || !page) return;
+
+  document.title = `${page.title} | 진로진학 플랫폼`;
+  root.innerHTML = renderAdmissionDetailPage(pageKey, page, admissionPages.groups?.[page.group] || []);
+
+  if (page.feature === "recommendations") {
+    state.recommendationMode = "major";
+    bindRecommendationControls();
+    renderRecommendationExplorer();
+  }
+  if (page.feature === "competencies") {
+    renderCompetencies();
+  }
+  if (page.feature === "sechuk") {
+    bindSechukFlow();
+  }
+}
+
+function renderAdmissionDetailPage(pageKey, page, tabs) {
+  const toneClass = page.tone === "holistic" ? "admission-tone-holistic" : "admission-tone-subject";
+  return `
+    <div class="section-head subject-section-head admission-detail-head ${toneClass}">
+      <div class="section-title-wrap">
+        <div class="section-title-row">
+          <h1>
+            ${renderAdmissionTitleIcon(page.tone)}
+            <span>${escapeHtml(page.title)}</span>
+          </h1>
+          <a class="ghost-button back-home-button" href="./index.html">첫 화면으로</a>
+        </div>
+        <p>${escapeHtml(page.summary)}</p>
+      </div>
+    </div>
+
+    <nav class="in-page-tabs admission-page-tabs ${page.tone === "holistic" ? "holistic-tabs" : ""}" aria-label="${escapeHtml(page.title)} 세부 안내">
+      ${tabs.map((tab) => `<a class="${tab.key === pageKey ? "active" : ""}" href="${escapeAttribute(tab.href)}">${escapeHtml(tab.label)}</a>`).join("")}
+    </nav>
+
+    <div class="detail-hero ${page.tone === "holistic" ? "holistic-hero" : "subject-hero"}">
+      <div>
+        <span class="label">${escapeHtml(page.heroLabel || "핵심 이해")}</span>
+        <h3>${escapeHtml(page.heroTitle)}</h3>
+        <p>${escapeHtml(page.heroText)}</p>
+      </div>
+      <div class="admission-detail-guide">
+        ${renderAdmissionDetailGuide(pageKey, page)}
+      </div>
+    </div>
+
+    ${page.body || ""}
+  `;
+}
+
+function renderAdmissionDetailGuide(pageKey, page) {
+  const guide = getAdmissionDetailGuide(pageKey, page);
+  return `
+    <b>${escapeHtml(guide.title)}</b>
+    <ul>
+      ${guide.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function getAdmissionDetailGuide(pageKey, page) {
+  const guideMap = {
+    subject: {
+      title: "먼저 확인할 것",
+      items: ["교과전형은 내신 평균만 보는 전형이 아니라는 점을 잡습니다.", "성적, 학점수, 대학별 계산법, 수능최저, 서류 반영을 나누어 봅니다."]
+    },
+    "subject-flow": {
+      title: "읽는 순서",
+      items: ["내 성적을 먼저 읽고, 대학 반영 방식으로 다시 계산합니다.", "마지막에 수능최저와 추천 가능 여부를 확인합니다."]
+    },
+    "subject-score": {
+      title: "성적표에서 볼 것",
+      items: ["등급 개수만 보지 말고 과목별 학점수 비중을 함께 봅니다.", "대학 환산점수는 평균등급과 다를 수 있음을 확인합니다."]
+    },
+    "subject-calculation": {
+      title: "대학 사례를 보는 법",
+      items: ["사례의 숫자를 외우기보다 대학마다 계산 방식이 다르다는 점을 확인합니다.", "지원 전에는 반드시 해당 연도 모집요강의 산출식을 다시 확인합니다."]
+    },
+    "subject-minimum": {
+      title: "수능최저 확인",
+      items: ["수능최저는 합격 가능성을 가르는 문턱입니다.", "대학, 전형, 모집단위별 기준이 다르므로 학과 단위로 확인합니다."]
+    },
+    "subject-document": {
+      title: "서류 반영 확인",
+      items: ["교과전형이어도 서류평가가 들어가면 과목 이수와 학생부 흐름이 중요합니다.", "전공 관련 과목을 들었는지, 수업 기록이 연결되는지 봅니다."]
+    },
+    "subject-misunderstanding": {
+      title: "오해를 풀며 점검",
+      items: ["내신 평균, 과목 선택, 수능최저, 추천, 출결에 대한 오해를 하나씩 확인합니다.", "상담 전에는 내가 해당되는 질문을 표시해 두면 좋습니다."]
+    },
+    holistic: {
+      title: "종합전형의 중심",
+      items: ["활동량보다 수업 속 질문과 성장 흐름을 봅니다.", "과목 선택, 세특, 탐구, 창체, 면접이 자연스럽게 이어지는지 확인합니다."]
+    },
+    "holistic-flow": {
+      title: "읽는 순서",
+      items: ["전형 방식, 학생부 항목, 평가역량, 과목 선택, 세특, 면접 순서로 봅니다.", "각 단계가 따로 놀지 않고 하나의 성장 흐름이 되는지 확인합니다."]
+    },
+    "holistic-record": {
+      title: "학생부 읽는 법",
+      items: ["학생부 항목을 따로 외우기보다 항목 사이의 연결을 봅니다.", "독서와 탐구는 세특, 창체, 면접 설명으로 이어질 때 의미가 커집니다."]
+    },
+    "holistic-competency": {
+      title: "역량 확인",
+      items: ["학업역량이 중심이고, 진로역량과 공동체역량은 수업 안에서 함께 드러납니다.", "희망 진로와 직접 관련 없는 과목도 학업역량을 보여줄 수 있습니다."]
+    },
+    "holistic-subjects": {
+      title: "추천 과목 사용법",
+      items: ["희망 학과가 정해졌다면 학과명으로, 아직 고민 중이라면 계열명으로 찾아봅니다.", "대학별로 확인하고 싶을 때는 대학명과 학과명을 함께 넣어 좁혀 봅니다."]
+    },
+    "holistic-sechuk": {
+      title: "세특 흐름 만들기",
+      items: ["진로를 억지로 붙이지 말고 수업 개념에서 질문을 시작합니다.", "동기, 질문, 개념, 과정, 결과, 한계, 후속 탐구가 이어지는지 봅니다."]
+    },
+    "holistic-ai": {
+      title: "AI 사용 기준",
+      items: ["AI는 학생부 문장을 대신 쓰는 도구가 아니라 질문을 넓히는 도구입니다.", "주제 후보, 반론, 한계, 추가 자료를 찾는 용도로 사용합니다."]
+    },
+    "holistic-interview": {
+      title: "면접 준비",
+      items: ["학생부에 적힌 내용을 외우기보다 왜 했는지와 무엇을 배웠는지 설명합니다.", "결과뿐 아니라 과정, 한계, 다음 탐구까지 말할 수 있어야 합니다."]
+    }
+  };
+  return guideMap[pageKey] || {
+    title: "이 페이지에서 할 일",
+    items: [page.summary || "상단 탭으로 필요한 내용을 나누어 확인합니다."]
+  };
+}
+
+function renderAdmissionTitleIcon(tone) {
+  if (tone === "holistic") {
+    return `
+      <svg class="title-holistic-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+        <rect x="8" y="7" width="20" height="23" rx="4" />
+        <path d="M13 14H23M13 19H20" />
+        <circle cx="13" cy="25" r="2.5" />
+        <circle cx="23" cy="25" r="2.5" />
+        <path class="holistic-link" d="M15.5 25H20.5" />
+      </svg>
+    `;
+  }
+  return `
+    <svg class="title-subject-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+      <rect x="8" y="6" width="20" height="24" rx="4" />
+      <path d="M13 14H22M13 20H19" />
+      <path class="subject-check" d="M20 25L23 28L29 20" />
+    </svg>
+  `;
+}
+
 function initRecommendationOnly(defaultMode = "advanced") {
   state.recommendationMode = defaultMode;
   bindRecommendationControls();
@@ -4484,12 +5036,17 @@ function initRecommendationOnly(defaultMode = "advanced") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  if ($("#admissionDetailPage")) {
+    initAdmissionDetailPage();
+    return;
+  }
+
   if ($("#home")) {
     init();
     return;
   }
 
   if ($("#advancedRecommendationPage")) {
-    initRecommendationOnly("advanced");
+    initRecommendationOnly("major");
   }
 });

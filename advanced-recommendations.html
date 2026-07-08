@@ -12,23 +12,31 @@
         <section class="advanced-hero">
           <div class="section-title-row">
             <div>
-              <p class="eyebrow">상담·자료 검토용</p>
+              <p class="eyebrow">학생 심화 확인용</p>
               <h1>권장과목 심화자료</h1>
             </div>
             <a class="ghost-button page-link-button" href="./index.html">플랫폼으로 돌아가기</a>
           </div>
           <p>
-            이 페이지는 학과별 핵심·권장·추천 과목을 더 자세히 살펴보는 공간입니다.
-            학과를 고르면 관련 과목을, 과목을 고르면 연결되는 학과·계열을 확인할 수 있습니다.
+            학과, 과목, 대학명 기준으로 권장과목 자료를 더 자세히 확인하는 공간입니다.
+            대학마다 제시하는 과목이 다를 수 있으니, 희망 대학이 있다면 대학별 조회까지 함께 봅니다.
           </p>
         </section>
 
         <section class="content-block">
           <h2>학과·과목 심화 조회</h2>
           <p>
-            메인 화면보다 자세하게 과목 연결을 확인합니다.
-            핵심과목과 권장과목은 자료 기반으로만 표시하고, 자료에 직접 나오지 않았지만 학과 탐색에 도움이 되는 과목은 추천과목으로 따로 표시합니다.
+            학과를 고르면 연결 과목을, 과목을 고르면 관련 학과를 볼 수 있습니다.
+            대학별로 확인하고 싶을 때는 대학명과 학과명을 함께 입력해 자료에 있는 과목을 좁혀 봅니다.
           </p>
+          <div class="recommendation-view-panel">
+            <div class="recommendation-view-tabs" aria-label="추천 과목 보기 방식">
+              <button class="active" type="button" data-recommendation-mode="major">학과·계열로 찾기</button>
+              <button type="button" data-recommendation-mode="subject">과목으로 찾기</button>
+              <button type="button" data-recommendation-mode="university">대학별로 찾기</button>
+            </div>
+            <p id="recommendationModeHelp">희망 학과나 계열을 고르면 연결 과목과 우리학교 개설 여부를 함께 볼 수 있습니다.</p>
+          </div>
           <div class="recommendation-tool advanced-recommendation-tool">
             <div class="recommendation-controls">
               <label class="recommendation-major-control">
@@ -37,12 +45,19 @@
               </label>
               <label class="recommendation-major-control">
                 학과·계열 검색
-                <input id="majorRecommendationSearch" type="search" list="majorSuggestionList" placeholder="예: 간호, 기계, 컴퓨터, 경영" />
-                <datalist id="majorSuggestionList"></datalist>
+                <input id="majorRecommendationSearch" type="search" placeholder="예: 간호, 기계, 컴퓨터, 경영" />
               </label>
               <label class="recommendation-subject-control">
                 과목으로 찾기
                 <select id="subjectRecommendationSelect"></select>
+              </label>
+              <label class="recommendation-university-control">
+                대학명 검색
+                <input id="universityRecommendationSearch" type="search" placeholder="예: 서울대, 부산대, 국민대" />
+              </label>
+              <label class="recommendation-university-control">
+                학과명 검색
+                <input id="universityMajorSearch" type="search" placeholder="예: 간호, 경영, 기계, 교육" />
               </label>
               <label class="recommendation-plan-control">
                 교육과정 기준
@@ -69,11 +84,11 @@
             </div>
             <div>
               <b>권장 과목</b>
-              <span>학과 공부를 준비하는 데 도움이 되는 과목입니다. 여러 자료에서 반복되면 학생 상담에서 우선순위가 높아집니다.</span>
+              <span>학과 공부를 준비하는 데 도움이 되는 과목입니다. 여러 대학에서 반복되면 먼저 확인할 가치가 큽니다.</span>
             </div>
             <div>
               <b>추천과목</b>
-              <span>공식 핵심·권장 과목은 아니지만 학과 탐색과 세특 주제 확장에 도움이 되는 학교 안내용 과목입니다.</span>
+              <span>공식 핵심·권장 과목은 아니지만 학과 탐색과 세특 주제 확장에 도움이 되는 참고 과목입니다.</span>
             </div>
             <div>
               <b>수학·과학 분리</b>
@@ -99,7 +114,7 @@
           <div class="type-grid">
             <div>
               <b>1. 학과·계열 선택</b>
-              <span>희망 학과가 정해졌다면 먼저 학과·계열로 찾습니다. 핵심과목과 권장과목이 비어 있으면 추천과목을 참고합니다.</span>
+              <span>희망 학과가 정해졌다면 먼저 학과·계열로 찾습니다. 핵심과목과 권장과목이 비어 있으면 추천과목을 참고해 더 넓게 봅니다.</span>
             </div>
             <div>
               <b>2. 과목으로 역조회</b>
@@ -120,6 +135,7 @@
 
     <script src="./curriculum-data.js"></script>
     <script src="./recommendation-data.js"></script>
+    <script src="./university-recommendation-data.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
