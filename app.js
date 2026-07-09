@@ -4269,6 +4269,36 @@ function exportSelfEvaluationPdf() {
   updateSelfEvaluationEntryFromForm();
   saveSelfEvaluationState(false);
   renderSelfEvaluationPrintView();
+
+  const printDocument = buildSelfEvaluationPrintDocument();
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    printSelfEvaluationInCurrentWindow();
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(printDocument);
+  printWindow.document.close();
+
+  const runPrint = () => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (error) {
+      printSelfEvaluationInCurrentWindow();
+    }
+  };
+
+  if (printWindow.document.readyState === "complete") {
+    window.setTimeout(runPrint, 250);
+  } else {
+    printWindow.addEventListener("load", () => window.setTimeout(runPrint, 250), { once: true });
+  }
+}
+
+function printSelfEvaluationInCurrentWindow() {
   const previousTitle = document.title;
   const course = getSelfEvaluationCourse();
   document.title = `${course?.name || "과목별"} 자기평가서`;
@@ -4282,6 +4312,171 @@ function exportSelfEvaluationPdf() {
 
   window.addEventListener("afterprint", cleanup);
   window.print();
+}
+
+function buildSelfEvaluationPrintDocument() {
+  const target = $("#selfEvalPrintView");
+  const course = getSelfEvaluationCourse();
+  const title = `${course?.name || "과목별"} 자기평가서`;
+  const content = target?.innerHTML || "";
+
+  return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #111;
+      font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .self-eval-print-paper {
+      width: 100%;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .print-paper-head {
+      border-bottom: 2px solid #111;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+    }
+
+    .print-paper-head span {
+      display: inline-block;
+      border: 1px solid #111;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 800;
+    }
+
+    .print-paper-head h2 {
+      margin: 6px 0 3px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .print-paper-head p,
+    .print-meta-grid p,
+    .print-competency-box p,
+    .print-field-list p,
+    .print-note {
+      margin: 0;
+    }
+
+    .print-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid #c9d3cc;
+      margin-bottom: 10px;
+    }
+
+    .print-meta-grid > div {
+      border-right: 1px solid #c9d3cc;
+      padding: 8px;
+      min-width: 0;
+    }
+
+    .print-meta-grid > div:last-child {
+      border-right: 0;
+    }
+
+    .print-meta-grid b,
+    .print-competency-box b,
+    .print-field-list b,
+    .teacher-memo-box b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: #111;
+    }
+
+    .print-meta-grid,
+    .print-competency-box,
+    .teacher-memo-box {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .print-competency-box,
+    .teacher-memo-box {
+      border: 1px solid #c9d3cc;
+      margin-bottom: 10px;
+      padding: 8px;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .print-field-list {
+      display: block;
+    }
+
+    .print-field-list article {
+      display: block;
+      width: 100%;
+      border: 1px solid #c9d3cc;
+      min-height: 0;
+      height: auto;
+      max-height: none;
+      margin: 0 0 8px;
+      padding: 8px;
+      overflow: visible;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .print-field-list p,
+    .print-competency-box p,
+    .print-meta-grid p,
+    .print-note {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-break: anywhere;
+    }
+
+    .teacher-memo-box {
+      margin-top: 10px;
+    }
+
+    .teacher-memo-box div {
+      min-height: 70px;
+      border-top: 1px solid #d8dfda;
+    }
+
+    .print-note {
+      color: #444;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  ${content}
+</body>
+</html>`;
 }
 
 function renderSelfEvaluationPrintView() {

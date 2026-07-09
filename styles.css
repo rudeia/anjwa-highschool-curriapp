@@ -5339,3 +5339,42 @@ body.modal-open {
     display: none !important;
   }
 }
+
+/* self-evaluation export fix v3: standalone print window + textarea autosize fallback */
+
+.self-eval-field textarea {
+  overflow-y: hidden !important;
+  resize: none !important;
+}
+
+@media print {
+  body.print-self-evaluation .print-field-list {
+    display: block !important;
+  }
+
+  body.print-self-evaluation .print-field-list article {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  body.print-self-evaluation .print-field-list p,
+  body.print-self-evaluation .print-competency-box p,
+  body.print-self-evaluation .print-meta-grid p,
+  body.print-self-evaluation .print-note {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    line-break: anywhere !important;
+  }
+}
