@@ -1614,6 +1614,7 @@ function bindSelfEvaluationControls() {
   $("#selfEvalForm")?.addEventListener("input", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLTextAreaElement)) return;
+    resizeSelfEvaluationTextarea(target);
     updateSelfEvaluationEntryFromForm();
     saveSelfEvaluationState(false);
   });
@@ -4170,6 +4171,17 @@ function renderSelfEvaluation() {
   formTarget.innerHTML = selfEvalFields.map((field) => renderSelfEvaluationField(field, entry[field.key] || "")).join("");
   renderSelfEvaluationCompetencies(entry);
   renderSelfEvaluationStatus();
+  resizeSelfEvaluationTextareas();
+}
+
+function resizeSelfEvaluationTextarea(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function resizeSelfEvaluationTextareas() {
+  $all("#selfEvalForm textarea").forEach((textarea) => resizeSelfEvaluationTextarea(textarea));
 }
 
 function renderSelfEvaluationField(field, value) {
