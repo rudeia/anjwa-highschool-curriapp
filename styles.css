@@ -5270,20 +5270,15 @@ body.modal-open {
 }
 
 
-/* 자기평가서 자동 높이 및 PDF 출력 보정 */
-.self-eval-field textarea {
-  overflow-y: hidden;
-  resize: none;
-}
-
+/* 자기평가서: 작성 화면 자동확장 + PDF 출력 누락/한 줄 잘림 보정 */
 @media print {
   body.print-self-evaluation .self-eval-print-paper,
-  body.print-self-evaluation .print-field-list,
-  body.print-self-evaluation .print-field-list article,
-  body.print-self-evaluation .print-field-list p,
-  body.print-self-evaluation .print-competency-box,
-  body.print-self-evaluation .print-competency-box p,
-  body.print-self-evaluation .teacher-memo-box {
+  body.print-self-evaluation .self-eval-print-paper * {
+    box-sizing: border-box;
+  }
+
+  body.print-self-evaluation .self-eval-print-paper {
+    width: 100% !important;
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
@@ -5291,34 +5286,56 @@ body.modal-open {
 
   body.print-self-evaluation .print-field-list {
     display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
   }
 
   body.print-self-evaluation .print-field-list article {
     display: block !important;
-    min-height: auto !important;
-    margin-bottom: 8px;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 0 8px !important;
+    overflow: visible !important;
     break-inside: auto !important;
     page-break-inside: auto !important;
-  }
-
-  body.print-self-evaluation .print-field-list article:nth-child(4),
-  body.print-self-evaluation .print-field-list article:nth-child(7),
-  body.print-self-evaluation .print-field-list article:nth-child(10) {
     grid-column: auto !important;
-  }
-
-  body.print-self-evaluation .print-field-list p,
-  body.print-self-evaluation .print-competency-box p {
-    display: block !important;
-    white-space: pre-wrap !important;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-    line-height: 1.55;
   }
 
   body.print-self-evaluation .print-competency-box,
   body.print-self-evaluation .teacher-memo-box {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     break-inside: auto !important;
     page-break-inside: auto !important;
+  }
+
+  body.print-self-evaluation .print-field-list p,
+  body.print-self-evaluation .print-competency-box p,
+  body.print-self-evaluation .print-note {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    line-break: anywhere !important;
+  }
+
+  body.print-self-evaluation textarea {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+  }
+
+  body.print-self-evaluation .back-home-button,
+  body.print-self-evaluation .bottom-actions,
+  body.print-self-evaluation .next-action-row {
+    display: none !important;
   }
 }
