@@ -1627,7 +1627,8 @@ function bindSelfEvaluationControls() {
     });
   });
 
-  $("#selfEvalCompetencyNote")?.addEventListener("input", () => {
+  $("#selfEvalCompetencyNote")?.addEventListener("input", (event) => {
+    resizeSelfEvaluationTextarea(event.target);
     updateSelfEvaluationEntryFromForm();
     saveSelfEvaluationState(false);
     renderSelfEvaluationStatus();
@@ -4152,6 +4153,17 @@ function renderSelfEvaluationCourseOptionLabel(course) {
   return `${course.name} · ${course.area}${semesters ? ` · ${semesters}` : ""}`;
 }
 
+
+function resizeSelfEvaluationTextarea(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function resizeSelfEvaluationTextareas() {
+  $all("#selfEvalForm textarea, #selfEvalCompetencyNote").forEach((textarea) => resizeSelfEvaluationTextarea(textarea));
+}
+
 function renderSelfEvaluation() {
   const formTarget = $("#selfEvalFields");
   if (!formTarget) return;
@@ -4172,29 +4184,6 @@ function renderSelfEvaluation() {
   renderSelfEvaluationCompetencies(entry);
   renderSelfEvaluationStatus();
   resizeSelfEvaluationTextareas();
-}
-
-function resizeSelfEvaluationTextarea(textarea) {
-  if (!(textarea instanceof HTMLTextAreaElement)) return;
-
-  // 내용이 길어질 때 textarea 내부 스크롤이 아니라 칸 자체가 늘어나도록 높이를 재계산합니다.
-  // display:none 상태이거나 렌더 직후 scrollHeight가 0으로 잡히는 경우를 막기 위해 최소 높이를 보정합니다.
-  const computedStyle = window.getComputedStyle(textarea);
-  const minHeight = parseFloat(computedStyle.minHeight) || 0;
-
-  textarea.style.height = "auto";
-  const nextHeight = Math.max(textarea.scrollHeight, minHeight);
-  textarea.style.height = `${nextHeight}px`;
-}
-
-function resizeSelfEvaluationTextareas() {
-  const textareas = $all("#selfEvalForm textarea");
-  textareas.forEach((textarea) => resizeSelfEvaluationTextarea(textarea));
-
-  // 렌더링 직후 레이아웃 계산이 늦게 끝나는 브라우저를 위한 2차 보정입니다.
-  window.requestAnimationFrame(() => {
-    textareas.forEach((textarea) => resizeSelfEvaluationTextarea(textarea));
-  });
 }
 
 function renderSelfEvaluationField(field, value) {
