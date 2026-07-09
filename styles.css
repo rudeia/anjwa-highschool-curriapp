@@ -4121,6 +4121,9 @@ body.modal-open {
 .self-eval-field textarea {
   min-height: 110px;
   width: 100%;
+  height: auto;
+  overflow-y: hidden;
+  resize: none;
 }
 
 .self-eval-field textarea[rows="2"] {
