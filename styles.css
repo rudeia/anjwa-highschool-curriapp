@@ -5268,3 +5268,57 @@ body.modal-open {
     font-size: 10px;
   }
 }
+
+
+/* 자기평가서 자동 높이 및 PDF 출력 보정 */
+.self-eval-field textarea {
+  overflow-y: hidden;
+  resize: none;
+}
+
+@media print {
+  body.print-self-evaluation .self-eval-print-paper,
+  body.print-self-evaluation .print-field-list,
+  body.print-self-evaluation .print-field-list article,
+  body.print-self-evaluation .print-field-list p,
+  body.print-self-evaluation .print-competency-box,
+  body.print-self-evaluation .print-competency-box p,
+  body.print-self-evaluation .teacher-memo-box {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body.print-self-evaluation .print-field-list {
+    display: block !important;
+  }
+
+  body.print-self-evaluation .print-field-list article {
+    display: block !important;
+    min-height: auto !important;
+    margin-bottom: 8px;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  body.print-self-evaluation .print-field-list article:nth-child(4),
+  body.print-self-evaluation .print-field-list article:nth-child(7),
+  body.print-self-evaluation .print-field-list article:nth-child(10) {
+    grid-column: auto !important;
+  }
+
+  body.print-self-evaluation .print-field-list p,
+  body.print-self-evaluation .print-competency-box p {
+    display: block !important;
+    white-space: pre-wrap !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.55;
+  }
+
+  body.print-self-evaluation .print-competency-box,
+  body.print-self-evaluation .teacher-memo-box {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+}
