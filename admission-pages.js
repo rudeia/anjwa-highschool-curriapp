@@ -57,6 +57,14 @@ window.ANJWA_ADMISSION_PAGES = {
             <p>서류나 교과정성평가가 있는 교과전형에서는 지원 학과와 과목 이수 흐름이 맞는지도 확인합니다.</p>
           </article>
         </div>
+        <div class="external-resource-card">
+          <div>
+            <span class="label">수시 입결 확인</span>
+            <h3>대학별 수시 입시 결과를 살펴보세요.</h3>
+            <p>수시 입결 조회 사이트로 이동합니다. 지원 전에는 반드시 해당 대학 입학처의 최신 모집요강과 함께 확인하세요.</p>
+          </div>
+          <a class="primary-button page-link-button" href="https://doctor-noh.vercel.app/" target="_blank" rel="noopener noreferrer">수시 입결 조회</a>
+        </div>
       `
     },
     "subject-flow": {
@@ -122,6 +130,14 @@ window.ANJWA_ADMISSION_PAGES = {
             <article><b>반영 교과에 들어가는가</b><span>희망 대학이 보지 않는 교과는 계산에서 빠질 수 있습니다.</span></article>
             <article><b>대학 방식으로 유리한가</b><span>상위 과목 반영, 특정 교과 반영이면 유불리가 달라질 수 있습니다.</span></article>
           </div>
+        </div>
+        <div class="external-resource-card">
+          <div>
+            <span class="label">실제 입결 비교</span>
+            <h3>계산 방식을 이해했다면 대학별 입시 결과도 함께 비교해 보세요.</h3>
+            <p>입결은 전형·모집단위·학년도에 따라 달라지므로 동일한 조건인지 확인하며 보세요.</p>
+          </div>
+          <a class="primary-button page-link-button" href="https://doctor-noh.vercel.app/" target="_blank" rel="noopener noreferrer">수시 입결 조회</a>
         </div>
       `
     },
