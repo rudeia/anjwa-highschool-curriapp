@@ -1,7 +1,7 @@
 const STORAGE_KEY = "anjwa-career-platform-plan-v1";
 const SELF_EVAL_STORAGE_KEY = "anjwa-career-platform-self-eval-v1";
 const curriculumData = window.ANJWA_CURRICULUM_DATA || { plans: {} };
-const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [], sources: [] };
+const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [] };
 const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA || { records: [] };
 const topicData = window.ANJWA_TOPIC_DATA || { topics: [] };
 const curriculumPlanOrder = ["current2026", "incoming2026", "incoming2025", "incoming2024"];
@@ -160,39 +160,6 @@ const courses = [
   { id: "sci_gene", name: "생물의 유전", area: "과학", category: "진로 선택", credits: 3, offered: false, grades: [2, 3], tracks: ["medical"] },
   { id: "eng_presentation", name: "영어 발표와 토론", area: "영어", category: "융합 선택", credits: 3, offered: true, grades: [1, 2, 3], tracks: ["engineering", "medical", "humanities", "media"] },
   { id: "career_project", name: "진로 주제 프로젝트", area: "교양", category: "융합 선택", credits: 2, offered: true, grades: [1, 2, 3], tracks: ["engineering", "medical", "humanities", "media"] }
-];
-
-const admissionCards = [
-  {
-    label: "의미",
-    title: "교과 성적 중심 전형",
-    body: "학생부 교과전형은 교과 성적을 중심으로 선발한다. 대학에 따라 반영 교과, 반영 과목 수, 학년별 반영 방식이 달라진다."
-  },
-  {
-    label: "준비",
-    title: "반영 교과 확인",
-    body: "일부 대학은 전 과목을 보지 않고 특정 교과나 상위 과목을 반영한다. 희망 대학의 반영 교과를 반드시 확인해야 한다."
-  },
-  {
-    label: "확장",
-    title: "서류 반영 교과전형",
-    body: "교과전형이라도 서류를 반영하는 경우가 있다. 이때 전공 관련 과목 선택과 수업 참여 기록이 함께 검토될 수 있다."
-  },
-  {
-    label: "차이",
-    title: "종합전형과의 차이",
-    body: "교과전형의 서류는 성적을 보완하거나 적합성을 확인하는 성격이 강하고, 종합전형의 서류는 평가의 중심 자료가 된다."
-  },
-  {
-    label: "사례",
-    title: "수도권 대학 사례 확인",
-    body: "대학별 사례는 매년 달라진다. 플랫폼에서는 대표 유형을 설명하고, 최종 확인은 대학 입학처와 대입정보포털 링크로 연결한다."
-  },
-  {
-    label: "전략",
-    title: "쉬운 과목보다 필요한 과목",
-    body: "고교학점제에서는 단순 등급 관리만으로 설명하기 어렵다. 희망 전공과 연결된 과목을 선택한 이유가 중요해진다."
-  }
 ];
 
 const competencies = [
@@ -1417,6 +1384,7 @@ const state = {
   topicArea: "all",
   topicSubject: "all",
   topicLevel: "all",
+  topicGrade: "all",
   topicQuery: "",
   plannerMode: "fixed",
   plannerPlan: "incoming2026",
@@ -1478,8 +1446,6 @@ function init() {
   bindSechukFlow();
   bindSubjectInfoPopup();
   renderCurriculumPlanOptions();
-  renderAdmissionCards();
-  renderCompetencies();
   renderCurriculum();
   renderRecommendationExplorer();
   renderTopicExplorerOptions();
@@ -1502,6 +1468,7 @@ function bindNavigation() {
 }
 
 function setView(viewId) {
+  if (!$(`#${viewId}`)?.classList.contains("view")) viewId = "home";
   state.activeView = viewId;
   if (viewId === "planner") {
     state.plannerMode = "fixed";
@@ -1516,8 +1483,6 @@ function getInitialViewFromHash() {
   const hash = decodeURIComponent(window.location.hash || "").replace(/^#/, "");
   if (!hash) return "";
   if ($(`#${hash}`)?.classList.contains("view")) return hash;
-  if (hash.startsWith("subject-")) return "subjectAdmission";
-  if (hash.startsWith("holistic-")) return "holisticAdmission";
   return "";
 }
 
@@ -1627,8 +1592,7 @@ function bindSelfEvaluationControls() {
     });
   });
 
-  $("#selfEvalCompetencyNote")?.addEventListener("input", (event) => {
-    resizeSelfEvaluationTextarea(event.target);
+  $("#selfEvalCompetencyNote")?.addEventListener("input", () => {
     updateSelfEvaluationEntryFromForm();
     saveSelfEvaluationState(false);
     renderSelfEvaluationStatus();
@@ -1727,6 +1691,7 @@ function bindTopicExplorerControls() {
   const areaFilter = $("#topicAreaFilter");
   const subjectFilter = $("#topicSubjectFilter");
   const levelFilter = $("#topicLevelFilter");
+  const gradeFilter = $("#topicGradeFilter");
   const searchInput = $("#topicSearch");
   const resetButton = $("#topicResetButton");
   if (!areaFilter || !subjectFilter || !levelFilter || !searchInput) return;
@@ -1748,6 +1713,11 @@ function bindTopicExplorerControls() {
     renderTopicExplorer();
   });
 
+  gradeFilter?.addEventListener("change", (event) => {
+    state.topicGrade = event.target.value;
+    renderTopicExplorer();
+  });
+
   searchInput.addEventListener("input", (event) => {
     state.topicQuery = event.target.value;
     renderTopicExplorer();
@@ -1757,9 +1727,11 @@ function bindTopicExplorerControls() {
     state.topicArea = "all";
     state.topicSubject = "all";
     state.topicLevel = "all";
+    state.topicGrade = "all";
     state.topicQuery = "";
     areaFilter.value = "all";
     levelFilter.value = "all";
+    if (gradeFilter) gradeFilter.value = "all";
     searchInput.value = "";
     renderTopicSubjectOptions();
     renderTopicExplorer();
@@ -1769,6 +1741,7 @@ function bindTopicExplorerControls() {
 function renderTopicExplorerOptions() {
   const areaFilter = $("#topicAreaFilter");
   const levelFilter = $("#topicLevelFilter");
+  const gradeFilter = $("#topicGradeFilter");
   const searchInput = $("#topicSearch");
   if (!areaFilter) return;
 
@@ -1779,6 +1752,7 @@ function renderTopicExplorerOptions() {
   `;
   areaFilter.value = state.topicArea || "all";
   if (levelFilter) levelFilter.value = state.topicLevel || "all";
+  if (gradeFilter) gradeFilter.value = state.topicGrade || "all";
   if (searchInput) searchInput.value = state.topicQuery || "";
   renderTopicSubjectOptions();
 }
@@ -1803,23 +1777,28 @@ function renderTopicExplorer() {
   const areaFilter = $("#topicAreaFilter");
   const subjectFilter = $("#topicSubjectFilter");
   const levelFilter = $("#topicLevelFilter");
+  const gradeFilter = $("#topicGradeFilter");
   const searchInput = $("#topicSearch");
   const area = areaFilter?.value || state.topicArea || "all";
   const subject = subjectFilter?.value || state.topicSubject || "all";
   const level = levelFilter?.value || state.topicLevel || "all";
+  const grade = gradeFilter?.value || state.topicGrade || "all";
   const query = searchInput?.value || state.topicQuery || "";
   state.topicArea = area;
   state.topicSubject = subject;
   state.topicLevel = level;
+  state.topicGrade = grade;
   state.topicQuery = query;
 
-  const topics = getFilteredTopicRecords({ area, subject, level, query });
+  const topics = getFilteredTopicRecords({ area, subject, level, grade, query });
+  const visibleLimit = area === "all" && subject === "all" && level === "all" && grade === "all" && !query.trim() ? 18 : 36;
+  const visibleTopics = topics.slice(0, visibleLimit);
   const emptyTopicMessage = level !== "all"
     ? `${level} 난이도에 맞는 예시가 아직 없습니다. 과목을 넓히거나 전체 난이도로 다시 확인해 보세요.`
     : "검색 조건에 맞는 탐구 주제를 찾지 못했습니다. 과목을 넓히거나 검색어를 짧게 입력해 보세요.";
-  if (resultCount) resultCount.textContent = `${topics.length}개`;
+  if (resultCount) resultCount.textContent = topics.length > visibleTopics.length ? `${topics.length}개 중 ${visibleTopics.length}개` : `${topics.length}개`;
   resultList.innerHTML = topics.length
-    ? topics.map((topic) => renderTopicCard(topic)).join("")
+    ? `${visibleTopics.map((topic) => renderTopicCard(topic)).join("")}${topics.length > visibleTopics.length ? `<div class="empty-note topic-more-note">교과군·과목·학년을 선택하면 나머지 주제를 더 정확하게 확인할 수 있습니다.</div>` : ""}`
     : `<div class="empty-note topic-empty">${escapeHtml(emptyTopicMessage)}</div>`;
 }
 
@@ -1828,7 +1807,7 @@ function getTopicRecords() {
 }
 
 function getTopicAreas() {
-  const preferredOrder = ["국어", "영어", "수학", "사회", "과학", "정보", "예술", "체육", "교양"];
+  const preferredOrder = ["국어", "영어", "수학", "사회", "과학", "정보", "기술·가정", "예술", "체육", "교양"];
   const areas = [...new Set(getTopicRecords().map((topic) => topic.area).filter(Boolean))];
   return areas.sort((a, b) => {
     const aIndex = preferredOrder.indexOf(a);
@@ -1846,17 +1825,19 @@ function getTopicSubjects(area = "all") {
     .sort((a, b) => a.localeCompare(b, "ko"));
 }
 
-function getFilteredTopicRecords({ area, subject, level, query }) {
+function getFilteredTopicRecords({ area, subject, level, grade, query }) {
   const normalizedQuery = normalizeText(query);
   return getTopicRecords().filter((topic) => {
     if (area !== "all" && topic.area !== area) return false;
     if (subject !== "all" && topic.subject !== subject) return false;
     if (level !== "all" && topic.level !== level) return false;
+    if (grade !== "all" && !getTopicGrades(topic).includes(Number(grade))) return false;
     if (!normalizedQuery) return true;
     const haystack = normalizeText([
       topic.area,
       topic.subject,
       topic.level,
+      getTopicGradeLabel(topic),
       topic.title,
       topic.question,
       topic.method,
@@ -1866,6 +1847,23 @@ function getFilteredTopicRecords({ area, subject, level, query }) {
     ].join(" "));
     return haystack.includes(normalizedQuery);
   });
+}
+
+function getTopicGrades(topic) {
+  if (Array.isArray(topic.grades) && topic.grades.length) return topic.grades.map(Number).filter(Boolean);
+  if (topic.grade) return [Number(topic.grade)].filter(Boolean);
+  return topic.level === "심화" ? [2, 3] : [1, 2];
+}
+
+function getTopicGradeLabel(topic) {
+  return `${getTopicGrades(topic).join("·")}학년`;
+}
+
+function getTopicDevelopmentText(topic) {
+  if (topic.nextStep) return topic.nextStep;
+  return topic.level === "심화"
+    ? "자료의 한계와 다른 해석 가능성을 점검하고, 새로운 자료로 재검증하거나 대안을 제안해 봅니다."
+    : "비교할 자료와 기준을 늘리고, 변수를 구분해 다음 학년의 분석 탐구로 발전시켜 봅니다.";
 }
 
 function renderTopicCard(topic) {
@@ -1878,7 +1876,10 @@ function renderTopicCard(topic) {
           <span class="topic-subject-badge">${escapeHtml(topic.area)} · ${escapeHtml(topic.subject)}</span>
           <h4>${escapeHtml(topic.title)}</h4>
         </div>
-        <span class="topic-level-badge ${topic.level === "심화" ? "advanced" : "basic"}">${escapeHtml(topic.level)}</span>
+        <div class="topic-badge-stack">
+          <span class="topic-grade-badge">${escapeHtml(getTopicGradeLabel(topic))}</span>
+          <span class="topic-level-badge ${topic.level === "심화" ? "advanced" : "basic"}">${escapeHtml(topic.level)}</span>
+        </div>
       </div>
       <div class="topic-card-section">
         <b>탐구 질문</b>
@@ -1897,6 +1898,10 @@ function renderTopicCard(topic) {
           <b>연결 학과 예시</b>
           <p>${majors.map((major) => escapeHtml(major)).join(" · ")}</p>
         </div>
+      </div>
+      <div class="topic-card-section topic-development">
+        <b>다음 학년 발전 방향</b>
+        <p>${escapeHtml(getTopicDevelopmentText(topic))}</p>
       </div>
       <div class="topic-keyword-row">
         ${keywords.map((keyword) => `<span>${escapeHtml(keyword)}</span>`).join("")}
@@ -1977,22 +1982,6 @@ function renderSechukExample(stepKey) {
   });
   title.textContent = data.title;
   text.textContent = data.text;
-}
-
-function renderAdmissionCards() {
-  const target = $("#subjectAdmissionCards");
-  if (!target) return;
-  target.innerHTML = admissionCards
-    .map(
-      (card) => `
-        <article class="info-card">
-          <span class="label">${card.label}</span>
-          <h3>${card.title}</h3>
-          <p>${card.body}</p>
-        </article>
-      `
-    )
-    .join("");
 }
 
 function renderCompetencies() {

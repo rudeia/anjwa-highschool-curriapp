@@ -610,14 +610,14 @@ p {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
 .launch-card {
   display: grid;
   gap: 12px;
-  min-height: 230px;
+  min-height: 210px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -638,42 +638,6 @@ p {
   min-height: 40px;
   padding: 0 14px;
   white-space: nowrap;
-}
-
-#subjectAdmission,
-#holisticAdmission {
-  position: relative;
-}
-
-#subjectAdmission .subject-section-head,
-#holisticAdmission .subject-section-head {
-  padding-right: 0;
-}
-
-#subjectAdmission .section-title-row,
-#holisticAdmission .section-title-row {
-  display: block;
-  padding-right: 124px;
-}
-
-#subjectAdmission .section-title-row .back-home-button,
-#holisticAdmission .section-title-row .back-home-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-
-#subjectAdmission .section-title-wrap > p,
-#holisticAdmission .section-title-wrap > p {
-  word-break: keep-all;
-  text-wrap: pretty;
-}
-
-@media (min-width: 760px) {
-  #subjectAdmission .section-title-wrap > p,
-  #holisticAdmission .section-title-wrap > p {
-    white-space: nowrap;
-  }
 }
 
 .launch-card:hover {
@@ -796,7 +760,7 @@ p {
 
 .topic-filter-panel {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(160px, 1fr) minmax(120px, 0.7fr) minmax(220px, 1.4fr) auto;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(150px, 1fr) minmax(105px, 0.65fr) minmax(105px, 0.65fr) minmax(190px, 1.35fr) auto;
   gap: 10px;
   align-items: end;
   padding: 16px;
@@ -869,6 +833,7 @@ p {
 }
 
 .topic-subject-badge,
+.topic-grade-badge,
 .topic-level-badge,
 .topic-keyword-row span {
   display: inline-flex;
@@ -895,6 +860,20 @@ p {
   font-size: 12px;
 }
 
+.topic-badge-stack {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.topic-grade-badge {
+  border: 1px solid #d6cdea;
+  background: #f7f3ff;
+  color: var(--violet);
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
 .topic-level-badge.advanced {
   border-color: #ead6b2;
   background: #fff8ea;
@@ -904,6 +883,18 @@ p {
 .topic-card-section {
   border-top: 1px solid var(--line);
   padding-top: 12px;
+}
+
+.topic-development {
+  border: 1px solid #d9e8df;
+  border-radius: var(--radius);
+  background: #f6fbf8;
+  padding: 11px 12px;
+}
+
+.topic-more-note {
+  grid-column: 1 / -1;
+  text-align: center;
 }
 
 .topic-card-section b,
@@ -2591,24 +2582,6 @@ a.tag:focus-visible {
 
 .content-block p {
   margin-bottom: 16px;
-}
-
-#subjectAdmission .detail-hero > div > p,
-#subjectAdmission .learner-summary > p,
-#subjectAdmission #subject-flow > p,
-#subjectAdmission #subject-misunderstanding details > p,
-#subjectAdmission #subject-score > p,
-#subjectAdmission #subject-grade-example > p:first-of-type,
-#subjectAdmission #subject-calculation > p,
-#subjectAdmission #subject-minimum > p,
-#subjectAdmission .explainer-card > p,
-#subjectAdmission #subject-document > p,
-#subjectAdmission .document-impact > div > p {
-  max-width: 960px;
-  text-indent: 0.9em;
-  line-height: 1.78;
-  word-break: keep-all;
-  overflow-wrap: break-word;
 }
 
 #subject-calculation table {
@@ -4481,7 +4454,6 @@ body.modal-open {
     display: grid;
   }
 
-  .hero-grid,
   .info-grid,
   .competency-grid,
   .planner-layout,
@@ -4519,6 +4491,11 @@ body.modal-open {
   .topic-filter-panel,
   .topic-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .topic-search-label {
@@ -4781,7 +4758,18 @@ body.modal-open {
   }
 
   .launch-card {
-    min-height: 180px;
+    gap: 8px;
+    min-height: 156px;
+    padding: 14px;
+  }
+
+  .launch-card strong {
+    font-size: 17px;
+  }
+
+  .launch-card span:last-child {
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .timeline-band ol {
@@ -4832,20 +4820,6 @@ body.modal-open {
     padding: 4px;
   }
 
-  #subjectAdmission .section-title-row,
-  #holisticAdmission .section-title-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding-right: 0;
-  }
-
-  #subjectAdmission .section-title-row .back-home-button,
-  #holisticAdmission .section-title-row .back-home-button {
-    position: static;
-    top: auto;
-    right: auto;
-  }
-
   .curriculum-lead {
     font-size: 14px;
   }
@@ -4856,6 +4830,30 @@ body.modal-open {
     min-height: 36px;
     padding: 0 9px;
     font-size: 13px;
+  }
+
+  .admission-detail-head .section-title-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .admission-detail-head h1 {
+    gap: 6px;
+    font-size: 20px;
+    line-height: 1.08;
+    white-space: nowrap;
+  }
+
+  .admission-detail-head h1 > span {
+    white-space: nowrap;
+  }
+
+  .admission-detail-head .back-home-button {
+    min-width: 78px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .curriculum-table-wrap {
@@ -5034,6 +5032,25 @@ body.modal-open {
 
   .curriculum-table td:nth-child(5) strong {
     font-size: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .admission-detail-head h1 {
+    gap: 4px;
+    font-size: 17px;
+  }
+
+  .admission-detail-head h1 .title-subject-icon,
+  .admission-detail-head h1 .title-holistic-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .admission-detail-head .back-home-button {
+    min-width: 66px;
+    padding-inline: 6px;
+    font-size: 11px;
   }
 }
 
@@ -5314,6 +5331,7 @@ body.modal-open {
 
   body.print-self-evaluation .print-field-list p,
   body.print-self-evaluation .print-competency-box p,
+  body.print-self-evaluation .print-meta-grid p,
   body.print-self-evaluation .print-note {
     display: block !important;
     width: 100% !important;
@@ -5337,44 +5355,5 @@ body.modal-open {
   body.print-self-evaluation .bottom-actions,
   body.print-self-evaluation .next-action-row {
     display: none !important;
-  }
-}
-
-/* self-evaluation export fix v3: standalone print window + textarea autosize fallback */
-
-.self-eval-field textarea {
-  overflow-y: hidden !important;
-  resize: none !important;
-}
-
-@media print {
-  body.print-self-evaluation .print-field-list {
-    display: block !important;
-  }
-
-  body.print-self-evaluation .print-field-list article {
-    display: block !important;
-    width: 100% !important;
-    min-height: 0 !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  body.print-self-evaluation .print-field-list p,
-  body.print-self-evaluation .print-competency-box p,
-  body.print-self-evaluation .print-meta-grid p,
-  body.print-self-evaluation .print-note {
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
-    overflow-wrap: anywhere !important;
-    line-break: anywhere !important;
   }
 }

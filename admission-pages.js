@@ -368,7 +368,7 @@ window.ANJWA_ADMISSION_PAGES = {
     "holistic-subjects": {
       group: "holistic",
       tone: "holistic",
-      title: "학과별 핵심·권장·추천 과목 찾기",
+      title: "학과별 추천 과목 찾기",
       summary: "학과를 고르면 과목을, 과목을 고르면 관련 학과를 확인합니다.",
       heroLabel: "과목 선택",
       heroTitle: "희망 학과와 연결되는 선택과목을 찾아봅니다.",
