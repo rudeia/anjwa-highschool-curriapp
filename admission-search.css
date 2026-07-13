@@ -1,0 +1,457 @@
+.admission-search-page {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.admission-page-header {
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfa;
+}
+
+.admission-page-header-inner,
+.admission-search-main {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.admission-page-header-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+  padding: 34px 0 30px;
+}
+
+.admission-page-header h1 {
+  margin: 4px 0 8px;
+  font-size: 36px;
+  line-height: 1.2;
+}
+
+.admission-page-header p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.admission-page-links {
+  display: flex;
+  gap: 8px;
+}
+
+.admission-page-links a,
+.filter-reset,
+.result-pagination button,
+.admission-result-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 9px 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.admission-page-links a:first-child,
+.admission-result-action.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.admission-search-main {
+  padding: 28px 0 64px;
+}
+
+.admission-notice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  border-left: 4px solid var(--blue);
+  background: #eef5fb;
+  padding: 14px 16px;
+  line-height: 1.55;
+}
+
+.admission-notice span {
+  color: var(--muted);
+}
+
+.data-updated-at {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.admission-filter-panel,
+.admission-results-section {
+  margin-top: 22px;
+}
+
+.admission-filter-panel {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 22px;
+}
+
+.admission-panel-heading,
+.admission-results-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+}
+
+.admission-panel-heading h2,
+.admission-results-head h2 {
+  margin: 3px 0 0;
+  font-size: 25px;
+  line-height: 1.25;
+}
+
+.admission-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.filter-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.filter-field-wide {
+  grid-column: span 2;
+}
+
+.filter-field input,
+.filter-field select,
+.result-sort select {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  padding: 9px 12px;
+}
+
+.result-sort {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.result-sort select {
+  width: auto;
+  min-width: 174px;
+}
+
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 26px;
+  margin: 14px 0;
+}
+
+.active-filter-chip,
+.admission-result-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 5px 9px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.admission-result-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admission-result-item {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.admission-result-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(180px, .8fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+}
+
+.admission-result-title {
+  min-width: 0;
+}
+
+.admission-result-title h3 {
+  margin: 5px 0 3px;
+  font-size: 20px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.admission-result-title p,
+.admission-result-metrics p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.admission-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admission-result-metrics div {
+  border-left: 1px solid var(--line);
+  padding-left: 10px;
+}
+
+.admission-result-metrics strong,
+.admission-result-metrics span {
+  display: block;
+}
+
+.admission-result-metrics span {
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.admission-result-actions {
+  display: grid;
+  gap: 7px;
+  min-width: 118px;
+}
+
+.admission-result-action {
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.admission-result-details {
+  border-top: 1px solid var(--line);
+  background: #fbfcfa;
+  padding: 18px;
+}
+
+.admission-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+}
+
+.admission-detail-field {
+  min-width: 0;
+}
+
+.admission-detail-field.wide {
+  grid-column: 1 / -1;
+}
+
+.admission-detail-field strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.admission-detail-field p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admission-detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.admission-detail-links a {
+  color: var(--blue);
+  font-weight: 750;
+}
+
+.admission-empty {
+  display: grid;
+  gap: 7px;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.admission-empty span {
+  color: var(--muted);
+}
+
+.result-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.admission-source-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 34px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admission-source-note strong {
+  color: var(--ink);
+}
+
+.result-pagination button:disabled {
+  cursor: default;
+  opacity: .4;
+}
+
+.admission-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  max-width: min(420px, calc(100% - 40px));
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  padding: 13px 16px;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.admission-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 860px) {
+  .admission-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admission-result-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .admission-result-metrics {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 620px) {
+  .admission-page-header-inner,
+  .admission-search-main {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .admission-page-header-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 24px 0;
+  }
+
+  .admission-page-header h1 {
+    font-size: 29px;
+  }
+
+  .admission-page-links a {
+    flex: 1;
+  }
+
+  .admission-notice {
+    display: grid;
+  }
+
+  .data-updated-at {
+    margin-left: 0;
+  }
+
+  .admission-filter-panel {
+    padding: 16px;
+  }
+
+  .admission-panel-heading,
+  .admission-results-head {
+    align-items: start;
+  }
+
+  .admission-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-field-wide {
+    grid-column: auto;
+  }
+
+  .result-sort {
+    display: grid;
+    gap: 5px;
+  }
+
+  .result-sort select {
+    min-width: 132px;
+    max-width: 152px;
+  }
+
+  .admission-result-summary {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .admission-result-metrics,
+  .admission-result-actions {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .admission-result-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admission-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admission-detail-field.wide {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2027 수시 전형 검색</title>
+  <link rel="stylesheet" href="./styles.css?v=20260713">
+  <link rel="stylesheet" href="./admission-search.css?v=20260713">
+</head>
+<body class="admission-search-page">
+  <header class="admission-page-header">
+    <div class="admission-page-header-inner">
+      <div>
+        <p class="eyebrow">고3 전용</p>
+        <h1>2027 수시 전형 검색</h1>
+        <p>대학과 학과를 찾아 전형 방법, 수능최저, 전년도 입결을 비교하고 상담카드에 담습니다.</p>
+      </div>
+      <nav class="admission-page-links" aria-label="페이지 이동">
+        <a href="./grade3-consultation-card.html">상담카드</a>
+        <a href="./index.html">첫 화면으로</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admission-search-main">
+    <section class="admission-notice" aria-label="자료 이용 안내">
+      <strong>검색 결과는 지원 후보를 찾는 참고자료입니다.</strong>
+      <span>지원 전에는 해당 대학의 2027학년도 수시 모집요강에서 지원 자격과 반영 방법을 다시 확인하세요.</span>
+      <span id="dataUpdatedAt" class="data-updated-at"></span>
+    </section>
+
+    <section class="admission-filter-panel" aria-labelledby="filterTitle">
+      <div class="admission-panel-heading">
+        <div>
+          <p class="eyebrow">조건 찾기</p>
+          <h2 id="filterTitle">희망 조건을 선택하세요</h2>
+        </div>
+        <button type="button" class="filter-reset" id="filterReset">조건 초기화</button>
+      </div>
+
+      <div class="admission-filter-grid">
+        <label class="filter-field filter-field-wide">
+          <span>통합 검색</span>
+          <input type="search" id="searchQuery" placeholder="대학·학과·전형명 검색" autocomplete="off">
+        </label>
+        <label class="filter-field">
+          <span>대학</span>
+          <input type="search" id="universityQuery" list="universityList" placeholder="예: 부산대" autocomplete="off">
+          <datalist id="universityList"></datalist>
+        </label>
+        <label class="filter-field">
+          <span>학과·모집단위</span>
+          <input type="search" id="departmentQuery" list="departmentList" placeholder="예: 간호학과" autocomplete="off">
+          <datalist id="departmentList"></datalist>
+        </label>
+        <label class="filter-field">
+          <span>지역</span>
+          <select id="regionFilter"><option value="">전체 지역</option></select>
+        </label>
+        <label class="filter-field">
+          <span>전형 유형</span>
+          <select id="categoryFilter">
+            <option value="">전체 전형</option>
+            <option>학생부교과</option>
+            <option>학생부종합</option>
+            <option>논술</option>
+            <option>실기/실적</option>
+            <option>기타</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>수능최저</span>
+          <select id="minimumFilter">
+            <option value="">전체</option>
+            <option value="있음">있음</option>
+            <option value="없음">없음</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>입결 자료</span>
+          <select id="resultFilter">
+            <option value="">전체</option>
+            <option value="available">50%·70%컷 있음</option>
+            <option value="missing">50%·70%컷 없음</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="admission-results-section" aria-labelledby="resultTitle">
+      <div class="admission-results-head">
+        <div>
+          <p class="eyebrow">검색 결과</p>
+          <h2 id="resultTitle"><span id="resultCount">0</span>개 전형</h2>
+        </div>
+        <label class="result-sort">
+          <span>정렬</span>
+          <select id="sortOrder">
+            <option value="university">대학·학과순</option>
+            <option value="competitionAsc">경쟁률 낮은순</option>
+            <option value="competitionDesc">경쟁률 높은순</option>
+            <option value="cutAsc">70%컷 낮은순</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="activeFilters" class="active-filters" aria-live="polite"></div>
+      <div id="resultList" class="admission-result-list" aria-live="polite"></div>
+      <div id="resultEmpty" class="admission-empty" hidden>
+        <strong>조건에 맞는 전형을 찾지 못했습니다.</strong>
+        <span>대학 또는 학과 이름을 짧게 입력하거나 필터를 줄여보세요.</span>
+      </div>
+      <nav class="result-pagination" aria-label="검색 결과 페이지">
+        <button type="button" id="prevPage">이전</button>
+        <span id="pageStatus">1 / 1</span>
+        <button type="button" id="nextPage">다음</button>
+      </nav>
+    </section>
+
+    <footer class="admission-source-note">
+      <strong>자료 출처</strong>
+      <span>2027 수시대동여지도 · 제작: 운정고등학교 이재규 선생님 · 공교육 상담 활용 자료</span>
+    </footer>
+  </main>
+
+  <div id="admissionToast" class="admission-toast" role="status" aria-live="polite"></div>
+  <script src="./admission-search-data.js?v=20260713"></script>
+  <script src="./admission-search.js?v=20260713"></script>
+</body>
+</html>
