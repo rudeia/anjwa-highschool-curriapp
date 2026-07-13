@@ -168,7 +168,7 @@
       button.addEventListener('click', () => toggleDetail(button.dataset.id));
     });
     elements.resultList.querySelectorAll('.import-button').forEach(button => {
-      button.addEventListener('click', () => sendToCard(button.dataset.id));
+      button.addEventListener('click', () => sendToCard(button.dataset.id, button));
     });
   }
 
@@ -185,7 +185,7 @@
     if (!src) return Promise.reject(new Error('상세 데이터 파일 없음'));
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = `${src}?v=20260713`;
+      script.src = `${src}?v=20260713-2`;
       script.onload = () => { state.loadedRegions.add(region); resolve(); };
       script.onerror = () => reject(new Error('상세 데이터 로드 실패'));
       document.head.appendChild(script);
@@ -255,9 +255,22 @@
     if (!container) state.openId = '';
   }
 
-  function sendToCard(id) {
+  async function sendToCard(id, button) {
     const row = rowById(id);
     if (!row) return;
+    const region = value(row, '지역');
+    let detail = null;
+    if (button) {
+      button.disabled = true;
+      button.textContent = '자료 확인 중';
+    }
+    try {
+      await loadRegion(region);
+      detail = detailById(region, id);
+    } catch (error) {
+      // 입결과 기본 전형 정보는 상세 파일이 없어도 전달한다.
+    }
+    const detailValue = column => detail ? detail.row[detail.indexes[column]] : '';
     const payload = {
       id,
       university: text(value(row, '대학명')),
@@ -265,12 +278,25 @@
       admissionType: text(value(row, '전형유형')),
       admissionName: text(value(row, '전형명')),
       department: text(value(row, '학과명')),
+      quota: text(value(row, '2027 모집인원')),
+      competition: text(value(row, '2026경쟁률')),
+      firstAverage: text(value(row, '최초합격자평균')),
+      average: text(value(row, '평균')),
+      cut50: text(value(row, '50%컷')),
+      cut70: text(value(row, '70%컷')),
+      cut80: text(value(row, '80%컷')),
+      minimum: text(value(row, '2027수능최저학력기준')),
+      method: text(detailValue('2027 전형방법')),
       timestamp: Date.now()
     };
     try {
       localStorage.setItem('admission_card_import_v1', JSON.stringify(payload));
       window.location.href = './grade3-consultation-card.html?import=search';
     } catch (error) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = '상담카드에 담기';
+      }
       showToast('브라우저 저장을 사용할 수 없어 상담카드로 전달하지 못했습니다.');
     }
   }
