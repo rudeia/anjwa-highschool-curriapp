@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>진로진학 교육과정 설계 플랫폼</title>
-    <link rel="stylesheet" href="./styles.css?v=20260713d" />
+    <link rel="stylesheet" href="./styles.css?v=20260713c" />
   </head>
   <body>
     <div class="app-shell">
@@ -51,6 +51,34 @@
             </button>
           </div>
 
+          <section class="grade3-hub" aria-labelledby="grade3-hub-title">
+            <div class="grade3-hub-head">
+              <div>
+                <p class="eyebrow">고3 전용</p>
+                <h2 id="grade3-hub-title">수시 지원 상담</h2>
+              </div>
+              <p>희망 대학·전형·학과를 정리하고 담임교사와의 상담을 준비합니다.</p>
+            </div>
+            <div class="grade3-launch-grid">
+              <a class="grade3-launch-card" href="./admission-search.html">
+                <span class="launch-icon admission-search-icon" aria-hidden="true"></span>
+                <span class="grade3-launch-copy">
+                  <strong>2027 수시 전형 검색</strong>
+                  <span>대학·학과·전형을 검색하고 수능최저, 경쟁률, 입결과 평가 방법을 비교합니다.</span>
+                </span>
+                <span class="grade3-launch-action">전형 검색</span>
+              </a>
+              <a class="grade3-launch-card" href="./grade3-consultation-card.html">
+                <span class="launch-icon consultation-icon" aria-hidden="true"></span>
+                <span class="grade3-launch-copy">
+                  <strong>2027 수시 지원 상담카드</strong>
+                  <span>최대 12개 지원안을 작성하고 대학·전형·학과 정보를 자동으로 채워 상담 자료로 저장합니다.</span>
+                </span>
+                <span class="grade3-launch-action">상담카드 작성</span>
+              </a>
+            </div>
+            <p class="grade3-privacy-note">작성 내용은 현재 기기의 브라우저에만 자동 저장됩니다. 공용 기기에서는 작성 후 반드시 내용을 지워주세요.</p>
+          </section>
         </section>
 
         <section class="view" id="curriculum" aria-labelledby="curriculum-title">
@@ -511,14 +539,6 @@
               <button type="button" role="tab" aria-selected="false" data-creative-eval-type="career">진로활동</button>
               <button type="button" role="tab" aria-selected="false" data-creative-eval-type="club">동아리활동</button>
             </div>
-            <div class="creative-eval-example-toolbar">
-              <label>
-                도움말 사례 분야
-                <select id="creativeEvalDomainSelect"></select>
-              </label>
-              <button class="ghost-button" id="creativeEvalFlowButton" type="button">3개년 성장 흐름 보기</button>
-              <p>선택한 분야의 1·2·3학년 사례가 각 물음표 도움말에 이어서 표시됩니다.</p>
-            </div>
             <div class="self-eval-layout creative-eval-layout">
               <aside class="self-eval-side-panel creative-eval-side-panel">
                 <span class="label" id="creativeEvalCurrentGrade">1학년 창체</span>
@@ -567,6 +587,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./curriculum-data.js?v=20260710b"></script>
     <script src="./topic-data.js?v=20260710b"></script>
-    <script src="./app.js?v=20260713d"></script>
+    <script src="./app.js?v=20260713c"></script>
   </body>
 </html>
