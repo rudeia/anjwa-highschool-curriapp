@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>진로진학 교육과정 설계 플랫폼</title>
-    <link rel="stylesheet" href="./styles.css?v=20260713" />
+    <link rel="stylesheet" href="./styles.css?v=20260713c" />
   </head>
   <body>
     <div class="app-shell">
@@ -393,11 +393,15 @@
                 <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
               </div>
               <p>
-                과목별로 수업 속 호기심, 탐구 과정, 독서 연결, 후속 활동을 정리합니다.
-                이 자료는 세특 문장을 대신 쓰는 것이 아니라 상담과 자기 점검을 위한 초안입니다.
+                과목별 수업 탐구와 학년별 창의적 체험활동을 정리합니다.
+                이 자료는 학생부 문장을 대신 쓰는 것이 아니라 상담과 자기 점검을 위한 초안입니다.
               </p>
             </div>
-            <div class="control-row self-eval-control-row">
+            <div class="self-eval-mode-switch" role="tablist" aria-label="자기평가서 작성 영역">
+              <button class="active" id="selfEvalSubjectModeButton" type="button" role="tab" aria-selected="true">과목별 자기평가서</button>
+              <button id="selfEvalCreativeModeButton" type="button" role="tab" aria-selected="false">창의적 체험활동</button>
+            </div>
+            <div class="control-row self-eval-control-row" id="selfEvalSubjectControls">
               <label>
                 내 학년도
                 <select id="selfEvalPlanSelect"></select>
@@ -412,9 +416,24 @@
               </label>
               <button class="ghost-button" id="loadSelfEvalButton" type="button">저장 내용 불러오기</button>
             </div>
+            <div class="control-row creative-eval-control-row" id="creativeEvalControls" hidden>
+              <label>
+                내 학년도
+                <select id="creativeEvalPlanSelect"></select>
+              </label>
+              <label>
+                작성 학년
+                <select id="creativeEvalGradeSelect">
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                </select>
+              </label>
+              <button class="ghost-button" id="loadCreativeEvalButton" type="button">저장 내용 불러오기</button>
+            </div>
           </div>
 
-          <div class="self-eval-guide">
+          <div class="self-eval-guide" id="selfEvalSubjectGuide">
             <article>
               <span class="label">작성 원칙</span>
               <h3>모든 과목은 학업역량을 보여줄 기회입니다</h3>
@@ -443,7 +462,25 @@
             </article>
           </div>
 
-          <div class="self-eval-layout">
+          <div class="creative-eval-guide" id="creativeEvalGuide" hidden>
+            <article>
+              <span class="label">작성 원칙</span>
+              <h3>활동 이름보다 내가 한 행동을 적습니다</h3>
+              <p>참여 계기, 구체적인 역할, 실행 과정, 확인한 변화, 배운 점이 이어지도록 정리합니다.</p>
+            </article>
+            <article>
+              <span class="label">학년별 성장</span>
+              <h3>탐색에서 심화와 종합으로 발전합니다</h3>
+              <p>1학년은 참여와 발견, 2학년은 연결과 심화, 3학년은 주도성과 성찰이 드러나면 좋습니다.</p>
+            </article>
+            <article>
+              <span class="label">기록 범위</span>
+              <h3>각 학년의 대표 흐름을 한 번 정리합니다</h3>
+              <p>활동을 모두 나열하지 말고 자율·진로·동아리에서 가장 의미 있었던 성장 흐름을 선택합니다.</p>
+            </article>
+          </div>
+
+          <div class="self-eval-layout" id="selfEvalSubjectWorkspace">
             <aside class="self-eval-side-panel">
               <span class="label">현재 작성 과목</span>
               <h3 id="selfEvalCurrentSubject">과목을 선택하세요</h3>
@@ -466,6 +503,37 @@
                 <button class="primary-button" id="exportSelfEvalButton" type="button">PDF 내보내기</button>
               </div>
             </form>
+          </div>
+
+          <div class="creative-eval-workspace" id="creativeEvalWorkspace" hidden>
+            <div class="creative-eval-type-switch" role="tablist" aria-label="창의적 체험활동 영역">
+              <button class="active" type="button" role="tab" aria-selected="true" data-creative-eval-type="autonomy">자율활동</button>
+              <button type="button" role="tab" aria-selected="false" data-creative-eval-type="career">진로활동</button>
+              <button type="button" role="tab" aria-selected="false" data-creative-eval-type="club">동아리활동</button>
+            </div>
+            <div class="self-eval-layout creative-eval-layout">
+              <aside class="self-eval-side-panel creative-eval-side-panel">
+                <span class="label" id="creativeEvalCurrentGrade">1학년 창체</span>
+                <h3 id="creativeEvalCurrentType">자율활동</h3>
+                <p id="creativeEvalCurrentGuide">학교와 학급 안에서 발견한 문제, 맡은 역할, 함께 만든 변화를 정리합니다.</p>
+                <div class="self-eval-status" id="creativeEvalSaveStatus">로컬 브라우저 저장 방식입니다.</div>
+                <div class="self-eval-competency-box">
+                  <b>강조하고 싶은 역량</b>
+                  <label><input type="checkbox" value="학업역량" data-creative-eval-competency /> 학업역량</label>
+                  <label><input type="checkbox" value="진로역량" data-creative-eval-competency /> 진로역량</label>
+                  <label><input type="checkbox" value="공동체역량" data-creative-eval-competency /> 공동체역량</label>
+                  <label class="self-eval-competency-note-label" for="creativeEvalCompetencyNote">강조하고 싶은 장면 <span>선택</span></label>
+                  <input id="creativeEvalCompetencyNote" class="self-eval-competency-note" type="text" placeholder="예: 의견 차이를 조사 결과로 조정한 과정" />
+                </div>
+              </aside>
+              <form class="self-eval-form creative-eval-form" id="creativeEvalForm">
+                <div id="creativeEvalFields"></div>
+                <div class="self-eval-submit-row">
+                  <button class="ghost-button" id="saveCreativeEvalButton" type="button">창체 내용 저장</button>
+                  <button class="primary-button" id="exportCreativeEvalButton" type="button">학년 창체 PDF</button>
+                </div>
+              </form>
+            </div>
           </div>
 
           <div class="self-eval-print-view" id="selfEvalPrintView" hidden></div>
@@ -491,6 +559,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./curriculum-data.js?v=20260710b"></script>
     <script src="./topic-data.js?v=20260710b"></script>
-    <script src="./app.js?v=20260710b"></script>
+    <script src="./app.js?v=20260713c"></script>
   </body>
 </html>

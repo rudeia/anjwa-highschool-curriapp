@@ -1,5 +1,6 @@
 const STORAGE_KEY = "anjwa-career-platform-plan-v1";
 const SELF_EVAL_STORAGE_KEY = "anjwa-career-platform-self-eval-v1";
+const CREATIVE_EVAL_STORAGE_KEY = "anjwa-career-platform-creative-eval-v1";
 const curriculumData = window.ANJWA_CURRICULUM_DATA || { plans: {} };
 const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [] };
 const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA || { records: [] };
@@ -279,6 +280,189 @@ const selfEvalFields = [
     placeholder: "책의 내용이 수업 개념, 탐구 질문, 후속 활동과 어떻게 연결되는지 적어보세요."
   }
 ];
+
+const creativeEvalTypes = {
+  autonomy: {
+    label: "자율활동",
+    shortGuide: "학교와 학급 안에서 발견한 문제, 맡은 역할, 함께 만든 변화를 정리합니다.",
+    competencies: ["공동체역량", "학업역량"],
+    fields: [
+      { key: "activityName", label: "주요 활동", rows: 2, placeholder: "학급·학교 프로그램이나 프로젝트의 이름과 핵심 내용을 적어보세요.", help: "활동명만 나열하지 말고 어떤 문제나 필요를 다룬 활동인지 함께 적습니다." },
+      { key: "motivation", label: "참여 계기와 문제의식", placeholder: "왜 참여했고, 학교생활에서 어떤 문제나 필요를 발견했는지 적어보세요.", help: "진로를 억지로 붙이기보다 실제로 불편했던 점, 궁금했던 점, 바꾸고 싶었던 점에서 출발합니다." },
+      { key: "role", label: "내가 맡은 역할", placeholder: "공식 직책뿐 아니라 조사, 의견 수렴, 기록, 조정 등 실제로 맡은 일을 적어보세요.", help: "반장·부장 같은 직책보다 내가 직접 판단하고 실행한 일이 드러나야 합니다." },
+      { key: "process", label: "실행 과정", placeholder: "의견 조사, 회의, 자료 분석, 캠페인, 제작, 발표 등 실제 과정을 순서대로 적어보세요.", help: "처음 계획과 실제 실행이 어떻게 달라졌는지, 무엇을 근거로 방법을 바꾸었는지 적으면 좋습니다." },
+      { key: "collaboration", label: "협력과 문제 해결", placeholder: "의견 차이, 어려움, 피드백을 어떻게 조정하고 해결했는지 적어보세요.", help: "모두와 잘 지냈다는 표현보다 의견 차이를 듣고 조정한 구체적인 장면을 씁니다." },
+      { key: "result", label: "결과와 변화", placeholder: "활동 전후 달라진 점, 결과물, 참여 반응 등 확인할 수 있는 변화를 적어보세요.", help: "성공했다는 감상보다 설문, 참여율, 결과물, 규칙 변화처럼 확인 가능한 근거를 남깁니다." },
+      { key: "reflection", label: "배운 점과 성장", placeholder: "공동체 안에서 무엇을 배우고 나의 태도나 판단이 어떻게 달라졌는지 적어보세요.", help: "리더십이라는 단어 대신 경청, 책임, 조정, 재시도처럼 성장한 행동을 설명합니다." },
+      { key: "followUp", label: "다음 실천", placeholder: "보완하거나 다음 학년에 이어가고 싶은 활동을 적어보세요.", help: "막연히 더 열심히 하겠다고 쓰지 말고 다음에 바꿀 방법이나 이어갈 문제를 구체화합니다." }
+    ]
+  },
+  career: {
+    label: "진로활동",
+    shortGuide: "진로에 대한 질문이 조사·상담·독서·교과 학습으로 이어진 과정을 정리합니다.",
+    competencies: ["진로역량", "학업역량"],
+    fields: [
+      { key: "activityName", label: "진로 질문 또는 활동", rows: 2, placeholder: "탐색한 분야와 해결하고 싶었던 진로 질문을 적어보세요.", help: "직업 이름만 쓰기보다 그 분야에서 알고 싶었던 문제를 질문으로 적습니다." },
+      { key: "motivation", label: "관심을 갖게 된 계기", placeholder: "수업, 독서, 상담, 강연, 경험 중 무엇이 관심을 만들었는지 적어보세요.", help: "어릴 때부터 꿈이었다는 표현보다 생각이 시작되거나 달라진 실제 계기를 씁니다." },
+      { key: "process", label: "탐색 과정", placeholder: "조사한 자료, 읽은 책, 상담 내용, 비교한 학과·직업, 직접 해본 활동을 적어보세요.", help: "강연을 들었다는 사실보다 강연 뒤 어떤 자료를 추가로 확인하고 질문을 확장했는지 적습니다." },
+      { key: "learningConnection", label: "교과·탐구 연결", placeholder: "관심 분야가 어떤 과목의 개념이나 탐구활동과 연결되었는지 적어보세요.", help: "진로활동을 별도 행사로 두지 말고 수업 개념, 선택과목, 독서와 연결합니다." },
+      { key: "insight", label: "새롭게 이해한 점", placeholder: "분야의 실제 문제, 필요한 역량, 예상과 달랐던 점을 적어보세요.", help: "좋은 직업이라는 감상보다 그 분야가 해결하는 문제와 필요한 학업을 구체적으로 정리합니다." },
+      { key: "change", label: "진로 생각의 변화", placeholder: "관심 분야가 넓어지거나 좁아진 과정, 나에게 맞는 점과 더 확인할 점을 적어보세요.", help: "진로가 확정되지 않아도 괜찮습니다. 무엇을 확인하면서 선택 기준이 달라졌는지가 중요합니다." },
+      { key: "reflection", label: "나의 강점과 보완점", placeholder: "현재 갖춘 역량과 앞으로 보완해야 할 학습·경험을 적어보세요.", help: "적성검사 결과를 옮기기보다 실제 활동에서 확인한 강점과 부족한 점을 근거로 씁니다." },
+      { key: "followUp", label: "다음 탐색 계획", placeholder: "다음 과목 선택, 독서, 상담, 탐구에서 무엇을 확인할지 적어보세요.", help: "다음 학년에 어떤 질문을 더 깊게 탐구할지, 어떤 과목이나 활동으로 확인할지 씁니다." }
+    ]
+  },
+  club: {
+    label: "동아리활동",
+    shortGuide: "동아리의 이름보다 주제 선택, 탐구 방법, 역할, 결과와 심화 과정을 정리합니다.",
+    competencies: ["학업역량", "진로역량", "공동체역량"],
+    fields: [
+      { key: "activityName", label: "동아리명과 활동 주제", rows: 2, placeholder: "동아리명과 가장 의미 있었던 탐구·프로젝트 주제를 적어보세요.", help: "여러 활동을 모두 적기보다 한 해의 성장 흐름을 가장 잘 보여주는 주제를 중심으로 씁니다." },
+      { key: "motivation", label: "주제 선택 이유", placeholder: "수업, 독서, 이전 활동에서 어떤 질문이 생겨 이 주제를 골랐는지 적어보세요.", help: "진로와 관련 있어서라는 말보다 어떤 현상이나 개념이 궁금했는지 구체화합니다." },
+      { key: "process", label: "탐구·제작 과정", placeholder: "자료 조사, 실험, 설계, 토론, 제작, 발표 과정을 구체적으로 적어보세요.", help: "사용한 자료와 방법, 변인을 통제하거나 기준을 정한 과정이 드러나면 좋습니다." },
+      { key: "role", label: "나의 역할과 협업", placeholder: "팀 안에서 맡은 일, 의견을 조정하거나 동료의 기여를 연결한 과정을 적어보세요.", help: "혼자 한 일과 함께 한 일을 구분하고, 협업이 결과를 어떻게 바꾸었는지 씁니다." },
+      { key: "result", label: "결과와 근거", placeholder: "실험 결과, 분석 내용, 결과물, 발표 피드백처럼 확인 가능한 내용을 적어보세요.", help: "성공 여부뿐 아니라 예상과 달랐던 결과와 그 결과를 어떻게 해석했는지 적습니다." },
+      { key: "limit", label: "한계와 보완", placeholder: "자료·방법·시간의 한계와 다시 한다면 바꾸고 싶은 점을 적어보세요.", help: "한계는 실패의 고백이 아니라 탐구 방법을 점검하고 다음 질문을 만드는 과정입니다." },
+      { key: "reflection", label: "배운 점과 역량", placeholder: "학업, 진로, 협업 측면에서 무엇이 성장했는지 실제 행동과 함께 적어보세요.", help: "흥미로웠다는 감상보다 개념 이해, 자료 해석, 의사소통 방식이 어떻게 달라졌는지 씁니다." },
+      { key: "followUp", label: "다음 탐구 계획", placeholder: "다음 학년이나 다른 과목에서 어떻게 심화할지 적어보세요.", help: "같은 활동을 반복하기보다 새로운 변수, 자료, 교과 개념을 추가해 심화 방향을 제시합니다." }
+    ]
+  }
+};
+
+const creativeEvalExamples = {
+  autonomy: [
+    {
+      grade: 1,
+      title: "학급 학습환경 개선",
+      values: {
+        activityName: "학급 학습환경 개선 프로젝트 - 소음과 좌석 이용 문제 조사",
+        motivation: "자습 시간마다 소음 기준이 달라 갈등이 생기는 모습을 보고, 구성원이 함께 지킬 수 있는 기준이 필요하다고 생각했다.",
+        role: "학급 구성원의 의견을 익명 설문으로 모으고, 서로 다른 요구를 분류해 회의 자료로 정리했다.",
+        process: "소음이 불편한 시간과 이유를 조사하고, 집중 구역과 대화 가능 구역을 나누는 방안을 제안해 일주일간 시범 운영했다.",
+        collaboration: "조용한 환경과 자유로운 협업을 원하는 의견이 충돌해 시간대별 기준을 두는 절충안을 만들었다.",
+        result: "시범 운영 뒤 설문에서 불편하다는 응답이 줄었고, 학급회의를 거쳐 자습 시간 규칙으로 정리되었다.",
+        reflection: "좋은 규칙은 한쪽 의견을 따르는 것이 아니라 자료를 통해 요구를 확인하고 합의 가능한 기준을 만드는 과정임을 배웠다.",
+        followUp: "다음에는 규칙이 잘 지켜지지 않는 이유도 조사해 학생이 스스로 점검할 수 있는 방법을 제안하고 싶다."
+      }
+    },
+    {
+      grade: 2,
+      title: "학교 정보 접근성 개선",
+      values: {
+        activityName: "교내 행사·지원 프로그램 안내 방식 개선",
+        motivation: "신청 기간을 놓쳐 프로그램에 참여하지 못한 친구들이 있다는 점에서 정보가 전달되는 방식에 문제가 있다고 판단했다.",
+        role: "기존 안내 경로를 조사하고 학생들이 자주 확인하는 매체와 필요한 정보를 설문으로 확인했다.",
+        process: "공지 유형을 신청·상담·행사로 분류하고, 마감일과 대상이 먼저 보이는 주간 안내 양식을 제작해 시범 배포했다.",
+        collaboration: "학생회와 담당 선생님의 의견을 반영해 개인정보가 포함되지 않도록 게시 기준을 수정했다.",
+        result: "시범 기간 중 문의가 반복되는 항목이 줄었고, 마감일 중심 안내가 유용하다는 피드백을 받았다.",
+        reflection: "정보를 많이 제공하는 것보다 이용자의 상황에 맞게 구조화하는 것이 접근성을 높인다는 점을 알게 되었다.",
+        followUp: "학년별로 필요한 정보가 다른지 비교하고, 접근성이 낮은 학생을 위한 보완 방법도 조사하고 싶다."
+      }
+    },
+    {
+      grade: 3,
+      title: "후배 과목 선택 지원",
+      values: {
+        activityName: "후배를 위한 선택과목 경험 공유 활동",
+        motivation: "과목 이름만 보고 선택했다가 수업 방식이 예상과 달랐다는 친구들의 경험을 보며 실제 수업 정보가 필요하다고 생각했다.",
+        role: "과목별 수업 방식과 준비 경험을 수집할 질문을 만들고, 답변을 과장 없이 정리하는 역할을 맡았다.",
+        process: "재학생 인터뷰를 통해 수업에서 다룬 개념, 활동 방식, 필요한 준비를 정리하고 공식 교육과정 정보와 구분해 안내했다.",
+        collaboration: "개인 성적이나 교사 평가로 오해될 수 있는 표현은 제외하고, 여러 학생의 공통 경험만 남기도록 기준을 합의했다.",
+        result: "후배 상담 시간에 자료가 활용되었고, 과목 선택 이유를 먼저 생각해 보게 되었다는 반응을 확인했다.",
+        reflection: "경험을 전달할 때도 정확성, 개인정보, 해석의 한계를 함께 고려해야 책임 있는 정보가 된다는 점을 배웠다.",
+        followUp: "후배들이 실제 선택 뒤 느낀 점을 다시 조사해 안내 자료의 부족한 부분을 보완하고 싶다."
+      }
+    }
+  ],
+  career: [
+    {
+      grade: 1,
+      title: "보건 문제에서 진로 질문 찾기",
+      values: {
+        activityName: "지역에 따라 의료 이용이 달라지는 이유는 무엇일까?",
+        motivation: "통합사회에서 지역 격차를 배우고, 거주 지역에 따라 병원까지 이동하는 시간이 다르다는 자료를 보며 관심이 생겼다.",
+        process: "보건의료 직업을 조사한 뒤 병원 수, 교통, 고령 인구가 의료 접근성에 어떤 영향을 주는지 공공자료로 비교했다.",
+        learningConnection: "통합사회의 지역 격차와 수학의 자료 해석을 연결해 단순히 의사라는 직업보다 보건정책과 의료서비스 구조를 함께 살펴보았다.",
+        insight: "의료 문제는 치료 기술뿐 아니라 교통, 정보, 인구 구조와도 연결되며 여러 직무가 함께 해결한다는 점을 알게 되었다.",
+        change: "의료계열을 하나의 직업으로 보던 생각에서 벗어나 임상, 보건정책, 의료데이터 분야를 구분해 탐색하게 되었다.",
+        reflection: "자료를 읽고 비교하는 데 흥미가 있었지만 직무별 실제 업무는 충분히 확인하지 못했다.",
+        followUp: "2학년에는 생명과학과 사회 과목의 관련 개념을 배우며 의료데이터와 보건정책 중 어떤 분야에 더 관심이 있는지 확인하고 싶다."
+      }
+    },
+    {
+      grade: 2,
+      title: "도시·교통 분야 좁혀 보기",
+      values: {
+        activityName: "대중교통 노선은 누구의 이동을 우선해야 할까?",
+        motivation: "지리 수업에서 생활권과 공간 불평등을 배우며 통학 시간과 교통 접근성의 차이가 궁금해졌다.",
+        process: "교통공학, 도시계획, 지리정보 관련 학과의 교육과정을 비교하고 버스 정류장 분포와 인구 자료를 지도에 표시했다.",
+        learningConnection: "한국지리의 생활권 개념과 수학의 좌표·통계 개념을 활용해 정류장 간 거리와 이용 인구를 비교했다.",
+        insight: "교통 계획은 노선을 만드는 기술뿐 아니라 이용자 자료, 안전, 비용, 형평성을 함께 판단하는 일임을 이해했다.",
+        change: "건축 중심의 관심이 도시공학과 교통계획으로 구체화되었고, 공간 자료를 다루는 역량이 필요하다고 판단했다.",
+        reflection: "공간 관계를 시각화하는 데 강점이 있었지만 비용과 정책 기준을 해석하는 지식은 부족했다.",
+        followUp: "경제 과목의 비용·편익 개념을 학습하고 실제 교통 정책 사례를 비교해 대안의 현실성을 검토하고 싶다."
+      }
+    },
+    {
+      grade: 3,
+      title: "AI·미디어 진로의 쟁점 검토",
+      values: {
+        activityName: "추천 알고리즘은 이용자의 선택을 넓힐까 좁힐까?",
+        motivation: "미디어 콘텐츠 추천이 편리한 동시에 비슷한 정보만 반복해 보여준다는 문제를 접하고 기술과 사회의 관계가 궁금해졌다.",
+        process: "컴퓨터공학, 미디어학, 심리학의 접근을 비교하고 추천 결과가 달라지는 간단한 데이터 분류 실험과 이용자 설문을 진행했다.",
+        learningConnection: "정보 과목의 데이터 처리, 사회문화의 미디어 효과, 확률과 통계의 표본 해석을 하나의 질문에 연결했다.",
+        insight: "알고리즘의 성능만으로 좋은 추천을 판단하기 어렵고 다양성, 설명 가능성, 이용자의 선택권도 평가 기준이 되어야 함을 알게 되었다.",
+        change: "개발 자체에 머물던 관심이 인간 중심 AI와 디지털 미디어 정책까지 확장되었다.",
+        reflection: "기술 원리를 설명하는 강점은 확인했지만 이용자 경험을 해석할 때 표본의 편향을 더 주의해야 했다.",
+        followUp: "대학에서는 데이터과학과 미디어 연구가 결합되는 전공을 비교하고, 추천의 다양성을 측정하는 지표를 더 탐구하고 싶다."
+      }
+    }
+  ],
+  club: [
+    {
+      grade: 1,
+      title: "과학 실험의 기초 다지기",
+      values: {
+        activityName: "과학실험 동아리 - 렌즈 종류에 따른 초점 거리 비교",
+        motivation: "과학 수업에서 빛의 굴절을 배운 뒤 렌즈의 모양이 상의 위치에 어떤 차이를 만드는지 직접 확인하고 싶었다.",
+        process: "볼록렌즈의 두께와 물체 거리를 바꾸며 상이 선명해지는 위치를 반복 측정하고 측정값을 표로 정리했다.",
+        role: "측정 기준을 통일하고 팀원의 기록을 비교해 값의 차이가 큰 실험은 다시 수행하도록 제안했다.",
+        result: "렌즈와 물체 사이의 조건에 따라 초점 위치가 달라짐을 확인했고 반복 측정값의 평균을 사용해 오차를 줄였다.",
+        limit: "렌즈의 정확한 곡률을 알 수 없어 렌즈 모양과 초점 거리의 관계를 정량적으로 설명하는 데 한계가 있었다.",
+        reflection: "실험 결과보다 측정 기준을 맞추고 오차 원인을 확인하는 과정이 과학적 탐구에서 중요하다는 점을 배웠다.",
+        followUp: "2학년에는 렌즈 공식과 오차율을 적용해 측정 결과를 수학적으로 설명해 보고 싶다."
+      }
+    },
+    {
+      grade: 2,
+      title: "경제 자료로 주장 검증하기",
+      values: {
+        activityName: "경제탐구 동아리 - 기준금리 변화와 가계대출의 관계 분석",
+        motivation: "금리가 오르면 대출이 항상 감소한다는 설명이 실제 자료에서도 같은지 궁금했다.",
+        process: "기준금리, 가계대출, 주택가격 자료의 시점을 맞춰 그래프로 비교하고 시차를 두었을 때 관계가 달라지는지 확인했다.",
+        role: "자료 출처와 단위를 검토하고 서로 다른 해석을 비교할 수 있도록 그래프 기준을 통일했다.",
+        result: "금리 변화 직후 모든 지표가 같은 방향으로 움직이지 않았고 소득, 주택시장 상황 등 다른 요인을 함께 봐야 한다고 해석했다.",
+        limit: "관찰 자료만으로 인과관계를 확정하기 어렵고 분석 기간에 따라 결과가 달라질 수 있었다.",
+        reflection: "경제 현상을 하나의 원인으로 설명하지 않고 자료의 시차와 다른 변수를 함께 살펴보는 태도가 필요함을 배웠다.",
+        followUp: "3학년에는 물가와 고용 지표를 추가하고 국가별 금리 정책 사례를 비교해 분석 범위를 넓히고 싶다."
+      }
+    },
+    {
+      grade: 3,
+      title: "인문사회 쟁점의 관점 통합",
+      values: {
+        activityName: "인문사회 토론 동아리 - 생성형 AI 창작물의 책임과 권리",
+        motivation: "AI가 만든 결과물의 오류와 저작권 문제를 접하며 창작자, 이용자, 개발자의 책임 기준이 궁금해졌다.",
+        process: "관련 법·윤리 사례를 당사자별로 분류하고, 권리 보호와 기술 활용을 함께 고려한 토론 쟁점을 설계했다.",
+        role: "상반된 주장의 근거를 정리하고 토론 중 합의된 기준과 끝까지 남은 쟁점을 기록해 최종 제안문을 작성했다.",
+        result: "결과물의 사용 목적, 공개 범위, 인간의 검토 여부에 따라 책임을 다르게 보아야 한다는 단계별 기준을 제안했다.",
+        limit: "기술과 제도가 빠르게 변해 현재 사례만으로 보편적인 기준을 정하기 어려웠다.",
+        reflection: "찬반 중 하나를 고르는 것보다 이해관계자의 권리와 실제 적용 조건을 구분해야 설득력 있는 대안이 된다는 점을 배웠다.",
+        followUp: "대학에서는 미디어 윤리와 정보법 사례를 더 살펴보고 실제 서비스 약관을 비교해 기준을 보완하고 싶다."
+      }
+    }
+  ]
+};
 
 const selfEvalHelp = {
   motivation: {
@@ -1393,6 +1577,11 @@ const state = {
   selfEvalSemester: "all",
   selfEvalSubject: "",
   selfEvalEntries: {},
+  selfEvalMode: "subject",
+  creativeEvalPlan: "incoming2026",
+  creativeEvalGrade: "1",
+  creativeEvalType: "autonomy",
+  creativeEvalEntries: {},
   selectedTrack: "engineering",
   targetMajor: "",
   plan: createEmptyPlan(),
@@ -1439,6 +1628,7 @@ function getCourse(id) {
 function init() {
   loadState();
   loadSelfEvaluationState();
+  loadCreativeEvaluationState();
   bindNavigation();
   bindControls();
   bindCurriculumSortHeaders();
@@ -1454,9 +1644,12 @@ function init() {
   renderSelfEvaluationPlanOptions();
   renderSelfEvaluationSemesterOptions();
   renderSelfEvaluationSubjectOptions();
+  renderCreativeEvaluationPlanOptions();
   renderCoursePool();
   renderPlanner();
   renderSelfEvaluation();
+  renderCreativeEvaluation();
+  renderSelfEvaluationMode();
   updateFormValues();
   setView(getInitialViewFromHash() || "home");
 }
@@ -1532,6 +1725,9 @@ function bindControls() {
 }
 
 function bindSelfEvaluationControls() {
+  $("#selfEvalSubjectModeButton")?.addEventListener("click", () => setSelfEvaluationMode("subject"));
+  $("#selfEvalCreativeModeButton")?.addEventListener("click", () => setSelfEvaluationMode("creative"));
+
   $("#selfEvalPlanSelect")?.addEventListener("change", (event) => {
     updateSelfEvaluationEntryFromForm();
     state.selfEvalPlan = event.target.value;
@@ -1597,6 +1793,65 @@ function bindSelfEvaluationControls() {
     saveSelfEvaluationState(false);
     renderSelfEvaluationStatus();
   });
+
+  $("#creativeEvalPlanSelect")?.addEventListener("change", (event) => {
+    updateCreativeEvaluationEntryFromForm();
+    state.creativeEvalPlan = event.target.value;
+    saveCreativeEvaluationState(false);
+    renderCreativeEvaluation();
+  });
+
+  $("#creativeEvalGradeSelect")?.addEventListener("change", (event) => {
+    updateCreativeEvaluationEntryFromForm();
+    state.creativeEvalGrade = event.target.value;
+    saveCreativeEvaluationState(false);
+    renderCreativeEvaluation();
+  });
+
+  $all("[data-creative-eval-type]").forEach((button) => {
+    button.addEventListener("click", () => {
+      updateCreativeEvaluationEntryFromForm();
+      state.creativeEvalType = button.dataset.creativeEvalType || "autonomy";
+      saveCreativeEvaluationState(false);
+      renderCreativeEvaluation();
+    });
+  });
+
+  $("#saveCreativeEvalButton")?.addEventListener("click", () => {
+    updateCreativeEvaluationEntryFromForm();
+    saveCreativeEvaluationState(true);
+  });
+
+  $("#loadCreativeEvalButton")?.addEventListener("click", () => {
+    loadCreativeEvaluationState();
+    renderCreativeEvaluationPlanOptions();
+    renderCreativeEvaluation();
+    showToast("저장된 창의적 체험활동을 불러왔습니다.");
+  });
+
+  $("#exportCreativeEvalButton")?.addEventListener("click", exportCreativeEvaluationPdf);
+
+  $("#creativeEvalForm")?.addEventListener("input", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement) resizeSelfEvaluationTextarea(target);
+    updateCreativeEvaluationEntryFromForm();
+    saveCreativeEvaluationState(false);
+    renderCreativeEvaluationStatus();
+  });
+
+  $all("[data-creative-eval-competency]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      updateCreativeEvaluationEntryFromForm();
+      saveCreativeEvaluationState(false);
+      renderCreativeEvaluationStatus();
+    });
+  });
+
+  $("#creativeEvalCompetencyNote")?.addEventListener("input", () => {
+    updateCreativeEvaluationEntryFromForm();
+    saveCreativeEvaluationState(false);
+    renderCreativeEvaluationStatus();
+  });
 }
 
 function bindSubjectInfoPopup() {
@@ -1619,6 +1874,14 @@ function bindSubjectInfoPopup() {
       event.preventDefault();
       event.stopPropagation();
       openSelfEvalHelpPopup(selfHelpButton.dataset.selfHelp || "");
+      return;
+    }
+
+    const creativeHelpButton = clicked?.closest("[data-creative-help]");
+    if (creativeHelpButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openCreativeEvalHelpPopup(creativeHelpButton.dataset.creativeHelp || "");
       return;
     }
 
@@ -4035,6 +4298,284 @@ function exportMineCurriculumPdf() {
 
   window.addEventListener("afterprint", cleanup);
   window.print();
+}
+
+function setSelfEvaluationMode(mode) {
+  if (!["subject", "creative"].includes(mode)) return;
+  if (state.selfEvalMode === "subject") updateSelfEvaluationEntryFromForm();
+  if (state.selfEvalMode === "creative") updateCreativeEvaluationEntryFromForm();
+  state.selfEvalMode = mode;
+  renderSelfEvaluationMode();
+}
+
+function renderSelfEvaluationMode() {
+  const isCreative = state.selfEvalMode === "creative";
+  const subjectButton = $("#selfEvalSubjectModeButton");
+  const creativeButton = $("#selfEvalCreativeModeButton");
+  const subjectTargets = ["#selfEvalSubjectControls", "#selfEvalSubjectGuide", "#selfEvalSubjectWorkspace"];
+  const creativeTargets = ["#creativeEvalControls", "#creativeEvalGuide", "#creativeEvalWorkspace"];
+
+  subjectButton?.classList.toggle("active", !isCreative);
+  creativeButton?.classList.toggle("active", isCreative);
+  subjectButton?.setAttribute("aria-selected", String(!isCreative));
+  creativeButton?.setAttribute("aria-selected", String(isCreative));
+  subjectTargets.forEach((selector) => {
+    const element = $(selector);
+    if (element) element.hidden = isCreative;
+  });
+  creativeTargets.forEach((selector) => {
+    const element = $(selector);
+    if (element) element.hidden = !isCreative;
+  });
+
+  if (isCreative) renderCreativeEvaluation();
+  else renderSelfEvaluation();
+}
+
+function getCreativeEvaluationTypeConfig(type = state.creativeEvalType) {
+  return creativeEvalTypes[type] || creativeEvalTypes.autonomy;
+}
+
+function createEmptyCreativeEvaluationEntry(type = state.creativeEvalType) {
+  const entry = { competencies: [], competencyNote: "" };
+  getCreativeEvaluationTypeConfig(type).fields.forEach((field) => {
+    entry[field.key] = "";
+  });
+  return entry;
+}
+
+function getCreativeEvaluationEntry(type = state.creativeEvalType) {
+  const planKey = state.creativeEvalPlan;
+  const grade = state.creativeEvalGrade;
+  if (!state.creativeEvalEntries[planKey]) state.creativeEvalEntries[planKey] = {};
+  if (!state.creativeEvalEntries[planKey][grade]) state.creativeEvalEntries[planKey][grade] = {};
+  if (!state.creativeEvalEntries[planKey][grade][type]) {
+    state.creativeEvalEntries[planKey][grade][type] = createEmptyCreativeEvaluationEntry(type);
+  }
+  return state.creativeEvalEntries[planKey][grade][type];
+}
+
+function renderCreativeEvaluationPlanOptions() {
+  const select = $("#creativeEvalPlanSelect");
+  if (!select) return;
+  select.innerHTML = plannerPlanOrder
+    .map((key) => `<option value="${key}">${escapeHtml(getCurriculumPlanLabel(key))}</option>`)
+    .join("");
+  if (!plannerPlanOrder.includes(state.creativeEvalPlan)) state.creativeEvalPlan = "incoming2026";
+  select.value = state.creativeEvalPlan;
+  const gradeSelect = $("#creativeEvalGradeSelect");
+  if (gradeSelect) gradeSelect.value = state.creativeEvalGrade;
+}
+
+function renderCreativeEvaluation() {
+  const formTarget = $("#creativeEvalFields");
+  if (!formTarget) return;
+  const type = state.creativeEvalType;
+  const config = getCreativeEvaluationTypeConfig(type);
+  const entry = getCreativeEvaluationEntry(type);
+
+  $all("[data-creative-eval-type]").forEach((button) => {
+    const active = button.dataset.creativeEvalType === type;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  const gradeSelect = $("#creativeEvalGradeSelect");
+  if (gradeSelect) gradeSelect.value = state.creativeEvalGrade;
+  const gradeLabel = $("#creativeEvalCurrentGrade");
+  const title = $("#creativeEvalCurrentType");
+  const guide = $("#creativeEvalCurrentGuide");
+  if (gradeLabel) gradeLabel.textContent = `${state.creativeEvalGrade}학년 창체`;
+  if (title) title.textContent = config.label;
+  if (guide) guide.textContent = config.shortGuide;
+
+  formTarget.innerHTML = config.fields.map((field) => renderCreativeEvaluationField(field, entry[field.key] || "")).join("");
+  renderCreativeEvaluationCompetencies(entry);
+  renderCreativeEvaluationStatus();
+  $all("#creativeEvalForm textarea").forEach((textarea) => resizeSelfEvaluationTextarea(textarea));
+}
+
+function renderCreativeEvaluationField(field, value) {
+  return `
+    <label class="self-eval-field creative-eval-field">
+      <span>
+        <b>${escapeHtml(field.label)}</b>
+        <button class="subject-info-button self-help-button" type="button"
+          aria-label="${escapeHtml(`${field.label} 도움말`)}"
+          title="작성 도움말"
+          data-creative-help="${escapeHtml(field.key)}">?</button>
+      </span>
+      <textarea data-creative-eval-field="${escapeHtml(field.key)}" rows="${field.rows || 4}" placeholder="${escapeAttribute(field.placeholder)}">${escapeTextareaValue(value)}</textarea>
+    </label>
+  `;
+}
+
+function renderCreativeEvaluationCompetencies(entry) {
+  const selected = new Set(entry.competencies || []);
+  $all("[data-creative-eval-competency]").forEach((checkbox) => {
+    checkbox.checked = selected.has(checkbox.value);
+  });
+  const note = $("#creativeEvalCompetencyNote");
+  if (note) note.value = entry.competencyNote || "";
+}
+
+function renderCreativeEvaluationStatus() {
+  const status = $("#creativeEvalSaveStatus");
+  if (!status) return;
+  const config = getCreativeEvaluationTypeConfig();
+  const entry = getCreativeEvaluationEntry();
+  const filledCount = config.fields.filter((field) => String(entry[field.key] || "").trim()).length;
+  const competencyText = entry.competencies?.length ? ` · ${entry.competencies.join(", ")}` : "";
+  status.textContent = `작성 항목 ${filledCount}/${config.fields.length}${competencyText}`;
+}
+
+function updateCreativeEvaluationEntryFromForm() {
+  const form = $("#creativeEvalForm");
+  if (!form) return;
+  const config = getCreativeEvaluationTypeConfig();
+  const entry = getCreativeEvaluationEntry();
+  config.fields.forEach((field) => {
+    const input = form.querySelector(`[data-creative-eval-field="${field.key}"]`);
+    if (input) entry[field.key] = input.value;
+  });
+  entry.competencies = $all("[data-creative-eval-competency]")
+    .filter((checkbox) => checkbox.checked)
+    .map((checkbox) => checkbox.value);
+  entry.competencyNote = $("#creativeEvalCompetencyNote")?.value.trim() || "";
+}
+
+function saveCreativeEvaluationState(showMessage) {
+  const data = {
+    creativeEvalPlan: state.creativeEvalPlan,
+    creativeEvalGrade: state.creativeEvalGrade,
+    creativeEvalType: state.creativeEvalType,
+    creativeEvalEntries: state.creativeEvalEntries
+  };
+  localStorage.setItem(CREATIVE_EVAL_STORAGE_KEY, JSON.stringify(data));
+  if (showMessage) showToast("창의적 체험활동을 저장했습니다.");
+}
+
+function loadCreativeEvaluationState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CREATIVE_EVAL_STORAGE_KEY));
+    if (!saved) return;
+    state.creativeEvalPlan = saved.creativeEvalPlan || state.creativeEvalPlan;
+    state.creativeEvalGrade = ["1", "2", "3"].includes(saved.creativeEvalGrade) ? saved.creativeEvalGrade : "1";
+    state.creativeEvalType = creativeEvalTypes[saved.creativeEvalType] ? saved.creativeEvalType : "autonomy";
+    state.creativeEvalEntries = saved.creativeEvalEntries || {};
+  } catch {
+    localStorage.removeItem(CREATIVE_EVAL_STORAGE_KEY);
+    state.creativeEvalEntries = {};
+  }
+}
+
+function openCreativeEvalHelpPopup(fieldKey) {
+  const modal = $("#subjectInfoModal");
+  const label = $("#subjectInfoLabel");
+  const title = $("#subjectInfoTitle");
+  const content = $("#subjectInfoContent");
+  const config = getCreativeEvaluationTypeConfig();
+  const field = config.fields.find((item) => item.key === fieldKey);
+  if (!modal || !title || !content || !field) return;
+
+  const examples = (creativeEvalExamples[state.creativeEvalType] || []).filter((item) => item.values[fieldKey]);
+  if (label) label.textContent = `${state.creativeEvalGrade}학년 ${config.label} 도움말`;
+  title.textContent = field.label;
+  content.innerHTML = `
+    <p class="subject-info-copy">${escapeHtml(field.help)}</p>
+    <div class="creative-help-principle">
+      <b>작성할 때 확인하세요</b>
+      <p>실제로 한 활동만 적고, 활동명보다 내가 판단하고 실행한 과정이 보이게 씁니다. 아래 사례는 문장을 옮겨 쓰는 자료가 아니라 구체성의 수준을 살펴보는 참고 예시입니다.</p>
+    </div>
+    <div class="creative-help-example-list">
+      ${examples.map((example) => `
+        <article class="${String(example.grade) === state.creativeEvalGrade ? "active" : ""}">
+          <span>${example.grade}학년 사례</span>
+          <b>${escapeHtml(example.title)}</b>
+          <p>${escapeHtml(example.values[fieldKey])}</p>
+        </article>
+      `).join("")}
+    </div>
+    <p class="subject-info-caution">
+      학교생활기록부는 교사가 실제 관찰과 학교 교육활동을 바탕으로 기록합니다. 학생은 사실을 과장하거나 학생부 문장을 대신 만들기보다 자신의 역할, 과정, 결과를 상담 자료로 정리해야 합니다.
+    </p>
+  `;
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+  $(".subject-info-close")?.focus();
+}
+
+function exportCreativeEvaluationPdf() {
+  updateCreativeEvaluationEntryFromForm();
+  saveCreativeEvaluationState(false);
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    showToast("PDF 창을 열 수 없습니다. 브라우저의 팝업 허용 여부를 확인해 주세요.");
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write(buildCreativeEvaluationPrintDocument());
+  printWindow.document.close();
+  const runPrint = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  if (printWindow.document.readyState === "complete") window.setTimeout(runPrint, 250);
+  else printWindow.addEventListener("load", () => window.setTimeout(runPrint, 250), { once: true });
+}
+
+function buildCreativeEvaluationPrintDocument() {
+  const planLabel = getCurriculumPlanLabel(state.creativeEvalPlan);
+  const grade = state.creativeEvalGrade;
+  const today = new Date().toLocaleDateString("ko-KR");
+  const sections = Object.entries(creativeEvalTypes).map(([type, config]) => {
+    const entry = getCreativeEvaluationEntry(type);
+    const competencies = entry.competencies?.length ? entry.competencies.join(", ") : "작성 내용 없음";
+    return `
+      <section class="activity-section">
+        <h2>${escapeHtml(config.label)}</h2>
+        <p class="competency"><b>강조하고 싶은 역량</b> ${escapeHtml(competencies)}${entry.competencyNote ? ` · ${escapeHtml(entry.competencyNote)}` : ""}</p>
+        ${config.fields.map((field) => `
+          <article>
+            <b>${escapeHtml(field.label)}</b>
+            <p>${escapeHtml(entry[field.key] || "작성 내용 없음")}</p>
+          </article>
+        `).join("")}
+      </section>
+    `;
+  }).join("");
+
+  return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>${escapeHtml(`${grade}학년 창의적 체험활동 자기평가서`)}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #111; font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; font-size: 11px; line-height: 1.55; }
+    header { border-bottom: 2px solid #111; margin-bottom: 12px; padding-bottom: 10px; }
+    header span { border: 1px solid #111; border-radius: 999px; padding: 2px 8px; font-weight: 800; }
+    h1 { margin: 7px 0 3px; font-size: 22px; }
+    h2 { margin: 0 0 8px; font-size: 17px; }
+    p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .activity-section { margin-bottom: 14px; break-before: auto; }
+    .activity-section + .activity-section { break-before: page; }
+    .competency { border: 1px solid #bcc9c0; background: #f5f8f6; margin-bottom: 8px; padding: 7px; }
+    article { border: 1px solid #c9d3cc; margin-bottom: 6px; padding: 7px; break-inside: avoid; }
+    article b { display: block; margin-bottom: 3px; }
+    footer { border-top: 1px solid #c9d3cc; margin-top: 12px; padding-top: 8px; color: #555; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>상담용 자료</span>
+    <h1>${escapeHtml(`${grade}학년 창의적 체험활동 자기평가서`)}</h1>
+    <p>${escapeHtml(planLabel)} · ${escapeHtml(today)}</p>
+  </header>
+  ${sections}
+  <footer>이 자료는 학생부 문장을 대신 작성하는 자료가 아니라, 실제 학교 활동과 성장 과정을 상담 전에 정리하기 위한 초안입니다.</footer>
+</body>
+</html>`;
 }
 
 function getSelfEvaluationPlan() {

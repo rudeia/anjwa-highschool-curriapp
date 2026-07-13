@@ -4158,6 +4158,33 @@ body.modal-open {
   gap: 16px;
 }
 
+.self-eval-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(520px, 100%);
+}
+
+.self-eval-mode-switch button,
+.creative-eval-type-switch button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.self-eval-mode-switch button.active,
+.creative-eval-type-switch button.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
 .self-eval-control-row {
   display: grid;
   grid-template-columns: minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(240px, 1.5fr) auto;
@@ -4169,6 +4196,17 @@ body.modal-open {
   min-width: 0;
 }
 
+.creative-eval-control-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.4fr) minmax(150px, 0.8fr) auto;
+  width: 100%;
+  align-items: end;
+}
+
+.creative-eval-control-row label {
+  min-width: 0;
+}
+
 .self-eval-guide {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4176,7 +4214,15 @@ body.modal-open {
   margin-bottom: 16px;
 }
 
+.creative-eval-guide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
 .self-eval-guide article,
+.creative-eval-guide article,
 .self-eval-side-panel,
 .self-eval-form,
 .self-eval-field {
@@ -4189,12 +4235,39 @@ body.modal-open {
   padding: 18px;
 }
 
+.creative-eval-guide article {
+  padding: 18px;
+}
+
 .self-eval-guide h3 {
+  margin-bottom: 8px;
+}
+
+.creative-eval-guide h3 {
   margin-bottom: 8px;
 }
 
 .self-eval-guide p {
   margin-bottom: 0;
+}
+
+.creative-eval-guide p {
+  margin-bottom: 0;
+}
+
+.creative-eval-workspace {
+  display: grid;
+  gap: 12px;
+}
+
+.creative-eval-type-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.creative-eval-layout {
+  width: 100%;
 }
 
 .self-eval-guide-button {
@@ -4331,6 +4404,60 @@ body.modal-open {
 .self-help-button {
   width: 24px;
   height: 24px;
+}
+
+.creative-help-principle {
+  border: 1px solid #d8e4dc;
+  border-radius: var(--radius);
+  background: #f5faf6;
+  margin: 14px 0;
+  padding: 13px;
+}
+
+.creative-help-principle b {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.creative-help-principle p {
+  margin: 0;
+}
+
+.creative-help-example-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.creative-help-example-list article {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 13px;
+}
+
+.creative-help-example-list article.active {
+  border-color: #83b89a;
+  background: #f3faf5;
+}
+
+.creative-help-example-list span,
+.creative-help-example-list b {
+  display: block;
+}
+
+.creative-help-example-list span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.creative-help-example-list b {
+  margin: 3px 0 8px;
+}
+
+.creative-help-example-list p {
+  margin: 0;
 }
 
 .self-help-example-grid {
@@ -4547,6 +4674,7 @@ body.modal-open {
   .planner-layout,
   .planner-mode-panel,
   .self-eval-guide,
+  .creative-eval-guide,
   .self-eval-layout,
   .activity-layout,
   .curriculum-filter-panel,
@@ -4624,6 +4752,19 @@ body.modal-open {
     grid-template-columns: 1fr 1fr;
   }
 
+  .creative-eval-control-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .creative-eval-control-row button {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .creative-help-example-list {
+    grid-template-columns: 1fr;
+  }
+
   .self-eval-control-row button {
     width: 100%;
   }
@@ -4680,6 +4821,7 @@ body.modal-open {
   .planner-layout,
   .planner-mode-panel,
   .self-eval-guide,
+  .creative-eval-guide,
   .self-eval-layout,
   .activity-layout,
   .curriculum-filter-panel,
@@ -4804,6 +4946,15 @@ body.modal-open {
     width: 100%;
   }
 
+  .creative-eval-control-row {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .creative-eval-control-row button {
+    grid-column: auto;
+  }
+
   .concept-depth-list {
     grid-template-columns: 1fr;
   }
@@ -4820,7 +4971,9 @@ body.modal-open {
   .planner-control-row .ghost-button,
   .planner-control-row .primary-button,
   .self-eval-control-row .ghost-button,
-  .self-eval-control-row .primary-button {
+  .self-eval-control-row .primary-button,
+  .creative-eval-control-row .ghost-button,
+  .creative-eval-control-row .primary-button {
     width: 100%;
   }
 
