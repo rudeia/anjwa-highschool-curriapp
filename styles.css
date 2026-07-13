@@ -4266,6 +4266,35 @@ body.modal-open {
   gap: 8px;
 }
 
+.creative-eval-example-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 14px;
+}
+
+.creative-eval-example-toolbar label {
+  min-width: 0;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.creative-eval-example-toolbar select {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.creative-eval-example-toolbar p {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .creative-eval-layout {
   width: 100%;
 }
@@ -4457,6 +4486,64 @@ body.modal-open {
 }
 
 .creative-help-example-list p {
+  margin: 0;
+}
+
+.creative-flow-summary {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.creative-flow-summary article {
+  border: 1px solid var(--line);
+  border-left: 4px solid #9bbbaa;
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 15px;
+}
+
+.creative-flow-summary article.active {
+  border-color: #6ba181;
+  background: #f3faf5;
+}
+
+.creative-flow-heading {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.creative-flow-heading span {
+  flex: 0 0 auto;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.creative-flow-summary dl,
+.creative-flow-summary dl div {
+  margin: 0;
+}
+
+.creative-flow-summary dl {
+  display: grid;
+  gap: 8px;
+}
+
+.creative-flow-summary dl div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.creative-flow-summary dt {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.creative-flow-summary dd {
   margin: 0;
 }
 
@@ -4951,8 +5038,21 @@ body.modal-open {
     width: 100%;
   }
 
+  .creative-eval-example-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .creative-eval-example-toolbar button {
+    width: 100%;
+  }
+
   .creative-eval-control-row button {
     grid-column: auto;
+  }
+
+  .creative-flow-summary dl div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
   .concept-depth-list {

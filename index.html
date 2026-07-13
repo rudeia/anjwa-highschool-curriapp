@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>진로진학 교육과정 설계 플랫폼</title>
-    <link rel="stylesheet" href="./styles.css?v=20260713c" />
+    <link rel="stylesheet" href="./styles.css?v=20260713d" />
   </head>
   <body>
     <div class="app-shell">
@@ -511,6 +511,14 @@
               <button type="button" role="tab" aria-selected="false" data-creative-eval-type="career">진로활동</button>
               <button type="button" role="tab" aria-selected="false" data-creative-eval-type="club">동아리활동</button>
             </div>
+            <div class="creative-eval-example-toolbar">
+              <label>
+                도움말 사례 분야
+                <select id="creativeEvalDomainSelect"></select>
+              </label>
+              <button class="ghost-button" id="creativeEvalFlowButton" type="button">3개년 성장 흐름 보기</button>
+              <p>선택한 분야의 1·2·3학년 사례가 각 물음표 도움말에 이어서 표시됩니다.</p>
+            </div>
             <div class="self-eval-layout creative-eval-layout">
               <aside class="self-eval-side-panel creative-eval-side-panel">
                 <span class="label" id="creativeEvalCurrentGrade">1학년 창체</span>
@@ -559,6 +567,6 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./curriculum-data.js?v=20260710b"></script>
     <script src="./topic-data.js?v=20260710b"></script>
-    <script src="./app.js?v=20260713c"></script>
+    <script src="./app.js?v=20260713d"></script>
   </body>
 </html>

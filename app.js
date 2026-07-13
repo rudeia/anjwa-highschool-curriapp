@@ -294,6 +294,9 @@ const creativeEvalTypes = {
       { key: "collaboration", label: "협력과 문제 해결", placeholder: "의견 차이, 어려움, 피드백을 어떻게 조정하고 해결했는지 적어보세요.", help: "모두와 잘 지냈다는 표현보다 의견 차이를 듣고 조정한 구체적인 장면을 씁니다." },
       { key: "result", label: "결과와 변화", placeholder: "활동 전후 달라진 점, 결과물, 참여 반응 등 확인할 수 있는 변화를 적어보세요.", help: "성공했다는 감상보다 설문, 참여율, 결과물, 규칙 변화처럼 확인 가능한 근거를 남깁니다." },
       { key: "reflection", label: "배운 점과 성장", placeholder: "공동체 안에서 무엇을 배우고 나의 태도나 판단이 어떻게 달라졌는지 적어보세요.", help: "리더십이라는 단어 대신 경청, 책임, 조정, 재시도처럼 성장한 행동을 설명합니다." },
+      { key: "book", label: "독서 기록", rows: 2, placeholder: "제목(저자)의 형태로 적어보세요.", help: "활동을 이해하거나 문제를 새롭게 바라보는 데 실제로 도움을 준 책을 적습니다." },
+      { key: "bookReflection", label: "독서로 달라진 생각", placeholder: "책을 읽기 전후 생각이 어떻게 달라졌는지 적어보세요.", help: "감명 깊었다는 표현보다 책에서 얻은 관점이 판단 기준을 어떻게 바꾸었는지 씁니다." },
+      { key: "bookConnection", label: "독서와 활동의 연결", placeholder: "책에서 얻은 질문이나 관점을 활동에 어떻게 적용했는지 적어보세요.", help: "독서를 별도 실적으로 두지 말고 조사 문항, 실행 방법, 결과 해석과 연결합니다." },
       { key: "followUp", label: "다음 실천", placeholder: "보완하거나 다음 학년에 이어가고 싶은 활동을 적어보세요.", help: "막연히 더 열심히 하겠다고 쓰지 말고 다음에 바꿀 방법이나 이어갈 문제를 구체화합니다." }
     ]
   },
@@ -309,6 +312,9 @@ const creativeEvalTypes = {
       { key: "insight", label: "새롭게 이해한 점", placeholder: "분야의 실제 문제, 필요한 역량, 예상과 달랐던 점을 적어보세요.", help: "좋은 직업이라는 감상보다 그 분야가 해결하는 문제와 필요한 학업을 구체적으로 정리합니다." },
       { key: "change", label: "진로 생각의 변화", placeholder: "관심 분야가 넓어지거나 좁아진 과정, 나에게 맞는 점과 더 확인할 점을 적어보세요.", help: "진로가 확정되지 않아도 괜찮습니다. 무엇을 확인하면서 선택 기준이 달라졌는지가 중요합니다." },
       { key: "reflection", label: "나의 강점과 보완점", placeholder: "현재 갖춘 역량과 앞으로 보완해야 할 학습·경험을 적어보세요.", help: "적성검사 결과를 옮기기보다 실제 활동에서 확인한 강점과 부족한 점을 근거로 씁니다." },
+      { key: "book", label: "독서 기록", rows: 2, placeholder: "제목(저자)의 형태로 적어보세요.", help: "직업 소개보다 진로 분야가 다루는 문제와 관점을 이해하는 데 도움을 준 책을 적습니다." },
+      { key: "bookReflection", label: "독서로 달라진 진로 생각", placeholder: "책을 읽고 해당 분야나 직업을 보는 관점이 어떻게 달라졌는지 적어보세요.", help: "진로가 확고해졌다는 결론보다 새롭게 알게 된 역할, 쟁점, 필요한 역량을 씁니다." },
+      { key: "bookConnection", label: "독서와 진로 탐색의 연결", placeholder: "책에서 생긴 질문을 상담, 교과 학습, 학과 조사로 어떻게 이어갔는지 적어보세요.", help: "책의 관점을 다음 조사나 선택과목 검토에 실제로 적용한 과정을 씁니다." },
       { key: "followUp", label: "다음 탐색 계획", placeholder: "다음 과목 선택, 독서, 상담, 탐구에서 무엇을 확인할지 적어보세요.", help: "다음 학년에 어떤 질문을 더 깊게 탐구할지, 어떤 과목이나 활동으로 확인할지 씁니다." }
     ]
   },
@@ -463,6 +469,478 @@ const creativeEvalExamples = {
     }
   ]
 };
+
+const creativeEvalDomains = {
+  korean: {
+    label: "국어·미디어",
+    careers: "국어국문·언론정보·문헌정보·미디어",
+    stages: [
+      {
+        title: "학교 안내문의 표현과 이해도",
+        trigger: "같은 학교 안내문을 읽고도 친구마다 준비해야 할 내용을 다르게 이해하는 모습을 보고 문장의 구조가 정보 전달에 미치는 영향이 궁금해졌다.",
+        question: "제목, 문장 길이, 핵심어의 위치에 따라 안내문의 이해도가 달라질까?",
+        concept: "국어의 요약, 정보 구조, 독자 고려 개념을 활용했다.",
+        method: "안내문 세 편의 문장 길이와 핵심 정보 위치를 비교하고, 친구들이 한 번 읽은 뒤 기억한 내용을 익명으로 확인했다.",
+        role: "비교 기준과 확인 문항을 만들고 응답을 표로 정리했다.",
+        collaboration: "친구들의 해석이 다른 지점을 함께 확인해 어려운 어휘만이 아니라 정보 배열도 검토했다.",
+        evidence: "날짜와 대상이 첫 문단에 제시된 안내문의 핵심 정보 회상률이 높았고, 이를 바탕으로 짧은 안내 양식을 제안했다.",
+        limit: "참여 인원이 적고 안내 내용의 난이도가 달라 문장 구조만의 효과로 단정하기 어려웠다.",
+        learning: "좋은 글은 내용을 줄이는 데 그치지 않고 독자가 필요한 정보를 찾는 순서를 설계해야 함을 배웠다.",
+        next: "2학년에는 기사 제목의 표현이 독자의 판단에 미치는 영향을 자료로 비교하고 싶다.",
+        book: "생각을 빼앗긴 세계(프랭클린 포어)",
+        bookInsight: "정보를 전달하는 형식도 독자의 선택과 판단에 영향을 준다는 관점으로 학교 안내문을 다시 보게 되었다."
+      },
+      {
+        title: "기사 제목의 프레이밍 비교",
+        trigger: "같은 사건을 다룬 기사도 제목에 따라 책임의 주체와 문제의 원인이 다르게 보인다는 점을 발견했다.",
+        question: "행위자, 수치, 감정어를 제목에 넣는 방식은 독자가 중요하다고 판단하는 쟁점을 어떻게 바꿀까?",
+        concept: "화법과 언어의 표현 효과, 매체의 관점, 논증의 근거를 연결했다.",
+        method: "동일 사건 기사 열두 편의 제목을 행위자·수치·감정어 기준으로 코딩하고 본문 근거와 일치하는지 교차 확인했다.",
+        role: "코딩 기준표를 만들고 팀원 간 분류가 다른 제목을 다시 검토했다.",
+        collaboration: "주관적 판단을 줄이기 위해 두 명 이상이 독립적으로 분류한 뒤 불일치 사례의 기준을 수정했다.",
+        evidence: "감정어가 강한 제목일수록 본문의 복합적인 원인이 축소되는 사례가 많아 제목과 본문을 함께 확인하는 읽기 기준을 제안했다.",
+        limit: "선정한 언론사와 사건 수가 제한되어 전체 기사 작성 관행으로 일반화할 수 없었다.",
+        learning: "비판적 읽기는 매체를 막연히 불신하는 것이 아니라 표현과 근거가 일치하는지 확인하는 과정임을 이해했다.",
+        next: "3학년에는 생성형 AI 요약문까지 비교해 정보가 축약될 때 사라지는 관점을 분석하고 싶다.",
+        book: "팩트풀니스(한스 로슬링)",
+        bookInsight: "극적인 표현이 사실 판단을 흐릴 수 있다는 내용을 기사 제목의 감정어와 수치 제시 방식 분석에 적용했다."
+      },
+      {
+        title: "생성형 AI 요약과 출처 신뢰성",
+        trigger: "긴 글을 AI로 요약하면 편리하지만 원문의 조건과 반론이 빠지는 경우를 확인해 요약의 신뢰 기준이 필요하다고 생각했다.",
+        question: "AI 요약문은 원문의 핵심 주장, 조건, 반론, 출처를 어느 정도 보존하며 이를 어떻게 검증할 수 있을까?",
+        concept: "독서의 핵심 정보 선별, 논증 구조, 매체 윤리를 통합했다.",
+        method: "칼럼과 보고서 원문을 직접 요약한 결과와 두 종류의 AI 요약을 비교하고 주장·근거·조건·출처 보존 여부를 평가표로 검토했다.",
+        role: "평가 기준을 설계하고 누락 사례를 원문 문단과 연결해 검증 기록을 남겼다.",
+        collaboration: "평가자마다 핵심 정보 판단이 달라 먼저 원문의 논증 구조를 합의한 뒤 결과를 다시 비교했다.",
+        evidence: "AI 요약은 중심 주장은 잘 남겼지만 제한 조건과 반론을 자주 생략해 출처 링크와 검토 질문을 포함한 사용 지침을 제작했다.",
+        limit: "프롬프트와 모델에 따라 결과가 달라 재현성을 확보하기 어려웠다.",
+        learning: "도구의 정확도를 믿는 것보다 검증 가능한 기준을 만들고 원문으로 되돌아가는 태도가 중요함을 배웠다.",
+        next: "대학에서는 디지털 리터러시와 자연어 처리의 평가 방법을 함께 탐구하고 싶다.",
+        book: "AI 지도책(케이트 크로퍼드)",
+        bookInsight: "AI 결과도 데이터와 설계자의 선택에서 자유롭지 않다는 관점을 바탕으로 요약문을 중립적인 결과로 보지 않게 되었다."
+      }
+    ]
+  },
+  math: {
+    label: "수학·데이터",
+    careers: "수학·통계·데이터과학·산업공학·경제",
+    stages: [
+      {
+        title: "평균과 분포로 보는 학습시간",
+        trigger: "학급의 평균 학습시간만으로 친구들의 학습 모습을 설명하기 어렵다는 생각이 들었다.",
+        question: "평균이 같은 집단도 분포와 이상치가 다르면 어떻게 다르게 해석해야 할까?",
+        concept: "평균, 중앙값, 범위와 자료의 분포를 활용했다.",
+        method: "익명 학습시간 자료를 구간별로 나누고 평균과 중앙값을 비교해 극단값이 결과에 미치는 영향을 확인했다.",
+        role: "개인을 식별하지 않는 설문 문항을 만들고 계산 결과를 그래프로 표현했다.",
+        collaboration: "자료 공개 범위에 대한 의견을 반영해 원자료 대신 구간별 빈도만 공유했다.",
+        evidence: "소수의 긴 학습시간이 평균을 높이는 것을 확인해 중앙값과 분포를 함께 제시하는 학급 자료를 만들었다.",
+        limit: "자기보고식 자료라 실제 시간과 차이가 있을 수 있고 학습의 질은 반영하지 못했다.",
+        learning: "대표값 하나보다 자료가 만들어진 방식과 흩어진 정도를 함께 보아야 함을 배웠다.",
+        next: "2학년에는 두 변수의 관계를 분석하면서 상관관계를 원인으로 해석하는 오류를 살펴보고 싶다.",
+        book: "통계의 미학(최제호)",
+        bookInsight: "대표값은 자료 전체를 대신하지 못한다는 설명을 읽고 평균과 중앙값을 함께 비교하게 되었다."
+      },
+      {
+        title: "상관관계와 교란변수 점검",
+        trigger: "수면시간이 길면 성적이 높다는 설문 결과를 보고 두 변수만으로 원인을 설명할 수 있는지 의문이 들었다.",
+        question: "수면시간과 집중도 사이의 관계는 학년, 학습시간, 스마트폰 사용시간을 고려해도 유지될까?",
+        concept: "산점도, 상관관계, 표본과 교란변수 개념을 적용했다.",
+        method: "익명 설문 자료를 산점도로 나타내고 학년과 스마트폰 사용시간에 따라 집단을 나누어 관계의 변화를 비교했다.",
+        role: "결측값 처리 기준과 그래프 축을 통일하고 과도한 인과 표현을 수정했다.",
+        collaboration: "팀원이 제시한 다른 설명을 변수 목록에 추가하고 분석 결과와 해석을 분리해 작성했다.",
+        evidence: "전체 자료에서는 관계가 보였지만 집단을 나누자 약해져 단순 상관만으로 원인을 설명할 수 없다는 결론을 냈다.",
+        limit: "표본이 작고 집중도를 주관적 척도로 측정해 결과의 안정성이 낮았다.",
+        learning: "그래프가 관계를 보여주더라도 어떤 변수를 빠뜨렸는지 질문해야 책임 있는 해석이 된다는 점을 배웠다.",
+        next: "3학년에는 제한된 조건에서 여러 대안을 비교하는 최적화 모형을 만들고 가정의 영향을 검토하고 싶다.",
+        book: "벌거벗은 통계학(찰스 윌런)",
+        bookInsight: "상관관계가 인과관계를 뜻하지 않는 사례를 읽고 설문 결과에 영향을 줄 다른 변수를 먼저 찾게 되었다."
+      },
+      {
+        title: "학교 공간 배정 최적화와 한계",
+        trigger: "한정된 자율학습 공간을 선착순으로 배정하면 이동이 불편한 학생에게 불리할 수 있다는 문제를 발견했다.",
+        question: "좌석 수, 이동거리, 이용시간, 형평성을 함께 고려한 배정 기준을 수학적으로 표현할 수 있을까?",
+        concept: "함수, 가중치, 경우의 수와 최적화의 목적함수를 활용했다.",
+        method: "조건별 가중치를 달리한 세 가지 배정 모형을 만들고 가상의 이용 자료에 적용해 총 이동거리와 미배정 인원을 비교했다.",
+        role: "변수와 제약조건을 정의하고 가중치 변화에 따른 결과를 표로 검증했다.",
+        collaboration: "효율과 형평성 중 무엇을 우선할지 토론하고 단일 정답 대신 기준별 결과를 함께 제시했다.",
+        evidence: "이동거리만 최소화한 모형은 특정 집단의 미배정률이 높아져 최소 보장 조건을 추가한 수정안을 제시했다.",
+        limit: "가상의 자료를 사용했고 실제 이용자의 선호와 갑작스러운 일정 변경을 반영하지 못했다.",
+        learning: "수학 모형은 중립적인 답이 아니라 어떤 가치를 변수와 조건에 넣었는지 설명해야 하는 도구임을 배웠다.",
+        next: "대학에서 최적화와 의사결정 모형을 학습하며 실제 자료로 민감도 분석을 수행하고 싶다.",
+        book: "수학이 필요한 순간(김민형)",
+        bookInsight: "수학이 답을 계산하는 기술을 넘어 판단의 전제와 관계를 명확히 하는 언어라는 관점을 모형 설계에 적용했다."
+      }
+    ]
+  },
+  science: {
+    label: "과학·공학",
+    careers: "물리·화학·환경·전기전자·기계공학",
+    stages: [
+      {
+        title: "교실 조도와 측정 오차",
+        trigger: "같은 교실에서도 자리와 시간에 따라 책상이 어둡게 느껴지는 차이가 궁금했다.",
+        question: "창문과 조명으로부터의 거리가 책상 조도에 어떤 차이를 만들까?",
+        concept: "빛의 세기, 거리, 반복 측정과 평균 개념을 적용했다.",
+        method: "같은 시간대에 교실 격자 위치별 조도를 세 번씩 측정하고 평균과 측정 범위를 좌석도에 표시했다.",
+        role: "측정 높이와 기기 방향을 통일하고 이상값이 나온 위치를 다시 측정했다.",
+        collaboration: "팀별 측정값 차이를 비교해 측정 자세와 외부 빛 조건을 기록 항목에 추가했다.",
+        evidence: "창가와 복도 쪽의 차이가 예상보다 컸고 흐린 날에는 특정 구역이 권장 수준보다 낮아 보조 조명 위치를 제안했다.",
+        limit: "스마트폰 센서의 정확도를 검교정하지 못했고 계절에 따른 일조 변화를 반영하지 못했다.",
+        learning: "측정값을 얻는 것보다 조건을 통일하고 오차 원인을 기록하는 과정이 중요함을 배웠다.",
+        next: "2학년에는 조도와 소비전력을 함께 측정해 밝기와 에너지 효율을 비교하고 싶다.",
+        book: "떨림과 울림(김상욱)",
+        bookInsight: "일상에서 느끼는 현상도 측정 가능한 물리량으로 바꾸어 볼 수 있다는 관점으로 교실의 빛을 살펴보았다."
+      },
+      {
+        title: "조명 방식과 에너지 효율",
+        trigger: "밝은 조명이 항상 효율적인 것은 아니라는 점에서 같은 조도를 만드는 데 필요한 전력이 궁금해졌다.",
+        question: "조명 종류와 배치에 따라 단위 전력당 확보되는 유효 조도는 어떻게 달라질까?",
+        concept: "전력, 에너지 전환, 효율과 오차율 개념을 연결했다.",
+        method: "LED 조명의 거리와 각도를 바꾸며 조도와 소비전력을 측정하고 조도/전력 비율을 계산했다.",
+        role: "독립변인과 통제변인을 정하고 측정표와 안전 수칙을 관리했다.",
+        collaboration: "측정 순서에 따른 기기 온도 변화를 확인해 충분한 냉각 시간을 포함하도록 실험 절차를 수정했다.",
+        evidence: "정면 밝기가 높은 배치보다 빛을 고르게 분산한 배치가 작업면 전체의 효율이 높아 교실 배치 모형을 제작했다.",
+        limit: "소형 조명으로 실험해 실제 교실 천장 높이와 반사면의 영향을 그대로 재현하지 못했다.",
+        learning: "공학적 개선은 최고값보다 사용 목적, 공간 전체의 균일성, 에너지 비용을 함께 고려해야 함을 알게 되었다.",
+        next: "3학년에는 센서의 보정과 자동 제어를 추가해 실제 환경 변화에 대응하는 장치를 설계하고 싶다.",
+        book: "에너지란 무엇인가(바츨라프 스밀)",
+        bookInsight: "효율은 장치 하나의 성능이 아니라 전체 시스템과 사용 조건에서 판단해야 한다는 관점을 실험 해석에 적용했다."
+      },
+      {
+        title: "환경센서 자동 제어의 신뢰성",
+        trigger: "자동 조명 장치가 사람의 움직임이나 햇빛 변화에 잘못 반응하는 사례를 보고 센서 기준의 신뢰성이 궁금해졌다.",
+        question: "조도와 움직임 센서의 오차를 고려하면서 불필요한 점등을 줄이는 제어 기준은 무엇일까?",
+        concept: "센서 보정, 임계값, 피드백 제어와 에너지 보존을 통합했다.",
+        method: "기준 조도계와 센서 값을 비교해 보정식을 만들고 임계값과 대기시간을 달리한 제어 알고리즘을 모형 공간에서 시험했다.",
+        role: "오류 상황을 설계하고 로그 데이터를 분석해 거짓 점등과 미점등 비율을 계산했다.",
+        collaboration: "에너지 절감과 이용자 안전의 우선순위가 충돌해 최소 조도 보장 조건을 함께 넣었다.",
+        evidence: "단일 임계값보다 일정 시간의 평균과 움직임 정보를 함께 사용한 방식이 오류를 줄여 개선 알고리즘을 제안했다.",
+        limit: "짧은 기간의 실내 실험이라 계절, 다양한 이용자 행동, 센서 노화를 반영하지 못했다.",
+        learning: "기술의 성능은 정상 작동뿐 아니라 오류가 발생했을 때 누구에게 어떤 영향을 주는지까지 평가해야 함을 배웠다.",
+        next: "대학에서는 제어공학과 센서공학을 학습해 실제 교실 데이터로 장기 검증하고 싶다.",
+        book: "공학이란 무엇인가(성풍현 외)",
+        bookInsight: "공학은 제약조건 속에서 안전하고 검증 가능한 해결책을 만드는 과정이라는 내용을 제어 기준 설계에 반영했다."
+      }
+    ]
+  },
+  social: {
+    label: "사회·지리",
+    careers: "지리·도시계획·행정·사회학·경제",
+    stages: [
+      {
+        title: "학교 주변 보행 안전 지도",
+        trigger: "등하교 때 같은 횡단보도에서도 보행자가 느끼는 위험이 시간대별로 다르다는 점을 발견했다.",
+        question: "차량 통행량, 신호시간, 시야 방해 요소 중 보행 위험과 가장 밀접한 조건은 무엇일까?",
+        concept: "생활공간, 안전권, 관찰 조사와 지도 표현을 활용했다.",
+        method: "학교 주변 세 지점의 차량 수, 신호시간, 불법 주정차 여부를 같은 기준으로 관찰해 지도에 표시했다.",
+        role: "관찰표와 안전 동선을 만들고 조사자가 차도에 접근하지 않도록 역할을 배치했다.",
+        collaboration: "체감 위험도만으로 판단하지 않도록 관찰 자료와 학생 의견을 구분해 정리했다.",
+        evidence: "통행량보다 불법 주정차로 시야가 가려지는 시간대의 위험 응답이 높아 학교에 안전 안내 위치 변경을 제안했다.",
+        limit: "며칠간의 관찰이라 날씨와 행사에 따른 변화가 반영되지 않았다.",
+        learning: "공간 문제를 해결하려면 개인의 느낌을 존중하면서도 관찰 가능한 조건으로 바꾸어 확인해야 함을 배웠다.",
+        next: "2학년에는 대중교통 접근성을 지역별 인구 특성과 함께 지도화하고 싶다.",
+        book: "도시는 무엇으로 사는가(유현준)",
+        bookInsight: "공간의 구조가 사람의 행동과 관계를 바꾼다는 관점으로 통학로를 단순한 이동 경로가 아닌 생활공간으로 보게 되었다."
+      },
+      {
+        title: "대중교통 취약지역 분석",
+        trigger: "같은 지역 안에서도 정류장까지 이동하기 어려운 주민이 있다는 점에서 정류장 수만으로 접근성을 판단하기 어렵다고 생각했다.",
+        question: "정류장 거리, 배차 간격, 고령 인구 비율을 함께 보면 교통 취약지역은 어떻게 달라질까?",
+        concept: "생활권, 공간 불평등, 인구구조와 자료의 표준화를 연결했다.",
+        method: "공공데이터의 정류장 위치와 배차 간격을 지도화하고 고령 인구 자료를 같은 공간 단위로 맞춰 중첩했다.",
+        role: "좌표 자료를 정리하고 지표 단위가 다른 값을 구간화해 비교 지도를 제작했다.",
+        collaboration: "교통 편의의 기준을 두고 의견이 달라 이동거리와 배차 간격을 별도 지표로 먼저 제시했다.",
+        evidence: "정류장이 가까워도 배차가 드문 지역이 확인되어 거리 중심 평가에 시간 접근성 지표를 추가했다.",
+        limit: "실제 승하차 수와 경사도, 보도 상태를 포함하지 못해 이동의 어려움을 완전히 설명하지 못했다.",
+        learning: "정책 지표는 무엇을 측정하는지에 따라 취약한 집단을 보이게도 가리게도 한다는 점을 이해했다.",
+        next: "3학년에는 예산과 형평성을 함께 고려한 노선 개선 대안을 비교하고 싶다.",
+        book: "도시의 승리(에드워드 글레이저)",
+        bookInsight: "도시의 연결성이 기회를 만든다는 관점을 교통 접근성과 교육·의료 이용 가능성의 관계로 확장했다."
+      },
+      {
+        title: "교통정책 대안의 형평성 평가",
+        trigger: "노선을 늘리자는 제안이 필요하지만 한정된 예산에서 누구의 이동을 우선할지 기준이 필요하다고 생각했다.",
+        question: "이용자 수, 이동시간 절감, 교통약자 접근성, 비용을 함께 고려하면 어떤 대안이 타당할까?",
+        concept: "공공재, 비용·편익, 사회적 형평성과 공간 분석을 통합했다.",
+        method: "노선 증편, 수요응답형 교통, 환승 지원 세 대안의 수혜집단과 비용을 비교하는 다기준 평가표를 만들었다.",
+        role: "평가 기준의 근거를 조사하고 가중치 변화에 따라 대안 순위가 달라지는지 분석했다.",
+        collaboration: "효율을 중시한 팀원과 형평성을 중시한 팀원의 기준을 모두 반영해 단일 순위 대신 조건별 권고안을 작성했다.",
+        evidence: "이용자 수만 보면 증편이 유리했지만 교통약자 접근성을 높이면 수요응답형 교통의 우선순위가 올라가 혼합안을 제시했다.",
+        limit: "실제 운영비와 주민 수요 자료가 부족해 정책의 실행 가능성을 정확히 계산하지 못했다.",
+        learning: "정책 제안은 좋은 의도보다 기준, 자료, 불이익을 받는 집단, 실행 조건을 투명하게 설명해야 함을 배웠다.",
+        next: "대학에서 도시정책과 지리정보 분석을 학습해 주민 참여 자료까지 포함한 평가를 수행하고 싶다.",
+        book: "정의란 무엇인가(마이클 샌델)",
+        bookInsight: "효율적인 선택이 항상 공정한 선택은 아니라는 질문을 교통정책의 가중치와 수혜집단 분석에 적용했다."
+      }
+    ]
+  },
+  english: {
+    label: "영어·국제",
+    careers: "영어영문·국제학·통번역·외교·글로벌미디어",
+    stages: [
+      {
+        title: "영문 기사 핵심어 비교",
+        trigger: "같은 환경 문제를 다룬 영문 기사에서 반복되는 단어와 책임 주체가 다르다는 점을 발견했다.",
+        question: "기사의 핵심어 선택은 독자가 문제의 원인과 해결 주체를 이해하는 방식에 어떤 차이를 만들까?",
+        concept: "영어의 어휘 뉘앙스, 주어 선택, 요약 읽기를 활용했다.",
+        method: "같은 사건을 다룬 영문 기사 세 편의 반복 어휘와 문장 주어를 표시하고 한국어 요약의 차이를 비교했다.",
+        role: "문맥에 따른 어휘 의미를 사전과 원문 예문으로 확인하고 비교표를 만들었다.",
+        collaboration: "번역이 다른 표현은 직역과 의역을 나누어 토론하고 원문의 강조점을 우선했다.",
+        evidence: "개인 행동을 강조한 기사와 기업·정부 책임을 강조한 기사의 해결책 제시가 달라 핵심어-주장 연결표를 제작했다.",
+        limit: "기사 수가 적고 영어 숙련도에 따라 뉘앙스 해석이 달라질 수 있었다.",
+        learning: "영어 읽기는 단어를 바꾸는 작업이 아니라 누가 무엇을 강조하는지 맥락을 해석하는 과정임을 배웠다.",
+        next: "2학년에는 국가별 기사와 인터뷰를 비교해 문화적 관점이 쟁점 구성에 미치는 영향을 살펴보고 싶다.",
+        book: "언어의 온도(이기주)",
+        bookInsight: "단어 선택이 관계와 판단을 바꿀 수 있다는 관점을 영문 기사의 핵심어와 책임 주체 분석에 적용했다."
+      },
+      {
+        title: "문화적 관점을 담은 영어 팟캐스트",
+        trigger: "국가별 청소년 기사에서 같은 사회 문제를 설명하는 사례와 해결 방식이 다르다는 점이 궁금했다.",
+        question: "문화적 배경이 다른 청중에게 같은 쟁점을 설명할 때 어떤 맥락과 표현을 보완해야 할까?",
+        concept: "영어 담화 구성, 청중 고려, 문화적 맥락과 출처 인용을 연결했다.",
+        method: "해외 기사와 기관 보고서를 비교해 쟁점 설명문을 작성하고 두 버전의 영어 팟캐스트를 제작해 청취 피드백을 받았다.",
+        role: "자료 출처를 검토하고 대본의 주장·근거·예시 순서를 편집했다.",
+        collaboration: "발음의 유창성보다 내용 이해가 우선이라는 피드백을 반영해 문장을 줄이고 배경 설명을 추가했다.",
+        evidence: "지역 배경을 짧게 설명한 버전에서 핵심 주장 이해 응답이 높아 청중별 설명 전략을 정리했다.",
+        limit: "청취자 수가 적고 영어 능력 차이가 결과에 영향을 주었을 수 있었다.",
+        learning: "국제적 의사소통은 영어를 어렵게 쓰는 것이 아니라 상대가 모르는 맥락을 예측하고 정확히 설명하는 능력임을 배웠다.",
+        next: "3학년에는 상반된 국가 자료를 종합한 영문 정책 제안서를 만들고 근거의 균형을 검토하고 싶다.",
+        book: "타인의 고통(수전 손택)",
+        bookInsight: "다른 사회의 문제를 전달할 때 자극적인 장면보다 맥락과 당사자의 관점을 존중해야 한다는 기준을 대본에 반영했다."
+      },
+      {
+        title: "근거 기반 영문 정책 브리프",
+        trigger: "국제 쟁점을 소개하는 글이 문제 제기에 그치고 실행 주체와 반론을 충분히 다루지 않는 경우를 발견했다.",
+        question: "서로 다른 국가 자료를 종합해 실행 조건과 반론을 포함한 영문 정책 제안서를 어떻게 작성할 수 있을까?",
+        concept: "영어 논증 구조, 반론·재반론, 자료 인용과 국제 비교를 통합했다.",
+        method: "정부·국제기구·언론 자료의 목적과 통계 기준을 비교하고 문제-근거-대안-한계 구조의 영문 브리프를 작성했다.",
+        role: "통계의 조사연도와 단위를 검증하고 출처별 이해관계를 주석으로 표시했다.",
+        collaboration: "초안에 빠진 반론을 동료 검토로 찾고 대안의 비용과 예상 부작용 문단을 추가했다.",
+        evidence: "근거의 수보다 출처의 기준을 설명한 수정본이 더 신뢰된다는 피드백을 받아 검증 체크리스트를 함께 제시했다.",
+        limit: "영어 자료 중심이라 비영어권 당사자의 목소리가 충분히 포함되지 못했다.",
+        learning: "글로벌 관점은 여러 나라를 나열하는 것이 아니라 자료 접근의 불균형과 번역 과정의 손실까지 성찰하는 태도임을 배웠다.",
+        next: "대학에서 국제학과 미디어 번역을 공부하며 다언어 자료를 포함한 비교 연구를 해보고 싶다.",
+        book: "왜 세계의 절반은 굶주리는가(장 지글러)",
+        bookInsight: "국제 문제를 개인의 선택만으로 설명하지 않고 제도와 무역 구조를 함께 살펴야 한다는 관점을 정책 대안 구성에 반영했다."
+      }
+    ]
+  },
+  pe: {
+    label: "체육·스포츠",
+    careers: "체육교육·스포츠과학·운동재활·스포츠경영",
+    stages: [
+      {
+        title: "준비운동과 운동 자각도 기록",
+        trigger: "같은 체육 활동에서도 준비운동 방식에 따라 몸이 풀리는 정도가 다르게 느껴졌다.",
+        question: "동적 준비운동과 정적 스트레칭 뒤 운동 자각도와 간단한 수행 기록은 어떻게 달라질까?",
+        concept: "운동 강도, 근육의 기능, 자기 신체 인식과 안전을 연결했다.",
+        method: "안전한 범위에서 두 준비운동 뒤 제자리 뛰기 기록과 운동 자각도를 측정하고 개인별 변화만 비교했다.",
+        role: "무리한 경쟁을 막기 위해 측정 중단 기준을 정하고 기록지를 관리했다.",
+        collaboration: "친구마다 유연성과 컨디션이 다르다는 의견을 반영해 개인 간 순위 대신 각자의 변화율을 보았다.",
+        evidence: "동적 준비운동 뒤 몸이 준비되었다는 응답과 수행 기록이 좋아지는 경향을 확인해 수업 전 준비운동 순서를 제안했다.",
+        limit: "측정 횟수가 적고 수면과 피로 상태를 통제하지 못해 일반화하기 어려웠다.",
+        learning: "운동 결과는 의지뿐 아니라 준비 과정과 개인 상태의 영향을 받으므로 안전한 비교 기준이 필요함을 배웠다.",
+        next: "2학년에는 운동 뒤 회복시간과 심박수 변화를 기록해 개인별 운동 계획을 만들고 싶다.",
+        book: "운동화 신은 뇌(존 레이티)",
+        bookInsight: "운동이 기록 향상뿐 아니라 집중과 정서에도 영향을 준다는 내용을 읽고 운동 전후 상태를 함께 기록하게 되었다."
+      },
+      {
+        title: "회복시간을 반영한 운동 계획",
+        trigger: "같은 운동량을 수행해도 회복 속도가 다른 친구에게 동일한 훈련 계획을 적용하는 것이 적절한지 의문이 들었다.",
+        question: "운동 강도와 휴식시간에 따라 심박수 회복과 운동 자각도는 어떻게 달라질까?",
+        concept: "심박수, 에너지 대사, 과부하와 회복의 원리를 적용했다.",
+        method: "교사의 안전 지침 아래 일정한 운동 뒤 1·3·5분 심박수와 자각도를 기록하고 개인별 회복 곡선을 비교했다.",
+        role: "측정 시간 신호와 기록을 담당하고 이상 반응이 있으면 즉시 중단하도록 점검했다.",
+        collaboration: "회복이 느린 학생을 부족하다고 평가하지 않도록 절대 수치보다 개인 기준선 대비 변화를 사용했다.",
+        evidence: "운동 강도가 높을수록 개인별 회복 차이가 커져 강도와 휴식시간을 조절한 선택형 계획표를 만들었다.",
+        limit: "웨어러블 기기의 오차와 일시적인 컨디션 영향을 충분히 분리하지 못했다.",
+        learning: "좋은 운동 지도는 동일한 과제를 주는 것이 아니라 개인의 반응을 관찰하고 조절하는 과정임을 이해했다.",
+        next: "3학년에는 체력과 장애 여부가 다른 학생도 참여할 수 있는 포용적 체육 프로그램을 설계하고 싶다.",
+        book: "스포츠 유전자(데이비드 엡스타인)",
+        bookInsight: "수행 차이를 재능 하나로 설명할 수 없다는 내용을 통해 훈련 이력과 환경, 회복 조건을 함께 보게 되었다."
+      },
+      {
+        title: "포용적 체육 프로그램 설계",
+        trigger: "기능 중심 경기에서 일부 학생이 반복적으로 소외되는 모습을 보며 참여의 기준을 바꿀 필요가 있다고 생각했다.",
+        question: "기능 수준과 신체 조건이 다른 학생 모두가 역할을 갖고 참여하려면 규칙과 평가를 어떻게 설계해야 할까?",
+        concept: "운동 기능, 협동학습, 보편적 설계와 스포츠 윤리를 통합했다.",
+        method: "참여 장벽을 익명 조사하고 공의 크기, 이동 범위, 득점 방식, 역할 순환을 달리한 게임을 시범 운영했다.",
+        role: "안전 기준과 역할 카드를 만들고 참여 시간과 만족도 변화를 관찰했다.",
+        collaboration: "경기성이 약해진다는 의견과 참여가 늘었다는 의견을 조정해 기본 규칙과 선택 규칙을 함께 두었다.",
+        evidence: "역할 순환과 다양한 득점 방식을 적용한 뒤 공을 접하지 못한 학생 수가 줄어 수정 규칙안을 정리했다.",
+        limit: "짧은 시범 수업이라 장기적인 기능 향상과 팀 관계 변화를 확인하지 못했다.",
+        learning: "공정함은 모두에게 같은 조건을 주는 것만이 아니라 참여를 막는 장벽을 줄이는 것임을 배웠다.",
+        next: "대학에서 특수체육과 운동재활을 공부하며 참여와 안전을 함께 평가하는 프로그램을 개발하고 싶다.",
+        book: "공정하다는 착각(마이클 샌델)",
+        bookInsight: "같은 규칙이 모두에게 같은 기회를 주는지 질문하게 되어 체육 활동의 참여 장벽과 역할 배분을 다시 살펴보았다."
+      }
+    ]
+  },
+  health: {
+    label: "보건·생명",
+    careers: "간호·보건·생명과학·의료행정·공중보건",
+    stages: [
+      {
+        title: "건강정보의 출처 판별",
+        trigger: "SNS에서 같은 건강 습관을 두고 서로 반대되는 조언이 확산되는 것을 보고 무엇을 믿어야 할지 궁금했다.",
+        question: "건강정보의 신뢰성을 판단할 때 출처, 연구 대상, 표현 방식 중 무엇을 확인해야 할까?",
+        concept: "건강 의사결정, 생명과학적 근거, 정보 출처 평가를 연결했다.",
+        method: "온라인 게시물과 공공기관 자료를 출처·근거 링크·연구 대상·과장 표현 기준으로 비교했다.",
+        role: "판별 체크리스트를 만들고 사실 확인이 어려운 표현을 별도로 표시했다.",
+        collaboration: "유명인이 소개한 정보도 근거가 될 수 있다는 의견을 검토해 전문성보다 검증 가능한 원자료 유무를 기준으로 합의했다.",
+        evidence: "효과를 단정하는 게시물은 연구 대상과 조건을 생략하는 경우가 많아 교내 건강정보 확인 카드뉴스를 제작했다.",
+        limit: "전문 논문의 연구 설계를 완전히 해석하기 어려워 공공기관 해설 자료에 의존했다.",
+        learning: "건강정보는 맞고 틀림만 판단하기보다 누구에게 어떤 조건에서 적용되는지 확인해야 함을 배웠다.",
+        next: "2학년에는 학생들이 자주 접하는 건강 오해를 조사해 근거 기반 캠페인을 설계하고 싶다.",
+        book: "우리 몸이 세계라면(김승섭)",
+        bookInsight: "건강은 개인 습관뿐 아니라 환경과 정보 접근의 영향을 받는다는 관점으로 건강 조언의 전제를 살펴보게 되었다."
+      },
+      {
+        title: "학생 건강 캠페인의 효과 확인",
+        trigger: "건강 캠페인이 정보를 전달해도 실제 행동 변화로 이어지지 않는 경우가 많다는 점이 궁금했다.",
+        question: "수면 위생 정보를 어떤 방식으로 제시해야 학생이 자신의 습관을 점검하고 실천할까?",
+        concept: "항상성, 생체리듬, 건강행동과 의사소통을 연결했다.",
+        method: "사전 설문으로 잘못 알려진 내용을 찾고 설명형·체크리스트형 자료를 제작해 이해도와 실천 의향을 비교했다.",
+        role: "개인 건강정보를 수집하지 않도록 문항을 수정하고 공공기관 자료로 내용을 검증했다.",
+        collaboration: "친구들의 피드백을 받아 훈계조 표현을 줄이고 실천 가능한 작은 행동을 선택하도록 구성했다.",
+        evidence: "체크리스트형 자료에서 자신의 습관을 점검했다는 응답이 높았지만 실제 실천 여부는 확인하지 못했다.",
+        limit: "의향을 행동 변화로 해석할 수 없고 수면 문제에는 개인이 해결하기 어려운 환경 요인도 있었다.",
+        learning: "보건 활동은 정보를 많이 주는 것보다 대상자의 상황과 선택 가능성을 고려해야 함을 이해했다.",
+        next: "3학년에는 건강정보 접근성이 낮은 사람을 고려한 안내와 지원체계를 조사하고 싶다.",
+        book: "우리는 왜 잠을 자야 할까(매슈 워커)",
+        bookInsight: "수면을 의지의 문제가 아니라 생체리듬과 환경의 문제로 이해하며 캠페인의 비난 표현을 수정했다."
+      },
+      {
+        title: "건강정보 접근성과 돌봄 설계",
+        trigger: "고령자나 외국인에게 의료 안내문이 어렵다면 필요한 서비스를 알고도 이용하지 못할 수 있다는 문제를 발견했다.",
+        question: "읽기 수준과 언어 배경이 다른 이용자에게 안전 정보를 정확히 전달하려면 어떤 장치가 필요할까?",
+        concept: "건강 문해력, 환자 안전, 의사소통과 공공보건의 접근성을 통합했다.",
+        method: "의료기관 안내문을 문장 길이·전문용어·행동 지침 기준으로 분석하고 쉬운 글과 그림 안내 시안을 사용자에게 검토받았다.",
+        role: "의학적 의미가 달라지지 않도록 원문과 수정문을 대조하고 확인 질문을 설계했다.",
+        collaboration: "쉬운 표현이 부정확할 수 있다는 의견을 반영해 핵심 전문용어는 남기고 바로 설명을 붙였다.",
+        evidence: "행동 순서를 번호와 그림으로 제시한 시안에서 이해가 어려운 지점이 줄어 수정 원칙을 정리했다.",
+        limit: "실제 환자 집단이 아닌 소수의 학생·성인 피드백이라 의료현장 효과를 확인하지 못했다.",
+        learning: "돌봄의 전문성은 지식을 아는 것뿐 아니라 상대가 안전하게 이해하고 행동하도록 설명하는 책임을 포함함을 배웠다.",
+        next: "대학에서 간호·공중보건·보건행정을 비교하며 건강 문해력 개선 연구를 이어가고 싶다.",
+        book: "아픔이 길이 되려면(김승섭)",
+        bookInsight: "질병 경험은 개인의 몸뿐 아니라 제도와 언어의 영향을 받는다는 관점을 의료정보 접근성 문제로 확장했다."
+      }
+    ]
+  },
+  education: {
+    label: "교육·심리",
+    careers: "교육학·교과교육·심리·상담·교육공학",
+    stages: [
+      {
+        title: "학습 습관과 기억 전략 비교",
+        trigger: "같은 시간을 공부해도 다음 날 기억나는 정도가 달라 학습 방법의 차이가 궁금했다.",
+        question: "다시 읽기와 스스로 질문하며 회상하기는 단기 기억에 어떤 차이를 만들까?",
+        concept: "기억, 인출, 자기점검과 학습전략을 연결했다.",
+        method: "짧은 학습 자료를 두 방식으로 익힌 뒤 동일한 확인 문항을 풀고 개인별 결과와 느낌을 기록했다.",
+        role: "난이도가 비슷한 자료와 문항을 만들고 점수보다 사용 전략의 차이를 익명으로 정리했다.",
+        collaboration: "친구마다 선호 방식이 달라 단일 우수 전략을 정하지 않고 언제 어떤 방법이 유용했는지 인터뷰했다.",
+        evidence: "회상 방식에서 틀린 부분을 더 빨리 발견했다는 응답이 많아 수업 복습용 자기질문 틀을 만들었다.",
+        limit: "하루 동안의 활동이라 장기 기억 효과를 확인하지 못했고 자료 친숙도도 달랐다.",
+        learning: "학습은 오래 보는 시간이 아니라 무엇을 모르는지 확인하고 방법을 조절하는 과정임을 배웠다.",
+        next: "2학년에는 또래 피드백이 글 수정과 학습 동기에 미치는 영향을 살펴보고 싶다.",
+        book: "어떻게 공부할 것인가(헨리 뢰디거 외)",
+        bookInsight: "익숙하게 읽히는 느낌이 실제로 기억한다는 뜻은 아니라는 내용을 바탕으로 회상 질문을 활용했다."
+      },
+      {
+        title: "또래 피드백의 구체성과 수정 행동",
+        trigger: "좋았다는 피드백보다 어느 부분을 어떻게 바꿀지 알려준 피드백이 글 수정에 도움이 된 경험에서 출발했다.",
+        question: "평가형 피드백과 질문·근거 중심 피드백은 글 수정 행동에 어떤 차이를 만들까?",
+        concept: "형성평가, 메타인지, 의사소통과 동기 개념을 적용했다.",
+        method: "같은 초안에 두 유형의 익명 피드백을 제공하고 수정된 문장의 종류와 작성자의 수용 이유를 비교했다.",
+        role: "사람을 평가하지 않고 글의 근거와 구조를 묻는 피드백 문장 틀을 설계했다.",
+        collaboration: "피드백이 부담스럽다는 의견을 반영해 장점-질문-제안 순서와 선택권을 포함했다.",
+        evidence: "구체적인 질문이 포함된 피드백에서 근거 추가와 문단 재구성 같은 실제 수정이 더 다양하게 나타났다.",
+        limit: "글의 주제와 작성자의 관계에 따라 피드백 수용 정도가 달라질 수 있었다.",
+        learning: "좋은 피드백은 정답을 대신 주기보다 학습자가 스스로 판단할 근거와 다음 행동을 찾게 해야 함을 배웠다.",
+        next: "3학년에는 후배 학습지원 프로그램에서 피드백 틀을 적용하고 참여자의 변화를 장기적으로 살펴보고 싶다.",
+        book: "교사와 학생 사이(하임 기너트)",
+        bookInsight: "사람의 성격을 평가하는 말보다 관찰한 행동과 해결 가능한 문제를 말해야 한다는 원칙을 피드백 문장에 적용했다."
+      },
+      {
+        title: "후배 학습지원 프로그램 평가",
+        trigger: "멘토링이 설명을 많이 해주는 활동으로 끝나면 후배가 스스로 공부하는 힘을 기르기 어렵다고 생각했다.",
+        question: "목표 설정, 자기질문, 피드백을 포함한 학습지원이 후배의 자기점검 행동을 어떻게 바꿀까?",
+        concept: "자기조절학습, 동기, 형성평가와 상담 윤리를 통합했다.",
+        method: "참여자와 주간 목표를 정하고 회상 질문과 피드백 기록지를 사용한 뒤 스스로 수정한 학습 행동을 면담으로 확인했다.",
+        role: "후배 대신 답을 정하지 않고 질문으로 계획을 점검하며 개인정보가 기록되지 않도록 양식을 관리했다.",
+        collaboration: "멘토별 방식 차이를 줄이기 위해 관찰-질문-선택의 공통 원칙을 합의하고 어려운 사례를 교사와 상의했다.",
+        evidence: "일부 참여자가 도움을 요청하기 전에 틀린 이유를 먼저 기록하기 시작했지만 모든 학생에게 같은 변화가 나타나지는 않았다.",
+        limit: "참여 기간이 짧고 멘토와의 관계 자체가 변화에 영향을 주어 프로그램 효과만 분리하기 어려웠다.",
+        learning: "교육은 지식을 전달하는 것보다 학습자의 선택과 속도를 존중하면서 스스로 조절할 수 있는 환경을 만드는 일임을 배웠다.",
+        next: "대학에서 교육학과 상담심리를 학습하며 학습지원의 효과와 윤리를 함께 연구하고 싶다.",
+        book: "배움의 발견(타라 웨스트오버)",
+        bookInsight: "배움이 지식 습득을 넘어 자신의 관점을 점검하고 선택을 넓히는 과정이라는 관점을 멘토링 목표에 반영했다."
+      }
+    ]
+  }
+};
+
+function buildCreativeEvalSeriesExamples(type, domainKey) {
+  const domain = creativeEvalDomains[domainKey] || creativeEvalDomains.korean;
+  return domain.stages.map((stage, index) => {
+    const common = {
+      grade: index + 1,
+      domain: domain.label,
+      title: stage.title,
+      careers: domain.careers
+    };
+    if (type === "career") {
+      return {
+        ...common,
+        values: {
+          activityName: `${domain.careers} 진로 질문 - ${stage.question}`,
+          motivation: stage.trigger,
+          process: `${stage.method} 이어 관련 학과의 교육과정과 직무 사례를 비교해 이 질문을 다루는 방법을 확인했다.`,
+          learningConnection: stage.concept,
+          insight: stage.learning,
+          change: `처음에는 ${domain.label} 분야를 직업명 중심으로 보았지만, 활동 뒤에는 '${stage.question}'을 해결하는 여러 전공과 역할을 비교하게 되었다.`,
+          reflection: `${stage.role} 다만 ${stage.limit}`,
+          book: stage.book,
+          bookReflection: stage.bookInsight,
+          bookConnection: `책에서 얻은 관점을 ${stage.question}이라는 진로 질문과 ${stage.method} 과정에 적용했다.`,
+          followUp: stage.next
+        }
+      };
+    }
+    if (type === "club") {
+      return {
+        ...common,
+        values: {
+          activityName: `${domain.label} 동아리 - ${stage.title}`,
+          motivation: `${stage.trigger} 이를 '${stage.question}'이라는 탐구 질문으로 구체화했다.`,
+          process: `${stage.concept} ${stage.method}`,
+          role: `${stage.role} ${stage.collaboration}`,
+          result: stage.evidence,
+          limit: stage.limit,
+          reflection: stage.learning,
+          followUp: stage.next
+        }
+      };
+    }
+    return {
+      ...common,
+      values: {
+        activityName: `${domain.label} 관점으로 살펴본 학교생활 개선 - ${stage.title}`,
+        motivation: stage.trigger,
+        role: stage.role,
+        process: `${stage.concept} ${stage.method}`,
+        collaboration: stage.collaboration,
+        result: stage.evidence,
+        reflection: stage.learning,
+        book: stage.book,
+        bookReflection: stage.bookInsight,
+        bookConnection: `책에서 얻은 관점을 학교생활의 '${stage.question}' 문제를 조사하고 해결안을 만드는 데 적용했다.`,
+        followUp: stage.next
+      }
+    };
+  });
+}
 
 const selfEvalHelp = {
   motivation: {
@@ -1581,6 +2059,7 @@ const state = {
   creativeEvalPlan: "incoming2026",
   creativeEvalGrade: "1",
   creativeEvalType: "autonomy",
+  creativeEvalDomain: "korean",
   creativeEvalEntries: {},
   selectedTrack: "engineering",
   targetMajor: "",
@@ -1807,6 +2286,13 @@ function bindSelfEvaluationControls() {
     saveCreativeEvaluationState(false);
     renderCreativeEvaluation();
   });
+
+  $("#creativeEvalDomainSelect")?.addEventListener("change", (event) => {
+    state.creativeEvalDomain = event.target.value;
+    saveCreativeEvaluationState(false);
+  });
+
+  $("#creativeEvalFlowButton")?.addEventListener("click", openCreativeEvalFlowPopup);
 
   $all("[data-creative-eval-type]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -4365,6 +4851,14 @@ function renderCreativeEvaluationPlanOptions() {
   select.value = state.creativeEvalPlan;
   const gradeSelect = $("#creativeEvalGradeSelect");
   if (gradeSelect) gradeSelect.value = state.creativeEvalGrade;
+  const domainSelect = $("#creativeEvalDomainSelect");
+  if (domainSelect) {
+    domainSelect.innerHTML = Object.entries(creativeEvalDomains)
+      .map(([key, domain]) => `<option value="${key}">${escapeHtml(domain.label)}</option>`)
+      .join("");
+    if (!creativeEvalDomains[state.creativeEvalDomain]) state.creativeEvalDomain = "korean";
+    domainSelect.value = state.creativeEvalDomain;
+  }
 }
 
 function renderCreativeEvaluation() {
@@ -4387,6 +4881,8 @@ function renderCreativeEvaluation() {
   if (gradeLabel) gradeLabel.textContent = `${state.creativeEvalGrade}학년 창체`;
   if (title) title.textContent = config.label;
   if (guide) guide.textContent = config.shortGuide;
+  const domainSelect = $("#creativeEvalDomainSelect");
+  if (domainSelect) domainSelect.value = state.creativeEvalDomain;
 
   formTarget.innerHTML = config.fields.map((field) => renderCreativeEvaluationField(field, entry[field.key] || "")).join("");
   renderCreativeEvaluationCompetencies(entry);
@@ -4448,6 +4944,7 @@ function saveCreativeEvaluationState(showMessage) {
     creativeEvalPlan: state.creativeEvalPlan,
     creativeEvalGrade: state.creativeEvalGrade,
     creativeEvalType: state.creativeEvalType,
+    creativeEvalDomain: state.creativeEvalDomain,
     creativeEvalEntries: state.creativeEvalEntries
   };
   localStorage.setItem(CREATIVE_EVAL_STORAGE_KEY, JSON.stringify(data));
@@ -4461,6 +4958,7 @@ function loadCreativeEvaluationState() {
     state.creativeEvalPlan = saved.creativeEvalPlan || state.creativeEvalPlan;
     state.creativeEvalGrade = ["1", "2", "3"].includes(saved.creativeEvalGrade) ? saved.creativeEvalGrade : "1";
     state.creativeEvalType = creativeEvalTypes[saved.creativeEvalType] ? saved.creativeEvalType : "autonomy";
+    state.creativeEvalDomain = creativeEvalDomains[saved.creativeEvalDomain] ? saved.creativeEvalDomain : "korean";
     state.creativeEvalEntries = saved.creativeEvalEntries || {};
   } catch {
     localStorage.removeItem(CREATIVE_EVAL_STORAGE_KEY);
@@ -4477,14 +4975,16 @@ function openCreativeEvalHelpPopup(fieldKey) {
   const field = config.fields.find((item) => item.key === fieldKey);
   if (!modal || !title || !content || !field) return;
 
-  const examples = (creativeEvalExamples[state.creativeEvalType] || []).filter((item) => item.values[fieldKey]);
+  const domain = creativeEvalDomains[state.creativeEvalDomain] || creativeEvalDomains.korean;
+  const examples = buildCreativeEvalSeriesExamples(state.creativeEvalType, state.creativeEvalDomain)
+    .filter((item) => item.values[fieldKey]);
   if (label) label.textContent = `${state.creativeEvalGrade}학년 ${config.label} 도움말`;
   title.textContent = field.label;
   content.innerHTML = `
     <p class="subject-info-copy">${escapeHtml(field.help)}</p>
     <div class="creative-help-principle">
       <b>작성할 때 확인하세요</b>
-      <p>실제로 한 활동만 적고, 활동명보다 내가 판단하고 실행한 과정이 보이게 씁니다. 아래 사례는 문장을 옮겨 쓰는 자료가 아니라 구체성의 수준을 살펴보는 참고 예시입니다.</p>
+      <p>실제로 한 활동만 적고, 활동명보다 내가 판단하고 실행한 과정이 보이게 씁니다. 아래는 ${escapeHtml(domain.label)} 분야의 하나의 질문이 3년 동안 심화되는 재구성 사례입니다.</p>
     </div>
     <div class="creative-help-example-list">
       ${examples.map((example) => `
@@ -4497,6 +4997,58 @@ function openCreativeEvalHelpPopup(fieldKey) {
     </div>
     <p class="subject-info-caution">
       학교생활기록부는 교사가 실제 관찰과 학교 교육활동을 바탕으로 기록합니다. 학생은 사실을 과장하거나 학생부 문장을 대신 만들기보다 자신의 역할, 과정, 결과를 상담 자료로 정리해야 합니다.
+    </p>
+  `;
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+  $(".subject-info-close")?.focus();
+}
+
+function openCreativeEvalFlowPopup() {
+  const modal = $("#subjectInfoModal");
+  const label = $("#subjectInfoLabel");
+  const title = $("#subjectInfoTitle");
+  const content = $("#subjectInfoContent");
+  const config = getCreativeEvaluationTypeConfig();
+  const domain = creativeEvalDomains[state.creativeEvalDomain] || creativeEvalDomains.korean;
+  if (!modal || !title || !content) return;
+
+  const examples = buildCreativeEvalSeriesExamples(state.creativeEvalType, state.creativeEvalDomain);
+  if (label) label.textContent = `${config.label} · ${domain.label}`;
+  title.textContent = "3개년 성장 흐름";
+  content.innerHTML = `
+    <p class="subject-info-copy">
+      같은 활동을 반복하는 흐름이 아닙니다. 1학년의 관찰과 질문을 2학년의 비교·분석으로 발전시키고,
+      3학년에는 검증·한계·대안까지 다루는 방식으로 심화합니다.
+    </p>
+    <div class="creative-flow-summary">
+      ${examples.map((example) => {
+        const values = example.values;
+        const process = values.process || values.learningConnection || "";
+        const result = values.result || values.insight || values.change || "";
+        return `
+          <article class="${String(example.grade) === state.creativeEvalGrade ? "active" : ""}">
+            <div class="creative-flow-heading">
+              <span>${example.grade}학년</span>
+              <b>${escapeHtml(example.title)}</b>
+            </div>
+            <dl>
+              <div><dt>출발</dt><dd>${escapeHtml(values.motivation || "")}</dd></div>
+              <div><dt>과정</dt><dd>${escapeHtml(process)}</dd></div>
+              <div><dt>확인</dt><dd>${escapeHtml(result)}</dd></div>
+              ${values.book ? `<div><dt>독서</dt><dd>${escapeHtml(values.book)}<br>${escapeHtml(values.bookReflection || "")}</dd></div>` : ""}
+              <div><dt>다음 단계</dt><dd>${escapeHtml(values.followUp || "")}</dd></div>
+            </dl>
+          </article>
+        `;
+      }).join("")}
+    </div>
+    <div class="creative-help-principle">
+      <b>내 활동으로 바꾸는 방법</b>
+      <p>사례의 주제를 가져오는 것이 아니라 내가 실제로 발견한 문제, 사용한 자료, 맡은 역할, 확인한 변화와 한계를 같은 구조로 정리합니다.</p>
+    </div>
+    <p class="subject-info-caution">
+      아래 흐름은 공식 평가 관점과 학교 교육활동의 기록 원칙을 참고해 만든 가상 사례입니다. 실제 학생의 기록을 복제한 자료가 아닙니다.
     </p>
   `;
   modal.hidden = false;
