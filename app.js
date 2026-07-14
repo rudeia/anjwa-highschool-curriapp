@@ -2800,13 +2800,11 @@ function bindSelfEvaluationControls() {
     state.creativeEvalSeries = "representative";
     renderCreativeEvaluationSeriesOptions();
     saveCreativeEvaluationState(false);
-    renderCreativeEvaluationSeriesPreview();
   });
 
   $("#creativeEvalSeriesSelect")?.addEventListener("change", (event) => {
     state.creativeEvalSeries = event.target.value;
     saveCreativeEvaluationState(false);
-    renderCreativeEvaluationSeriesPreview();
   });
 
   $("#creativeEvalFlowButton")?.addEventListener("click", openCreativeEvalFlowPopup);
@@ -5394,64 +5392,6 @@ function renderCreativeEvaluationSeriesOptions() {
   select.value = state.creativeEvalSeries;
 }
 
-function renderCreativeEvaluationSeriesPreview() {
-  const target = $("#creativeEvalSeriesPreview");
-  if (!target) return;
-  const config = getCreativeEvaluationTypeConfig();
-  const domain = creativeEvalDomains[state.creativeEvalDomain] || creativeEvalDomains.korean;
-  const series = getCreativeEvalSeries(state.creativeEvalDomain, state.creativeEvalType)
-    .find((item) => item.id === state.creativeEvalSeries);
-  const examples = buildCreativeEvalSeriesExamples(
-    state.creativeEvalType,
-    state.creativeEvalDomain,
-    state.creativeEvalSeries
-  );
-  if (!series || !examples.length) {
-    target.innerHTML = "";
-    return;
-  }
-
-  target.innerHTML = `
-    <div class="creative-preview-head">
-      <div>
-        <span class="label">선택한 주제</span>
-        <h3>${escapeHtml(series.label)}</h3>
-      </div>
-      <p>${escapeHtml(`${config.label} · ${domain.label}`)}</p>
-    </div>
-    <div class="creative-preview-grid">
-      ${examples.map((example, index) => {
-        const stage = series.stages[index];
-        const values = example.values;
-        const process = values.process || values.learningConnection || "";
-        const result = values.result || values.insight || values.change || "";
-        return `
-          <article class="${String(example.grade) === state.creativeEvalGrade ? "active" : ""}">
-            <div class="creative-preview-grade">${example.grade}학년</div>
-            <h4>${escapeHtml(example.title)}</h4>
-            <dl>
-              <div><dt>질문</dt><dd>${escapeHtml(stage?.question || values.motivation || "")}</dd></div>
-              <div><dt>과정</dt><dd>${escapeHtml(process)}</dd></div>
-              <div><dt>확인</dt><dd>${escapeHtml(result)}</dd></div>
-            </dl>
-            <button class="ghost-button" type="button" data-creative-preview-grade="${example.grade}">${example.grade}학년 작성 화면 보기</button>
-          </article>
-        `;
-      }).join("")}
-    </div>
-  `;
-
-  target.querySelectorAll("[data-creative-preview-grade]").forEach((button) => {
-    button.addEventListener("click", () => {
-      updateCreativeEvaluationEntryFromForm();
-      state.creativeEvalGrade = button.dataset.creativePreviewGrade || "1";
-      saveCreativeEvaluationState(false);
-      renderCreativeEvaluation();
-      $("#creativeEvalForm")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
-}
-
 function renderCreativeEvaluation() {
   const formTarget = $("#creativeEvalFields");
   if (!formTarget) return;
@@ -5476,7 +5416,6 @@ function renderCreativeEvaluation() {
   if (domainSelect) domainSelect.value = state.creativeEvalDomain;
   const seriesSelect = $("#creativeEvalSeriesSelect");
   if (seriesSelect) seriesSelect.value = state.creativeEvalSeries;
-  renderCreativeEvaluationSeriesPreview();
 
   formTarget.innerHTML = config.fields.map((field) => renderCreativeEvaluationField(field, entry[field.key] || "")).join("");
   renderCreativeEvaluationCompetencies(entry);
