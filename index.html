@@ -349,6 +349,7 @@
               </label>
               <button class="ghost-button" id="savePlanButton">저장</button>
               <button class="primary-button" id="loadPlanButton">저장 내용 불러오기</button>
+              <button class="ghost-button reset-button" id="resetPlanButton" type="button">현재 학년도 초기화</button>
             </div>
           </div>
 
@@ -430,6 +431,13 @@
               <button class="active" id="selfEvalSubjectModeButton" type="button" role="tab" aria-selected="true">과목별 자기평가서</button>
               <button id="selfEvalCreativeModeButton" type="button" role="tab" aria-selected="false">창의적 체험활동</button>
             </div>
+            <div class="self-eval-identity-row">
+              <label for="selfEvalStudentNumber">
+                학번
+                <input id="selfEvalStudentNumber" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off" placeholder="예: 10101" />
+              </label>
+              <button class="ghost-button reset-button" id="clearSelfEvalStudentNumberButton" type="button">학번 지우기</button>
+            </div>
             <div class="control-row self-eval-control-row" id="selfEvalSubjectControls">
               <label>
                 내 학년도
@@ -444,6 +452,7 @@
                 <select id="selfEvalSubjectSelect"></select>
               </label>
               <button class="ghost-button" id="loadSelfEvalButton" type="button">저장 내용 불러오기</button>
+              <button class="ghost-button reset-button" id="resetSelfEvalButton" type="button">현재 과목 초기화</button>
             </div>
             <div class="control-row creative-eval-control-row" id="creativeEvalControls" hidden>
               <label>
@@ -459,6 +468,7 @@
                 </select>
               </label>
               <button class="ghost-button" id="loadCreativeEvalButton" type="button">저장 내용 불러오기</button>
+              <button class="ghost-button reset-button" id="resetCreativeEvalButton" type="button">현재 활동 초기화</button>
             </div>
           </div>
 

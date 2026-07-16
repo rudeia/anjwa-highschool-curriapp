@@ -2082,17 +2082,17 @@ th {
 
 .planner-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(520px, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(680px, auto);
   align-items: start;
 }
 
 .planner-control-row {
   display: grid;
-  grid-template-columns: minmax(250px, 1fr) minmax(76px, auto) minmax(170px, auto);
+  grid-template-columns: minmax(230px, 1fr) minmax(76px, auto) minmax(170px, auto) minmax(150px, auto);
   gap: 10px;
   align-items: end;
   justify-self: end;
-  width: min(620px, 100%);
+  width: min(760px, 100%);
 }
 
 .planner-control-row label {
@@ -4185,9 +4185,41 @@ body.modal-open {
   color: #fff;
 }
 
+.self-eval-identity-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) auto;
+  gap: 10px;
+  align-items: end;
+  width: min(440px, 100%);
+}
+
+.self-eval-identity-row label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.self-eval-identity-row input {
+  width: 100%;
+}
+
+.reset-button {
+  border-color: #d8b1ab;
+  background: #fffafa;
+  color: #a54136;
+}
+
+.reset-button:hover {
+  border-color: #b85a4e;
+  background: #fff3f1;
+  color: #8f3027;
+}
+
 .self-eval-control-row {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(150px, 0.9fr) minmax(240px, 1.5fr) auto;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 0.85fr) minmax(220px, 1.45fr) auto auto;
   width: 100%;
   align-items: end;
 }
@@ -4198,7 +4230,7 @@ body.modal-open {
 
 .creative-eval-control-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.4fr) minmax(150px, 0.8fr) auto;
+  grid-template-columns: minmax(200px, 1.35fr) minmax(140px, 0.8fr) auto auto;
   width: 100%;
   align-items: end;
 }
@@ -4831,7 +4863,7 @@ body.modal-open {
   }
 
   .planner-control-row {
-    grid-template-columns: minmax(220px, 1fr) auto auto;
+    grid-template-columns: minmax(220px, 1fr) auto auto auto;
     justify-self: stretch;
     width: 100%;
   }
@@ -4846,7 +4878,6 @@ body.modal-open {
 
   .creative-eval-control-row button {
     width: 100%;
-    grid-column: 1 / -1;
   }
 
   .creative-help-example-list {
@@ -5049,6 +5080,15 @@ body.modal-open {
 
   .creative-eval-control-row button {
     grid-column: auto;
+  }
+
+  .self-eval-identity-row {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .self-eval-identity-row button {
+    width: 100%;
   }
 
   .creative-flow-summary dl div {
@@ -5758,6 +5798,14 @@ body.modal-open {
   body.print-self-evaluation .print-note {
     color: #444;
     font-size: 10px;
+  }
+
+  body.print-self-evaluation .print-export-time {
+    margin-top: 5px;
+    color: #222;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: right;
   }
 }
 

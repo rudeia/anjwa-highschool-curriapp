@@ -1,6 +1,7 @@
 const STORAGE_KEY = "anjwa-career-platform-plan-v1";
 const SELF_EVAL_STORAGE_KEY = "anjwa-career-platform-self-eval-v1";
 const CREATIVE_EVAL_STORAGE_KEY = "anjwa-career-platform-creative-eval-v1";
+const SELF_EVAL_IDENTITY_STORAGE_KEY = "anjwa-career-platform-self-eval-identity-v1";
 const curriculumData = window.ANJWA_CURRICULUM_DATA || { plans: {} };
 const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [] };
 const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA || { records: [] };
@@ -2563,6 +2564,7 @@ const state = {
   selfEvalSubject: "",
   selfEvalEntries: {},
   selfEvalMode: "subject",
+  selfEvalStudentNumber: "",
   creativeEvalPlan: "incoming2026",
   creativeEvalGrade: "1",
   creativeEvalType: "autonomy",
@@ -2616,6 +2618,7 @@ function init() {
   loadState();
   loadSelfEvaluationState();
   loadCreativeEvaluationState();
+  loadSelfEvaluationIdentity();
   bindNavigation();
   bindControls();
   bindCurriculumSortHeaders();
@@ -2632,6 +2635,7 @@ function init() {
   renderSelfEvaluationSemesterOptions();
   renderSelfEvaluationSubjectOptions();
   renderCreativeEvaluationPlanOptions();
+  renderSelfEvaluationIdentity();
   renderCoursePool();
   renderPlanner();
   renderSelfEvaluation();
@@ -2707,6 +2711,7 @@ function bindControls() {
 
   $("#savePlanButton")?.addEventListener("click", () => saveState(true));
   $("#loadPlanButton")?.addEventListener("click", loadSavedPlannerSelection);
+  $("#resetPlanButton")?.addEventListener("click", resetCurrentPlannerPlan);
 
   bindSelfEvaluationControls();
 }
@@ -2714,6 +2719,15 @@ function bindControls() {
 function bindSelfEvaluationControls() {
   $("#selfEvalSubjectModeButton")?.addEventListener("click", () => setSelfEvaluationMode("subject"));
   $("#selfEvalCreativeModeButton")?.addEventListener("click", () => setSelfEvaluationMode("creative"));
+
+  $("#selfEvalStudentNumber")?.addEventListener("input", (event) => {
+    const normalized = normalizeStudentNumber(event.target.value);
+    event.target.value = normalized;
+    state.selfEvalStudentNumber = normalized;
+    saveSelfEvaluationIdentity();
+  });
+
+  $("#clearSelfEvalStudentNumberButton")?.addEventListener("click", clearSelfEvaluationStudentNumber);
 
   $("#selfEvalPlanSelect")?.addEventListener("change", (event) => {
     updateSelfEvaluationEntryFromForm();
@@ -2756,6 +2770,8 @@ function bindSelfEvaluationControls() {
     renderSelfEvaluation();
     showToast("저장된 자기평가서를 불러왔습니다.");
   });
+
+  $("#resetSelfEvalButton")?.addEventListener("click", resetCurrentSelfEvaluationEntry);
 
   $("#exportSelfEvalButton")?.addEventListener("click", exportSelfEvaluationPdf);
 
@@ -2831,6 +2847,8 @@ function bindSelfEvaluationControls() {
     renderCreativeEvaluation();
     showToast("저장된 창의적 체험활동을 불러왔습니다.");
   });
+
+  $("#resetCreativeEvalButton")?.addEventListener("click", resetCurrentCreativeEvaluationEntry);
 
   $("#exportCreativeEvalButton")?.addEventListener("click", exportCreativeEvaluationPdf);
 
@@ -5335,6 +5353,72 @@ function renderSelfEvaluationMode() {
   else renderSelfEvaluation();
 }
 
+function normalizeStudentNumber(value) {
+  return String(value || "").replace(/[^0-9]/g, "").slice(0, 12);
+}
+
+function loadSelfEvaluationIdentity() {
+  state.selfEvalStudentNumber = normalizeStudentNumber(localStorage.getItem(SELF_EVAL_IDENTITY_STORAGE_KEY));
+}
+
+function saveSelfEvaluationIdentity() {
+  if (state.selfEvalStudentNumber) {
+    localStorage.setItem(SELF_EVAL_IDENTITY_STORAGE_KEY, state.selfEvalStudentNumber);
+  } else {
+    localStorage.removeItem(SELF_EVAL_IDENTITY_STORAGE_KEY);
+  }
+}
+
+function renderSelfEvaluationIdentity() {
+  const input = $("#selfEvalStudentNumber");
+  if (input) input.value = state.selfEvalStudentNumber;
+}
+
+function clearSelfEvaluationStudentNumber() {
+  if (!state.selfEvalStudentNumber) {
+    showToast("지울 학번이 없습니다.");
+    return;
+  }
+  if (!window.confirm("학번만 지웁니다. 작성한 자기평가서 내용은 유지됩니다.")) return;
+  state.selfEvalStudentNumber = "";
+  saveSelfEvaluationIdentity();
+  renderSelfEvaluationIdentity();
+  $("#selfEvalStudentNumber")?.focus();
+  showToast("학번을 지웠습니다.");
+}
+
+function requireSelfEvaluationStudentNumber() {
+  const input = $("#selfEvalStudentNumber");
+  const studentNumber = normalizeStudentNumber(input?.value || state.selfEvalStudentNumber);
+  state.selfEvalStudentNumber = studentNumber;
+  saveSelfEvaluationIdentity();
+  renderSelfEvaluationIdentity();
+  if (studentNumber) return studentNumber;
+  showToast("PDF를 내보내려면 학번을 먼저 입력해 주세요.");
+  input?.focus();
+  return "";
+}
+
+function createLocalExportTime(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  return {
+    compact: `${year}${month}${day}${hour}${minute}`,
+    display: `${year}.${month}.${day} ${hour}:${minute}`
+  };
+}
+
+function sanitizePdfFilePart(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_") || "자료";
+}
+
 function getCreativeEvaluationTypeConfig(type = state.creativeEvalType) {
   return creativeEvalTypes[type] || creativeEvalTypes.autonomy;
 }
@@ -5485,6 +5569,23 @@ function saveCreativeEvaluationState(showMessage) {
   if (showMessage) showToast("창의적 체험활동을 저장했습니다.");
 }
 
+function resetCurrentCreativeEvaluationEntry() {
+  updateCreativeEvaluationEntryFromForm();
+  const config = getCreativeEvaluationTypeConfig();
+  const label = `${state.creativeEvalGrade}학년 ${config.label}`;
+  if (!window.confirm(`${label} 작성 내용만 초기화합니다. 다른 학년과 활동 내용은 유지됩니다.`)) return;
+
+  const planEntries = state.creativeEvalEntries[state.creativeEvalPlan];
+  const gradeEntries = planEntries?.[state.creativeEvalGrade];
+  if (gradeEntries) delete gradeEntries[state.creativeEvalType];
+  if (gradeEntries && !Object.keys(gradeEntries).length) delete planEntries[state.creativeEvalGrade];
+  if (planEntries && !Object.keys(planEntries).length) delete state.creativeEvalEntries[state.creativeEvalPlan];
+
+  saveCreativeEvaluationState(false);
+  renderCreativeEvaluation();
+  showToast(`${label} 작성 내용을 초기화했습니다.`);
+}
+
 function loadCreativeEvaluationState() {
   try {
     const saved = JSON.parse(localStorage.getItem(CREATIVE_EVAL_STORAGE_KEY));
@@ -5599,13 +5700,16 @@ function openCreativeEvalFlowPopup() {
 function exportCreativeEvaluationPdf() {
   updateCreativeEvaluationEntryFromForm();
   saveCreativeEvaluationState(false);
+  const studentNumber = requireSelfEvaluationStudentNumber();
+  if (!studentNumber) return;
+  const exportTime = createLocalExportTime();
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
     showToast("PDF 창을 열 수 없습니다. 브라우저의 팝업 허용 여부를 확인해 주세요.");
     return;
   }
   printWindow.document.open();
-  printWindow.document.write(buildCreativeEvaluationPrintDocument());
+  printWindow.document.write(buildCreativeEvaluationPrintDocument(studentNumber, exportTime));
   printWindow.document.close();
   const runPrint = () => {
     printWindow.focus();
@@ -5615,10 +5719,10 @@ function exportCreativeEvaluationPdf() {
   else printWindow.addEventListener("load", () => window.setTimeout(runPrint, 250), { once: true });
 }
 
-function buildCreativeEvaluationPrintDocument() {
+function buildCreativeEvaluationPrintDocument(studentNumber, exportTime) {
   const planLabel = getCurriculumPlanLabel(state.creativeEvalPlan);
   const grade = state.creativeEvalGrade;
-  const today = new Date().toLocaleDateString("ko-KR");
+  const fileTitle = `${sanitizePdfFilePart(studentNumber)}_${grade}학년_창체자기평가서_${exportTime.compact}`;
   const sections = Object.entries(creativeEvalTypes).map(([type, config]) => {
     const entry = getCreativeEvaluationEntry(type);
     const competencies = entry.competencies?.length ? entry.competencies.join(", ") : "작성 내용 없음";
@@ -5640,7 +5744,7 @@ function buildCreativeEvaluationPrintDocument() {
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(`${grade}학년 창의적 체험활동 자기평가서`)}</title>
+  <title>${escapeHtml(fileTitle)}</title>
   <style>
     @page { size: A4; margin: 12mm; }
     * { box-sizing: border-box; }
@@ -5656,16 +5760,20 @@ function buildCreativeEvaluationPrintDocument() {
     article { border: 1px solid #c9d3cc; margin-bottom: 6px; padding: 7px; break-inside: avoid; }
     article b { display: block; margin-bottom: 3px; }
     footer { border-top: 1px solid #c9d3cc; margin-top: 12px; padding-top: 8px; color: #555; font-size: 10px; }
+    .export-time { margin-top: 4px; text-align: right; color: #222; font-weight: 700; }
   </style>
 </head>
 <body>
   <header>
     <span>상담용 자료</span>
     <h1>${escapeHtml(`${grade}학년 창의적 체험활동 자기평가서`)}</h1>
-    <p>${escapeHtml(planLabel)} · ${escapeHtml(today)}</p>
+    <p>학번 ${escapeHtml(studentNumber)} · ${escapeHtml(planLabel)}</p>
   </header>
   ${sections}
-  <footer>이 자료는 학생부 문장을 대신 작성하는 자료가 아니라, 실제 학교 활동과 성장 과정을 상담 전에 정리하기 위한 초안입니다.</footer>
+  <footer>
+    <p>이 자료는 학생부 문장을 대신 작성하는 자료가 아니라, 실제 학교 활동과 성장 과정을 상담 전에 정리하기 위한 초안입니다.</p>
+    <p class="export-time">저장 시각: ${escapeHtml(exportTime.display)}</p>
+  </footer>
 </body>
 </html>`;
 }
@@ -5868,6 +5976,26 @@ function saveSelfEvaluationState(showMessage) {
   if (showMessage) showToast("자기평가서를 저장했습니다.");
 }
 
+function resetCurrentSelfEvaluationEntry() {
+  updateSelfEvaluationEntryFromForm();
+  const course = getSelfEvaluationCourse();
+  const entryKey = getSelfEvaluationEntryKey();
+  if (!entryKey) {
+    showToast("초기화할 과목을 먼저 선택해 주세요.");
+    return;
+  }
+  const label = course?.name || "현재 과목";
+  if (!window.confirm(`${label} 자기평가서만 초기화합니다. 다른 과목의 작성 내용은 유지됩니다.`)) return;
+
+  const planEntries = state.selfEvalEntries[state.selfEvalPlan];
+  if (planEntries) delete planEntries[entryKey];
+  if (planEntries && !Object.keys(planEntries).length) delete state.selfEvalEntries[state.selfEvalPlan];
+
+  saveSelfEvaluationState(false);
+  renderSelfEvaluation();
+  showToast(`${label} 자기평가서를 초기화했습니다.`);
+}
+
 function loadSelfEvaluationState() {
   try {
     const saved = JSON.parse(localStorage.getItem(SELF_EVAL_STORAGE_KEY));
@@ -5890,13 +6018,18 @@ function loadSelfEvaluationState() {
 function exportSelfEvaluationPdf() {
   updateSelfEvaluationEntryFromForm();
   saveSelfEvaluationState(false);
-  renderSelfEvaluationPrintView();
+  const studentNumber = requireSelfEvaluationStudentNumber();
+  if (!studentNumber) return;
+  const exportTime = createLocalExportTime();
+  const course = getSelfEvaluationCourse();
+  const fileTitle = `${sanitizePdfFilePart(studentNumber)}_${sanitizePdfFilePart(course?.name || "과목별")}_자기평가서_${exportTime.compact}`;
+  renderSelfEvaluationPrintView(studentNumber, exportTime);
 
-  const printDocument = buildSelfEvaluationPrintDocument();
+  const printDocument = buildSelfEvaluationPrintDocument(fileTitle);
   const printWindow = window.open("", "_blank");
 
   if (!printWindow) {
-    printSelfEvaluationInCurrentWindow();
+    printSelfEvaluationInCurrentWindow(fileTitle);
     return;
   }
 
@@ -5909,7 +6042,7 @@ function exportSelfEvaluationPdf() {
       printWindow.focus();
       printWindow.print();
     } catch (error) {
-      printSelfEvaluationInCurrentWindow();
+      printSelfEvaluationInCurrentWindow(fileTitle);
     }
   };
 
@@ -5920,10 +6053,9 @@ function exportSelfEvaluationPdf() {
   }
 }
 
-function printSelfEvaluationInCurrentWindow() {
+function printSelfEvaluationInCurrentWindow(fileTitle) {
   const previousTitle = document.title;
-  const course = getSelfEvaluationCourse();
-  document.title = `${course?.name || "과목별"} 자기평가서`;
+  document.title = fileTitle;
   document.body.classList.add("print-self-evaluation");
 
   const cleanup = () => {
@@ -5936,17 +6068,15 @@ function printSelfEvaluationInCurrentWindow() {
   window.print();
 }
 
-function buildSelfEvaluationPrintDocument() {
+function buildSelfEvaluationPrintDocument(fileTitle) {
   const target = $("#selfEvalPrintView");
-  const course = getSelfEvaluationCourse();
-  const title = `${course?.name || "과목별"} 자기평가서`;
   const content = target?.innerHTML || "";
 
   return `<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(title)}</title>
+  <title>${escapeHtml(fileTitle)}</title>
   <style>
     @page {
       size: A4;
@@ -6093,6 +6223,14 @@ function buildSelfEvaluationPrintDocument() {
       color: #444;
       font-size: 10px;
     }
+
+    .print-export-time {
+      margin-top: 5px;
+      color: #222;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -6101,7 +6239,7 @@ function buildSelfEvaluationPrintDocument() {
 </html>`;
 }
 
-function renderSelfEvaluationPrintView() {
+function renderSelfEvaluationPrintView(studentNumber, exportTime) {
   const target = $("#selfEvalPrintView");
   if (!target) return;
 
@@ -6111,7 +6249,6 @@ function renderSelfEvaluationPrintView() {
   const semesterLabel = course?.semesters?.length
     ? course.semesters.map((semesterKey) => getSemesterLabel(semesterKey)).join(", ")
     : "학기 확인";
-  const today = new Date().toLocaleDateString("ko-KR");
   const competencyText = entry.competencies?.length ? entry.competencies.join(", ") : "아직 체크하지 않음";
   const competencyNoteText = entry.competencyNote || "작성 내용 없음";
 
@@ -6120,7 +6257,7 @@ function renderSelfEvaluationPrintView() {
       <div class="print-paper-head">
         <span>상담용 자료</span>
         <h2>과목별 자기평가서</h2>
-        <p>${escapeHtml(planLabel)} · ${escapeHtml(course?.name || "과목 미선택")} · ${escapeHtml(today)}</p>
+        <p>학번 ${escapeHtml(studentNumber)} · ${escapeHtml(planLabel)} · ${escapeHtml(course?.name || "과목 미선택")}</p>
       </div>
       <div class="print-meta-grid">
         <div>
@@ -6160,6 +6297,7 @@ function renderSelfEvaluationPrintView() {
       <p class="print-note">
         이 자기평가서는 세특 문장을 대신 작성하는 자료가 아니라, 수업 속 배움과 탐구 과정을 정리하기 위한 상담 자료입니다.
       </p>
+      <p class="print-export-time">저장 시각: ${escapeHtml(exportTime.display)}</p>
     </section>
   `;
 }
@@ -6663,6 +6801,18 @@ function loadSavedPlannerSelection() {
   renderCoursePool();
   renderPlanner();
   showToast("저장된 선택 과목을 불러왔습니다.");
+}
+
+function resetCurrentPlannerPlan() {
+  const label = getCurriculumPlanLabel(state.plannerPlan);
+  if (!window.confirm(`${label}에서 선택한 과목과 추가 교육과정만 초기화합니다. 다른 학년도의 선택 내용은 유지됩니다.`)) return;
+
+  state.plan = createEmptyPlan();
+  state.plannerPlans[state.plannerPlan] = clonePlannerPlan(state.plan);
+  saveState(false);
+  renderCoursePool();
+  renderPlanner();
+  showToast(`${label} 선택 내용을 초기화했습니다.`);
 }
 
 function escapeHtml(value) {
