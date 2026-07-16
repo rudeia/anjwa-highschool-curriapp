@@ -3,21 +3,195 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>서비스 안내 | 진로진학 플랫폼</title>
-    <style>
-      * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f6f8f6; color: #142019; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
-      main { width: min(100%, 560px); padding: 32px; border: 1px solid #dce4de; border-radius: 8px; background: #fff; }
-      h1 { margin: 0 0 14px; font-size: 1.55rem; }
-      p { margin: 0 0 24px; color: #627069; line-height: 1.7; }
-      a { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; padding: 0 18px; border-radius: 7px; background: #142019; color: #fff; font-weight: 700; text-decoration: none; }
-    </style>
+    <meta name="robots" content="noindex,nofollow">
+    <title>수시 지원 상담카드 | 진로진학 플랫폼</title>
+    <link rel="stylesheet" href="./consultation-card.css?v=20260716p">
   </head>
   <body>
-    <main>
-      <h1>현재 제공하지 않는 서비스입니다</h1>
-      <p>자료 이용 범위를 확인하는 동안 고3 수시 지원 상담카드를 공개하지 않습니다.</p>
-      <a href="./index.html">첫 화면으로</a>
+    <main class="card-shell">
+      <header class="page-head">
+        <div>
+          <p class="eyebrow">고3 상담 준비</p>
+          <h1>수시 지원 상담카드</h1>
+          <p class="page-summary">대학·학과·전형을 선택하면 과거 입결과 2027 모집정보를 한 카드에서 확인합니다.</p>
+        </div>
+        <div class="page-actions">
+          <button id="printCard" class="print-button" type="button">인쇄·PDF</button>
+          <a class="search-link" href="./admission-search.html">입결 자료 보기</a>
+          <a class="home-link" href="./index.html">첫 화면으로</a>
+        </div>
+      </header>
+
+      <section class="privacy-note" aria-label="저장 안내">
+        <strong>이 기기에만 저장됩니다.</strong>
+        <span>작성 내용은 현재 브라우저에 자동 저장됩니다. 공용 기기에서는 상담 후 초기화하세요.</span>
+      </section>
+
+      <section class="card-toolbar" aria-label="상담카드 관리">
+        <div>
+          <strong id="savedCount">0개 지원안</strong>
+          <span id="slotStatus">일반지원 0/6 · 예비후보 0/3 · 제한 외 0</span>
+        </div>
+        <div class="toolbar-actions">
+          <button id="openCardEditor" class="primary-button" type="button">지원 대학 추가</button>
+          <button id="reorderCard" class="secondary-button" type="button">순위 편집</button>
+          <button id="resetCard" class="reset-button" type="button">전체 초기화</button>
+        </div>
+      </section>
+
+      <section class="student-file-bar">
+        <label class="student-number-field">
+          <span>학번</span>
+          <input id="studentNumber" type="text" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="예: 31001">
+        </label>
+        <div class="save-time" aria-live="polite">
+          <span>최근 저장</span>
+          <strong id="lastSavedAt">아직 저장 전</strong>
+          <small id="lastExportedAt">상담카드 파일 저장 이력 없음</small>
+          <small id="lastPrintedAt">인쇄·PDF 기록 없음</small>
+        </div>
+        <div class="file-actions">
+          <button id="exportCard" class="primary-button" type="button">상담카드 저장</button>
+          <button id="importCard" class="secondary-button" type="button">상담카드 불러오기</button>
+          <input id="importCardFile" type="file" accept=".anjwacard,.json,application/json" hidden>
+        </div>
+      </section>
+
+      <section id="cardList" class="card-list" aria-live="polite"></section>
+
+      <section id="standardLimitNotice" class="standard-limit-notice" aria-live="polite" hidden></section>
+
+      <section class="exempt-area" aria-labelledby="exemptHeading">
+        <header>
+          <div>
+            <p class="eyebrow">별도 지원</p>
+            <h2 id="exemptHeading">지원 횟수 제한 제외 대학</h2>
+            <p>과학기술원 등 일반대학 수시 지원 횟수와 별도로 확인할 대학을 이곳에서 선택합니다.</p>
+          </div>
+          <button id="openExemptEditor" class="secondary-button" type="button">별도 지원 대학 추가</button>
+        </header>
+        <div id="exemptList" class="card-list"></div>
+      </section>
+
+      <section class="consultation-area" aria-labelledby="consultationHeading">
+        <header class="consultation-head">
+          <div>
+            <p class="eyebrow">상담 기록</p>
+            <h2 id="consultationHeading">수시 지원 상담란</h2>
+            <p>지원안을 비교한 메모와 다음 행동을 함께 정리하세요.</p>
+          </div>
+          <span class="consultation-save-note">자도 저장</span>
+        </header>
+        <div id="consultationSessions" class="consultation-sessions"></div>
+        <label class="overall-opinion">
+          <span>담임교사 종합 의견</span>
+          <textarea id="overallOpinion" placeholder="전체 수, 수넝최저 충족 여부, 면접·서루 준비와 최종 지원 방향을 종합해 적어보세요."></textarea>
+        </label>
+      </section>
+
+      <footer class="card-footer">
+        <p>입시결과는 대학별 산출 방식이 다르므로 지원 가능성을 단정하는 기준이 아닙니다. 모집요강과 대학 입학처 원문을 함께 확인하세요.</p>
+        <p>상담카드 정보 구성 참고: 운정고등학교 이재규 선생님 제작 수시 지원 상담카드</p>
+      </footer>
     </main>
+
+    <div id="cardEditor" class="editor-layer" hidden>
+      <div class="editor-backdrop" data-close-editor></div>
+      <section class="editor-panel" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+        <header class="editor-head">
+          <div>
+            <p class="eyebrow" id="editorEyebrow">지원안 입력</p>
+            <h2 id="editorTitle">지원 대학 추가</h2>
+          </div>
+          <button class="editor-close" type="button" data-close-editor aria-label="편집 창 닫기">×</button>
+        </header>
+
+        <form id="cardEditorForm" class="editor-form">
+          <div class="editor-grid">
+            <label id="editorRankField" class="editor-field">
+              <span>지원 순위</span>
+              <select id="editorRank"></select>
+            </label>
+            <label class="editor-field">
+              <span>대학·캠퍼스</span>
+              <select id="editorUniversity" required disabled>
+                <option value="">대학 목록 불러오는 중</option>
+              </select>
+            </label>
+            <label id="editorDepartmentField" class="editor-field">
+              <span>2027 학과·모집단위</span>
+              <select id="editorDepartment" required disabled>
+                <option value="">대학을 먼저 선택하세요</option>
+              </select>
+            </label>
+            <label id="editorAdmissionField" class="editor-field">
+              <span>2027 전형명</span>
+              <select id="editorAdmission" required disabled>
+                <option value="">학과를 먼저 선택하세요</option>
+              </select>
+            </label>
+            <label id="editorManualDepartmentField" class="editor-field" hidden>
+              <span>2027 학과·모집단위</span>
+              <input id="editorManualDepartment" type="text" placeholder="학과·모집단위 직접 입력">
+            </label>
+            <label id="editorManualAdmissionField" class="editor-field" hidden>
+              <span>2027 전형명</span>
+              <input id="editorManualAdmission" type="text" placeholder="전형명 직접 입력">
+            </label>
+          </div>
+
+          <div id="editorPreview" class="editor-preview" aria-live="polite">
+            대학·학과·전형을 선택하면 2027 모집정보와 연결된 과거 입결을 확인할 수 있습니다.
+          </div>
+
+          <details id="editorOverrides" class="override-editor">
+            <summary><span>자도 채움 정보 확인·수정</span><strong id="editorOverrideCount">자도 값</strong></summary>
+            <p>수정값은 이 상담카드에만 저장되며, 공식 원본은 별도로 유지됩니다.</p>
+            <div class="override-fields">
+              <label data-override-field="quota">
+                <span>2027 모집인원 <em data-override-status="quota">자도</em></span>
+                <div><input id="editorQuotaOverride" type="text" inputmode="numeric" placeholder="모집인원"><button type="button" data-reset-override="quota">원래값</button></div>
+                <small data-override-source="quota"></small>
+              </label>
+              <label data-override-field="selectionMethod">
+                <span>전형방법·반영비율 <em data-override-status="selectionMethod">자도</em></span>
+                <div><textarea id="editorSelectionMethodOverride" placeholder="전형방법·반영비율"></textarea><button type="button" data-reset-override="selectionMethod">원래값</button></div>
+                <small data-override-source="selectionMethod"></small>
+              </label>
+              <label data-override-field="minimum">
+                <span>수넝최저학력기준 <em data-override-status="minimum">자도</em></span>
+                <div><textarea id="editorMinimumOverride" placeholder="수넝최저 없음 또는 기준"></textarea><button type="button" data-reset-override="minimum">원래값</button></div>
+                <small data-override-source="minimum"></small>
+              </label>
+            </div>
+          </details>
+
+          <div class="editor-notes">
+            <fieldset>
+              <legend>지원 판단</legend>
+              <div id="editorStrategy" class="strategy-control">
+                <button type="button" data-editor-strategy="상향">상향</button>
+                <button type="button" data-editor-strategy="적정">적정</button>
+                <button type="button" data-editor-strategy="안정">안정</button>
+              </div>
+            </fieldset>
+            <label class="memo-field">
+              <span class="field-label">상담 메모</span>
+              <textarea id="editorMemo" placeholder="지원 이유, 수능최저 준비, 상담에서 확인할 내용을 적어보세요."></textarea>
+            </label>
+          </div>
+
+          <p id="editorError" class="editor-error" role="alert" hidden></p>
+          <div class="editor-actions">
+            <button class="secondary-button" type="button" data-close-editor>취소</button>
+            <button id="saveEditor" class="primary-button" type="submit">상담카드에 추가</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="cardToast" class="card-toast" role="status" aria-live="polite" hidden></div>
+    <script src="./consultation-card-store.js?v=20260716s" defer></script>
+    <script src="./consultation-card.js?v=20260716u" defer></script>
   </body>
 </html>
