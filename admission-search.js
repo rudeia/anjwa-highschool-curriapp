@@ -140,7 +140,7 @@ function verificationLabel(value) {
   if (value === "adiga_reference_snapshot") return "과거 공개자료";
   if (value === "reference_snapshot_supplemented") return "원문+과거자료";
   if (value === "official_primary_partial") return "원문 일부 확인";
-  return "교차 검증";
+  return "두 자료 일치";
 }
 
 function verificationClass(value) {
@@ -187,11 +187,11 @@ function fieldList(values) {
 
 function verificationNote(row) {
   if (row.verification === "adiga_reference_snapshot") {
-    return "현재 화면에서 다시 확인하기 어려운 과거 대학어디가 공개값을 검수하여 복구한 자료입니다.";
+    return "현재 화면에서 다시 확인하기 어려운 과거 대학어디가 공개값을 확인해 보완한 자료입니다.";
   }
   if (row.verification === "reference_snapshot_supplemented") {
     const fields = fieldList(row.supplementedFields);
-    return `대학어디가 원문을 기준으로${fields ? `, 비어 있던 ${fields}은` : " 일부 빈 값은"} 검수한 과거 공개자료로 보충했습니다.`;
+    return `대학어디가 원문을 기준으로${fields ? `, 비어 있던 ${fields}은` : " 일부 빈 값은"} 과거 공개자료로 보완했습니다.`;
   }
   if (row.verification === "official_primary_partial") {
     const fields = fieldList(row.suppressedFields);
@@ -592,7 +592,7 @@ function renderAdvancedMetadata() {
   }).join("");
   const totalRows = (state.manifest.years || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
   const totalUniversities = Number(state.manifest.universityCount || 0);
-  byId("metadataStatus").textContent = `${totalRows.toLocaleString("ko-KR")}건 · ${totalUniversities}개 대학·캠퍼스 코드 · 지역·설립 유형 100% 연결 · 미분류 ${Number(state.manifest.unclassifiedRows || 0).toLocaleString("ko-KR")}건`;
+  byId("metadataStatus").textContent = `${totalRows.toLocaleString("ko-KR")}건의 2024~2026학년도 입시결과와 ${totalUniversities}개 대학 정보를 조회할 수 있습니다.`;
 }
 
 function selectYear(year) {

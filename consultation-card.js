@@ -84,10 +84,10 @@ function cleanAdmissionName(value) {
 function historyVerificationBadge(entry) {
   if (entry.verification === "official_office_exact") return '<em>입학처 대조</em>';
   if (entry.verification === "official_primary_traced") return '<em>어디가 원문</em>';
-  if (entry.verification === "adiga_reference_snapshot") return '<em class="is-snapshot" title="검수한 과거 대학어디가 공개자료">과거 공개자료</em>';
-  if (entry.verification === "reference_snapshot_supplemented") return '<em class="is-supplemented" title="대학어디가 원문의 빈 값을 검수한 과거 공개자료로 보충">원문+과거자료</em>';
+  if (entry.verification === "adiga_reference_snapshot") return '<em class="is-snapshot" title="과거 대학어디가 공개자료에서 확인">과거 공개자료</em>';
+  if (entry.verification === "reference_snapshot_supplemented") return '<em class="is-supplemented" title="대학어디가 원문의 빈 값을 과거 공개자료로 보완">원문+과거자료</em>';
   if (entry.verification === "official_primary_partial") return '<em class="is-partial" title="대학어디가 원문에서 확인된 값만 표시">원문 일부</em>';
-  if (entry.verification === "cross_reference_consensus") return '<em class="is-consensus">교차 검증</em>';
+  if (entry.verification === "cross_reference_consensus") return '<em class="is-consensus">두 자료 일치</em>';
   return "";
 }
 
