@@ -1,5 +1,5 @@
 (() => {
-  const RELEASE_FALLBACK = new Date("2026-07-16T00:00:00+09:00");
+  const RELEASE_FALLBACK = new Date("2026-07-17T00:00:00+09:00");
 
   function validDate(value) {
     return value instanceof Date && !Number.isNaN(value.getTime());

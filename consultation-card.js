@@ -1357,7 +1357,9 @@ byId("consultationSessions").addEventListener("change", (event) => {
 byId("exportCard").addEventListener("click", downloadCardFile);
 byId("importCard").addEventListener("click", () => byId("importCardFile").click());
 byId("importCardFile").addEventListener("change", (event) => importCardFile(event.target.files?.[0]));
-byId("printCard")?.addEventListener("click", printConsultationCard);
+document.querySelectorAll("[data-print-card]").forEach((button) => {
+  button.addEventListener("click", printConsultationCard);
+});
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !byId("cardEditor").hidden) closeEditor();
 });
