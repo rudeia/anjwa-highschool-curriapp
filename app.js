@@ -2,10 +2,13 @@ const STORAGE_KEY = "anjwa-career-platform-plan-v1";
 const SELF_EVAL_STORAGE_KEY = "anjwa-career-platform-self-eval-v1";
 const CREATIVE_EVAL_STORAGE_KEY = "anjwa-career-platform-creative-eval-v1";
 const SELF_EVAL_IDENTITY_STORAGE_KEY = "anjwa-career-platform-self-eval-identity-v1";
+const COURSE_DESIGNER_STORAGE_KEY = "anjwa-career-platform-course-designer-v1";
 const curriculumData = window.ANJWA_CURRICULUM_DATA || { plans: {} };
 const recommendationData = window.ANJWA_RECOMMENDATION_DATA || { records: [] };
 const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA || { records: [] };
 const topicData = window.ANJWA_TOPIC_DATA || { topics: [] };
+const subjectGuideData = window.ANJWA_SUBJECT_GUIDE || { areaProfiles: {}, groupProfiles: {} };
+const courseDesignerData = window.ANJWA_COURSE_DESIGNER || { interests: [], optionProfiles: [] };
 const curriculumPlanOrder = ["current2026", "incoming2026", "incoming2025", "incoming2024"];
 const plannerPlanOrder = ["incoming2026", "incoming2025", "incoming2024"];
 const curriculumPlanLabels = {
@@ -108,7 +111,7 @@ const additionalCourseCatalogSeed = [
   { name: "프랑스어", area: "제2외국어·한문", category: "일반선택" },
   { name: "독일어", area: "제2외국어·한문", category: "일반선택" },
   { name: "한문", area: "제2외국어·한문", category: "일반선택" },
-  { name: "심리학", area: "교양", category: "일반선택" },
+  { name: "인간과 심리", area: "교양", category: "진로선택" },
   { name: "교육의 이해", area: "교양", category: "일반선택" },
   { name: "교육학", area: "교양", category: "일반선택" },
   { name: "철학", area: "교양", category: "일반선택" }
@@ -2556,6 +2559,12 @@ const state = {
   topicLevel: "all",
   topicGrade: "all",
   topicQuery: "",
+  courseDesignerPlan: "incoming2026",
+  courseDesignerStatus: "considering",
+  courseDesignerInterests: [],
+  courseDesignerOption: "balanced",
+  courseDesignerGenerated: false,
+  courseDesignerNeedsReview: false,
   plannerMode: "fixed",
   plannerPlan: "incoming2026",
   plannerPlans: {},
@@ -2616,17 +2625,21 @@ function getCourse(id) {
 
 function init() {
   loadState();
+  loadCourseDesignerState();
   loadSelfEvaluationState();
   loadCreativeEvaluationState();
   loadSelfEvaluationIdentity();
   bindNavigation();
   bindControls();
+  bindCourseDesignerControls();
   bindCurriculumSortHeaders();
   bindCurriculumHelp();
   bindSechukFlow();
   bindSubjectInfoPopup();
   renderCurriculumPlanOptions();
   renderCurriculum();
+  renderCourseDesignerPlanOptions();
+  renderCourseDesigner();
   renderRecommendationExplorer();
   renderTopicExplorerOptions();
   renderTopicExplorer();
@@ -2658,6 +2671,7 @@ function setView(viewId) {
     state.plannerMode = "fixed";
     renderPlannerModeState();
   }
+  if (viewId === "courseDesigner") renderCourseDesigner();
   $all(".view").forEach((view) => view.classList.toggle("active", view.id === viewId));
   $all(".nav-button").forEach((button) => button.classList.toggle("active", button.dataset.view === viewId));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3312,6 +3326,911 @@ function renderPlannerPlanOptions() {
 
 function getCurriculumPlanLabel(key) {
   return curriculumPlanLabels[key] || curriculumData.plans[key]?.label || key;
+}
+
+function bindCourseDesignerControls() {
+  $("#courseDesignerPlanSelect")?.addEventListener("change", (event) => {
+    state.courseDesignerPlan = event.target.value;
+    state.courseDesignerGenerated = false;
+    state.courseDesignerNeedsReview = false;
+    saveCourseDesignerState();
+    renderCourseDesigner();
+  });
+
+  $("#courseDesignerStatusSwitch")?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-course-designer-status]") : null;
+    if (!button) return;
+    state.courseDesignerStatus = button.dataset.courseDesignerStatus;
+    state.courseDesignerOption = getCourseDesignerDefaultOption(state.courseDesignerStatus);
+    state.courseDesignerNeedsReview = false;
+    saveCourseDesignerState();
+    renderCourseDesigner();
+  });
+
+  $("#courseDesignerInterestGroups")?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-course-designer-interest]") : null;
+    if (!button) return;
+    toggleCourseDesignerInterest(button.dataset.courseDesignerInterest);
+  });
+
+  $("#courseDesignerOptionTabs")?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-course-designer-option]") : null;
+    if (!button) return;
+    state.courseDesignerOption = button.dataset.courseDesignerOption;
+    saveCourseDesignerState();
+    renderCourseDesignerResults();
+  });
+
+  $("#courseDesignerResults")?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-course-designer-add-course]") : null;
+    if (!button) return;
+    addCourseDesignerCourseToPlanner(button);
+  });
+
+  $("#courseDesignerOpenPlannerButton")?.addEventListener("click", openCourseDesignerPlanner);
+
+  $("#courseDesignerGenerateButton")?.addEventListener("click", generateCourseDesignerOptions);
+  $("#courseDesignerResetButton")?.addEventListener("click", resetCourseDesigner);
+}
+
+function renderCourseDesignerPlanOptions() {
+  const select = $("#courseDesignerPlanSelect");
+  if (!select) return;
+  select.innerHTML = plannerPlanOrder
+    .filter((key) => curriculumData.plans?.[key])
+    .map((key) => `<option value="${key}">${escapeHtml(getCurriculumPlanLabel(key))}</option>`)
+    .join("");
+  if (!curriculumData.plans?.[state.courseDesignerPlan]) {
+    state.courseDesignerPlan = plannerPlanOrder.find((key) => curriculumData.plans?.[key]) || "incoming2026";
+  }
+  select.value = state.courseDesignerPlan;
+}
+
+function renderCourseDesigner() {
+  const root = $("#courseDesigner");
+  if (!root) return;
+  renderCourseDesignerPlanOptions();
+  renderCourseDesignerStatus();
+  renderCourseDesignerInterestGroups();
+  renderCourseDesignerVersionNotice();
+
+  const selected = getSelectedCourseDesignerInterests();
+  const count = $("#courseDesignerInterestCount");
+  const summary = $("#courseDesignerSelectionSummary");
+  const results = $("#courseDesignerResults");
+  if (count) count.textContent = `${selected.length} / 3`;
+  if (summary) {
+    summary.textContent = selected.length
+      ? `내가 고른 분야: ${selected.map((interest) => interest.label).join(" · ")}`
+      : "관심 있는 분야를 한 개 이상 골라 보세요.";
+  }
+  if (results) results.hidden = !state.courseDesignerGenerated || !selected.length || state.courseDesignerNeedsReview;
+  if (!results?.hidden) renderCourseDesignerResults();
+}
+
+function renderCourseDesignerStatus() {
+  $all("[data-course-designer-status]").forEach((button) => {
+    const active = button.dataset.courseDesignerStatus === state.courseDesignerStatus;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function renderCourseDesignerInterestGroups() {
+  const target = $("#courseDesignerInterestGroups");
+  if (!target) return;
+  const selected = new Set(state.courseDesignerInterests);
+  const groups = new Map();
+  (courseDesignerData.interests || []).forEach((interest) => {
+    if (!groups.has(interest.group)) groups.set(interest.group, []);
+    groups.get(interest.group).push(interest);
+  });
+  target.innerHTML = [...groups.entries()].map(([group, interests]) => `
+    <section class="course-designer-interest-group">
+      <h4>${escapeHtml(group)}</h4>
+      <div>
+        ${interests.map((interest) => {
+          const active = selected.has(interest.id);
+          return `
+            <button class="course-designer-interest-button${active ? " active" : ""}" type="button"
+              data-course-designer-interest="${escapeAttribute(interest.id)}" aria-pressed="${active}">
+              <b>${escapeHtml(interest.label)}</b>
+              <small>${escapeHtml(interest.summary)}</small>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `).join("");
+}
+
+function renderCourseDesignerVersionNotice() {
+  const notice = $("#courseDesignerVersionNotice");
+  if (!notice) return;
+  notice.hidden = !state.courseDesignerNeedsReview;
+  if (notice.hidden) {
+    notice.innerHTML = "";
+    return;
+  }
+  notice.innerHTML = `
+    <b>우리학교 교육과정이 바뀌었습니다.</b>
+    <span>고른 관심 분야는 그대로 두고 이전 결과만 숨겼습니다. 바뀐 교육과정으로 과목 선택안을 다시 확인해 주세요.</span>
+  `;
+}
+
+function toggleCourseDesignerInterest(interestId) {
+  const validIds = new Set((courseDesignerData.interests || []).map((interest) => interest.id));
+  if (!validIds.has(interestId)) return;
+  const selected = new Set(state.courseDesignerInterests);
+  if (selected.has(interestId)) {
+    selected.delete(interestId);
+  } else {
+    if (selected.size >= 3) {
+      showToast("관심 분야는 한 화면에서 최대 3개까지 비교할 수 있습니다.");
+      return;
+    }
+    selected.add(interestId);
+  }
+  state.courseDesignerInterests = [...selected];
+  state.courseDesignerGenerated = false;
+  state.courseDesignerNeedsReview = false;
+  saveCourseDesignerState();
+  renderCourseDesigner();
+}
+
+function generateCourseDesignerOptions() {
+  if (!getSelectedCourseDesignerInterests().length) {
+    showToast("관심 있는 분야를 한 개 이상 골라 주세요.");
+    return;
+  }
+  state.courseDesignerOption = getCourseDesignerDefaultOption(state.courseDesignerStatus);
+  state.courseDesignerGenerated = true;
+  state.courseDesignerNeedsReview = false;
+  saveCourseDesignerState();
+  renderCourseDesigner();
+  window.requestAnimationFrame(() => {
+    $("#courseDesignerResults")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function resetCourseDesigner() {
+  state.courseDesignerStatus = "considering";
+  state.courseDesignerInterests = [];
+  state.courseDesignerOption = "balanced";
+  state.courseDesignerGenerated = false;
+  state.courseDesignerNeedsReview = false;
+  saveCourseDesignerState();
+  renderCourseDesigner();
+  showToast("고른 관심 분야와 과목 선택안을 모두 지웠습니다.");
+}
+
+function getCourseDesignerDefaultOption(status) {
+  if (status === "clear") return "deep";
+  if (status === "exploring") return "explore";
+  return "balanced";
+}
+
+function getSelectedCourseDesignerInterests() {
+  const selected = new Set(state.courseDesignerInterests);
+  return (courseDesignerData.interests || []).filter((interest) => selected.has(interest.id));
+}
+
+function getCourseDesignerOptionProfile(optionId) {
+  return (courseDesignerData.optionProfiles || []).find((profile) => profile.id === optionId)
+    || (courseDesignerData.optionProfiles || [])[0]
+    || { id: "balanced", code: "균형", label: "복수 관심 균형형", description: "", caution: "" };
+}
+
+function saveCourseDesignerState() {
+  const payload = {
+    plan: state.courseDesignerPlan,
+    status: state.courseDesignerStatus,
+    interests: state.courseDesignerInterests,
+    option: state.courseDesignerOption,
+    generated: state.courseDesignerGenerated,
+    curriculumVersion: curriculumData.updated || ""
+  };
+  localStorage.setItem(COURSE_DESIGNER_STORAGE_KEY, JSON.stringify(payload));
+}
+
+function loadCourseDesignerState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COURSE_DESIGNER_STORAGE_KEY));
+    if (!saved) return;
+    const planKeys = new Set(plannerPlanOrder.filter((key) => curriculumData.plans?.[key]));
+    const statusKeys = new Set(["clear", "considering", "exploring"]);
+    const interestIds = new Set((courseDesignerData.interests || []).map((interest) => interest.id));
+    const optionIds = new Set((courseDesignerData.optionProfiles || []).map((profile) => profile.id));
+    if (planKeys.has(saved.plan)) state.courseDesignerPlan = saved.plan;
+    if (statusKeys.has(saved.status)) state.courseDesignerStatus = saved.status;
+    state.courseDesignerInterests = Array.isArray(saved.interests)
+      ? saved.interests.filter((id) => interestIds.has(id)).slice(0, 3)
+      : [];
+    if (optionIds.has(saved.option)) state.courseDesignerOption = saved.option;
+    state.courseDesignerGenerated = Boolean(saved.generated);
+    state.courseDesignerNeedsReview = Boolean(
+      saved.curriculumVersion
+      && curriculumData.updated
+      && saved.curriculumVersion !== curriculumData.updated
+    );
+    if (state.courseDesignerNeedsReview) state.courseDesignerGenerated = false;
+  } catch (error) {
+    localStorage.removeItem(COURSE_DESIGNER_STORAGE_KEY);
+  }
+}
+
+function buildCourseDesignerSubjectCandidates() {
+  const candidates = new Map();
+  const recordMap = new Map((recommendationData.records || []).map((record) => [record.id, record]));
+  const selectedInterests = getSelectedCourseDesignerInterests();
+  const officialEvidenceMap = buildCourseDesignerOfficialEvidenceMap(selectedInterests, recordMap);
+  const ensureCandidate = (subject) => {
+    const key = normalizeText(subject);
+    if (!key) return null;
+    if (!candidates.has(key)) {
+      candidates.set(key, {
+        subject,
+        sources: new Set(),
+        interests: new Set(),
+        recordMajors: new Set(),
+        levelsByInterest: new Map(),
+        officialEvidence: []
+      });
+    }
+    return candidates.get(key);
+  };
+
+  selectedInterests.forEach((interest) => {
+    (interest.recordIds || []).forEach((recordId) => {
+      const record = recordMap.get(recordId);
+      if (!record) return;
+      [
+        ["core", getRecordCoreSubjects(record)],
+        ["recommended", getRecordRecommendedSubjects(record)],
+        ["suggested", getRecordSuggestedSubjects(record)]
+      ].forEach(([source, subjects]) => {
+        subjects.forEach((subject) => {
+          const candidate = ensureCandidate(subject);
+          if (!candidate) return;
+          candidate.sources.add(source);
+          candidate.interests.add(interest.label);
+          candidate.recordMajors.add(record.major);
+          if (!candidate.levelsByInterest.has(interest.label)) {
+            candidate.levelsByInterest.set(interest.label, new Set());
+          }
+          candidate.levelsByInterest.get(interest.label).add(source);
+        });
+      });
+    });
+  });
+
+  officialEvidenceMap.forEach((evidenceList) => {
+    evidenceList.forEach((evidence) => {
+      const candidate = candidates.get(normalizeText(evidence.subject));
+      if (!candidate) return;
+      const matchesGuideLevel = evidence.level === "core"
+        ? candidate.sources.has("core")
+        : candidate.sources.has("recommended");
+      if (!matchesGuideLevel) return;
+      addCourseDesignerOfficialEvidence(candidate.officialEvidence, evidence);
+    });
+  });
+
+  return [...candidates.values()];
+}
+
+function buildCourseDesignerOfficialEvidenceMap(selectedInterests, recordMap) {
+  const evidenceMap = new Map();
+  const universityRecords = getUniversityRecommendationRecords();
+  selectedInterests.forEach((interest) => {
+    (interest.recordIds || []).forEach((recordId) => {
+      const guideRecord = recordMap.get(recordId);
+      if (!guideRecord) return;
+      universityRecords
+        .filter((record) => courseDesignerGuideMatchesUniversityRecord(guideRecord, record))
+        .forEach((record) => {
+          [
+            ["core", filterRecommendationDisplaySubjects(record.coreSubjects || [])],
+            ["recommended", filterRecommendationDisplaySubjects(record.recommendedSubjects || [])]
+          ].forEach(([level, subjects]) => {
+            subjects.forEach((subject) => {
+              const key = normalizeText(subject);
+              if (!key) return;
+              if (!evidenceMap.has(key)) evidenceMap.set(key, []);
+              addCourseDesignerOfficialEvidence(evidenceMap.get(key), {
+                subject,
+                level,
+                university: record.university || "대학명 확인",
+                department: record.department || "모집단위 확인",
+                interest: interest.label,
+                major: guideRecord.major
+              });
+            });
+          });
+        });
+    });
+  });
+  return evidenceMap;
+}
+
+function courseDesignerGuideMatchesUniversityRecord(guideRecord, universityRecord) {
+  const target = normalizeMajorSearchTerm(universityRecord.department || "");
+  if (!target) return false;
+  return (guideRecord.departments || [])
+    .map((department) => normalizeMajorSearchTerm(department))
+    .filter(Boolean)
+    .some((term) => target === term || target.endsWith(term));
+}
+
+function addCourseDesignerOfficialEvidence(target, evidence) {
+  const key = [evidence.university, evidence.department, evidence.level, normalizeText(evidence.subject)].join("|");
+  if (!target.some((item) => item.key === key)) target.push({ ...evidence, key });
+}
+
+function buildCourseDesignerContext() {
+  const plan = curriculumData.plans?.[state.courseDesignerPlan] || { courses: [] };
+  const subjectCandidates = buildCourseDesignerSubjectCandidates();
+  const choiceGroups = buildCurriculumChoiceGroups(plan.courses || [], curriculumSemesterOrder);
+  const groupMap = buildCourseChoiceGroupMap(choiceGroups);
+  const availableMap = new Map();
+  const fixedMap = new Map();
+  const unmatched = [];
+
+  subjectCandidates.forEach((subjectCandidate) => {
+    const matches = getCourseDesignerCourseMatches(subjectCandidate.subject, state.courseDesignerPlan);
+    if (!matches.length) {
+      unmatched.push(subjectCandidate);
+      return;
+    }
+    matches.forEach((course) => {
+      const targetMap = isPlannerChoiceCourse(course) ? availableMap : fixedMap;
+      mergeCourseDesignerCourseCandidate(targetMap, course, subjectCandidate, groupMap.get(course.id) || []);
+    });
+  });
+
+  const availableCourses = [...availableMap.values()];
+  const fixedCourses = [...fixedMap.values()];
+  const relevantAreas = new Set([...availableCourses, ...fixedCourses].map((item) => item.course.area).filter(Boolean));
+  return {
+    plan,
+    subjectCandidates,
+    availableCourses,
+    fixedCourses,
+    unmatched,
+    relevantAreas
+  };
+}
+
+function mergeCourseDesignerCourseCandidate(targetMap, course, subjectCandidate, groupInfos) {
+  if (!targetMap.has(course.id)) {
+    targetMap.set(course.id, {
+      course,
+      sources: new Set(),
+      interests: new Set(),
+      subjects: new Set(),
+      recordMajors: new Set(),
+      levelsByInterest: new Map(),
+      officialEvidence: [],
+      groupInfos
+    });
+  }
+  const target = targetMap.get(course.id);
+  subjectCandidate.sources.forEach((source) => target.sources.add(source));
+  subjectCandidate.interests.forEach((interest) => target.interests.add(interest));
+  subjectCandidate.recordMajors.forEach((major) => target.recordMajors.add(major));
+  subjectCandidate.levelsByInterest.forEach((levels, interest) => {
+    if (!target.levelsByInterest.has(interest)) target.levelsByInterest.set(interest, new Set());
+    levels.forEach((level) => target.levelsByInterest.get(interest).add(level));
+  });
+  (subjectCandidate.officialEvidence || []).forEach((evidence) => addCourseDesignerOfficialEvidence(target.officialEvidence, evidence));
+  target.subjects.add(subjectCandidate.subject);
+}
+
+function getCourseDesignerCourseMatches(subject, planKey) {
+  const plan = curriculumData.plans?.[planKey];
+  if (!plan) return [];
+  const names = new Set(getCourseDesignerCompareNames(subject, planKey).map((name) => normalizeText(name)));
+  const seen = new Set();
+  return (plan.courses || []).filter((course) => {
+    if (!names.has(normalizeText(course.name)) || seen.has(course.id)) return false;
+    seen.add(course.id);
+    return true;
+  });
+}
+
+function getCourseDesignerCompareNames(subject, planKey) {
+  const planMeta = recommendationCurriculumPlans.find((plan) => plan.key === planKey);
+  const names = new Set(getSubjectCompareNames(subject, planKey));
+  const aliases2022 = {
+    "정치와 법": ["정치", "법과 사회"],
+    "생활과 윤리": ["현대사회와 윤리"],
+    "한국지리": ["한국지리 탐구"],
+    "세계지리": ["세계시민과 지리"]
+  };
+  if (planMeta?.standard === "2022") {
+    (aliases2022[subject] || []).forEach((name) => names.add(name));
+  }
+  return [...names];
+}
+
+function getCourseDesignerOptionSelections(context, optionId) {
+  const selectedByGrade = { "1": [], "2": [], "3": [] };
+  const selectedIds = new Set();
+  const groupUsage = new Map();
+  const areaUsage = new Map();
+  const interestUsage = new Map();
+  const limit = optionId === "explore" ? 4 : 3;
+  const selectedInterestLabels = getSelectedCourseDesignerInterests().map((interest) => interest.label);
+
+  ["1", "2", "3"].forEach((grade) => {
+    const pool = context.availableCourses.filter((candidate) => courseDesignerCourseHasGrade(candidate.course, grade));
+    const getViable = (interestLabel = "") => pool
+      .filter((candidate) => !selectedIds.has(candidate.course.id))
+      .filter((candidate) => !interestLabel || candidate.interests.has(interestLabel))
+      .filter((candidate) => canUseCourseDesignerChoiceGroups(candidate, groupUsage, grade))
+      .map((candidate) => {
+        const interestMetrics = getCourseDesignerInterestMetrics(candidate, interestLabel);
+        return {
+          candidate,
+          score: getCourseDesignerCandidateScore(candidate, optionId, areaUsage, interestUsage),
+          ...interestMetrics
+        };
+      })
+      .sort((a, b) => {
+        if (interestLabel) {
+          return b.interestLevel - a.interestLevel
+            || b.coreBreadth - a.coreBreadth
+            || b.recommendedBreadth - a.recommendedBreadth
+            || b.score - a.score
+            || a.candidate.course.row - b.candidate.course.row;
+        }
+        return b.score - a.score || a.candidate.course.row - b.candidate.course.row;
+      });
+    const selectCandidate = (candidate) => {
+      selectedByGrade[grade].push(candidate);
+      selectedIds.add(candidate.course.id);
+      areaUsage.set(candidate.course.area, (areaUsage.get(candidate.course.area) || 0) + 1);
+      candidate.interests.forEach((interest) => interestUsage.set(interest, (interestUsage.get(interest) || 0) + 1));
+      markCourseDesignerChoiceGroups(candidate, groupUsage, grade);
+    };
+
+    if (optionId !== "deep" && selectedInterestLabels.length > 1) {
+      selectedInterestLabels.forEach((interestLabel) => {
+        if (selectedByGrade[grade].length >= limit) return;
+        const candidate = getViable(interestLabel)[0]?.candidate;
+        if (candidate) selectCandidate(candidate);
+      });
+    }
+
+    while (selectedByGrade[grade].length < limit) {
+      const viable = getViable();
+      if (!viable.length) break;
+      selectCandidate(viable[0].candidate);
+    }
+
+    selectedByGrade[grade] = selectedByGrade[grade]
+      .map((candidate, recommendationOrder) => ({ candidate, recommendationOrder }))
+      .sort((a, b) => getCourseDesignerSemesterIndex(a.candidate, grade) - getCourseDesignerSemesterIndex(b.candidate, grade)
+        || a.recommendationOrder - b.recommendationOrder)
+      .map(({ candidate }) => candidate);
+  });
+  return selectedByGrade;
+}
+
+function getCourseDesignerSemesterIndex(candidate, grade) {
+  const indexes = (candidate.course?.semesters || [])
+    .filter((semesterKey) => String(semesterKey).startsWith(`${grade}-`))
+    .map(getSemesterSortIndex);
+  return indexes.length ? Math.min(...indexes) : Number.MAX_SAFE_INTEGER;
+}
+
+function getCourseDesignerCandidateScore(candidate, optionId, areaUsage = new Map(), interestUsage = new Map()) {
+  const sourceWeights = {
+    deep: { core: 54, recommended: 38, suggested: 12 },
+    balanced: { core: 44, recommended: 38, suggested: 24 },
+    explore: { core: 28, recommended: 32, suggested: 40 }
+  };
+  const weights = sourceWeights[optionId] || sourceWeights.balanced;
+  const sourceScore = Math.max(...[...candidate.sources].map((source) => weights[source] || 0), 0);
+  const officialEvidence = candidate.officialEvidence || [];
+  const officialScore = officialEvidence.some((evidence) => evidence.level === "core")
+    ? 16
+    : officialEvidence.length
+      ? 10
+      : 0;
+  const sharedMultiplier = optionId === "deep" ? 4 : optionId === "balanced" ? 9 : 11;
+  const sharedScore = Math.max(0, candidate.interests.size - 1) * sharedMultiplier;
+  const category = String(candidate.course?.category || "");
+  const categoryScore = optionId === "deep" && category.includes("진로")
+    ? 6
+    : optionId === "explore" && category.includes("융합")
+      ? 10
+      : optionId === "balanced" && category.includes("일반")
+        ? 5
+        : 0;
+  const areaPenalty = (areaUsage.get(candidate.course?.area) || 0) * (optionId === "deep" ? 2 : 7);
+  const interestCounts = [...candidate.interests].map((interest) => interestUsage.get(interest) || 0);
+  const leastUsedInterest = interestCounts.length ? Math.min(...interestCounts) : 0;
+  const interestBalanceScore = optionId === "deep" ? 0 : Math.max(0, 8 - leastUsedInterest * 4);
+  return sourceScore + officialScore + sharedScore + categoryScore + interestBalanceScore - areaPenalty;
+}
+
+function getCourseDesignerInterestMetrics(candidate, interestLabel) {
+  if (!interestLabel) return { interestLevel: 0, coreBreadth: 0, recommendedBreadth: 0 };
+  const currentLevels = candidate.levelsByInterest?.get(interestLabel) || new Set();
+  const interestLevel = currentLevels.has("core")
+    ? 3
+    : currentLevels.has("recommended")
+      ? 2
+      : currentLevels.has("suggested")
+        ? 1
+        : 0;
+  const levelSets = [...(candidate.levelsByInterest?.values() || [])];
+  const coreBreadth = levelSets.filter((levels) => levels.has("core")).length;
+  const recommendedBreadth = levelSets.filter((levels) => levels.has("recommended")).length;
+  return { interestLevel, coreBreadth, recommendedBreadth };
+}
+
+function courseDesignerCourseHasGrade(course, grade) {
+  return (course.semesters || []).some((semesterKey) => String(semesterKey).startsWith(`${grade}-`));
+}
+
+function canUseCourseDesignerChoiceGroups(candidate, usage, grade) {
+  return candidate.groupInfos
+    .filter((group) => String(group.semesterKey).startsWith(`${grade}-`))
+    .every((group) => (usage.get(group.id) || 0) < getCourseDesignerChoiceLimit(group));
+}
+
+function markCourseDesignerChoiceGroups(candidate, usage, grade) {
+  candidate.groupInfos
+    .filter((group) => String(group.semesterKey).startsWith(`${grade}-`))
+    .forEach((group) => usage.set(group.id, (usage.get(group.id) || 0) + 1));
+}
+
+function getCourseDesignerChoiceLimit(group) {
+  const match = String(group.marker || "").match(/택\s*(\d+)/);
+  return match ? Number(match[1]) : 1;
+}
+
+function getCourseDesignerFoundationCourses(context, grade) {
+  const direct = context.fixedCourses
+    .filter((candidate) => courseDesignerCourseHasGrade(candidate.course, grade))
+    .map((candidate) => candidate.course);
+  const common = (context.plan.courses || [])
+    .filter((course) => !isPlannerChoiceCourse(course))
+    .filter((course) => courseDesignerCourseHasGrade(course, grade))
+    .filter((course) => String(course.category || "").includes("공통"))
+    .filter((course) => !context.relevantAreas.size || context.relevantAreas.has(course.area));
+  const seen = new Set();
+  return [...direct, ...common].filter((course) => {
+    const key = normalizeText(course.name);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 4);
+}
+
+function getCourseDesignerAlternatives(context, optionId) {
+  const fakeAreaUsage = new Map();
+  const fakeInterestUsage = new Map();
+  return [...context.unmatched]
+    .map((candidate) => ({
+      ...candidate,
+      course: { area: "", category: "" },
+      score: getCourseDesignerCandidateScore({ ...candidate, course: { area: "", category: "" } }, optionId, fakeAreaUsage, fakeInterestUsage)
+    }))
+    .sort((a, b) => b.score - a.score || String(a.subject).localeCompare(String(b.subject), "ko"))
+    .slice(0, 6);
+}
+
+function renderCourseDesignerResults() {
+  const results = $("#courseDesignerResults");
+  if (!results || results.hidden) return;
+  const profiles = courseDesignerData.optionProfiles || [];
+  if (!profiles.some((profile) => profile.id === state.courseDesignerOption)) {
+    state.courseDesignerOption = getCourseDesignerDefaultOption(state.courseDesignerStatus);
+  }
+  const context = buildCourseDesignerContext();
+  const selectedInterests = getSelectedCourseDesignerInterests();
+  const profile = getCourseDesignerOptionProfile(state.courseDesignerOption);
+  const selections = getCourseDesignerOptionSelections(context, profile.id);
+  const alternatives = getCourseDesignerAlternatives(context, profile.id);
+  const planMeta = recommendationCurriculumPlans.find((plan) => plan.key === state.courseDesignerPlan);
+  const basis = $("#courseDesignerResultBasis");
+  if (basis) {
+    basis.textContent = `${getCurriculumPlanLabel(state.courseDesignerPlan)} · ${planMeta?.standard || ""} 개정 · 교육과정 ${formatDateLabel(curriculumData.updated)}`;
+  }
+  renderCourseDesignerOptionTabs(context);
+  renderCourseDesignerOptionIntro(profile, context, selections, selectedInterests);
+  renderCourseDesignerThreeYearMap(context, selections);
+  renderCourseDesignerAlternativeList(alternatives, planMeta);
+}
+
+function renderCourseDesignerOptionTabs(context) {
+  const target = $("#courseDesignerOptionTabs");
+  if (!target) return;
+  target.innerHTML = (courseDesignerData.optionProfiles || []).map((profile) => {
+    const selections = getCourseDesignerOptionSelections(context, profile.id);
+    const selectedCourses = Object.values(selections).flat();
+    const preview = selectedCourses.slice(0, 3).map((candidate) => candidate.course.name).join(" · ");
+    const active = profile.id === state.courseDesignerOption;
+    return `
+      <button class="course-designer-option-tab${active ? " active" : ""}" type="button" role="tab"
+        aria-selected="${active}" data-course-designer-option="${escapeAttribute(profile.id)}">
+        <span>${escapeHtml(profile.code)}</span>
+        <b>${escapeHtml(profile.label)}</b>
+        <small>${selectedCourses.length ? `살펴볼 과목 ${selectedCourses.length}개 · ${escapeHtml(preview)}` : "학교 선택과목 찾아보기"}</small>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderCourseDesignerOptionIntro(profile, context, selections, interests) {
+  const target = $("#courseDesignerOptionIntro");
+  if (!target) return;
+  const selectedCount = Object.values(selections).flat().length;
+  const fixedCount = context.fixedCourses.length;
+  target.innerHTML = `
+    <div>
+      <span class="course-designer-option-code">${escapeHtml(profile.code)}</span>
+      <div>
+        <h3>${escapeHtml(profile.label)}</h3>
+        <p>${escapeHtml(profile.description)}</p>
+      </div>
+    </div>
+    <dl>
+      <div><dt>관심 분야</dt><dd>${interests.length}</dd></div>
+      <div><dt>살펴볼 과목</dt><dd>${selectedCount}</dd></div>
+      <div><dt>기본 과목</dt><dd>${fixedCount}</dd></div>
+    </dl>
+    <p class="course-designer-option-caution">${escapeHtml(profile.caution)}</p>
+  `;
+}
+
+function renderCourseDesignerThreeYearMap(context, selections) {
+  const target = $("#courseDesignerMap");
+  if (!target) return;
+  target.innerHTML = `
+    <div class="course-designer-map-head">
+      <div>
+        <span class="label">학년별로 살펴보기</span>
+        <h3>1학년부터 3학년까지 어떤 과목을 배우고 선택하는지 살펴봅시다</h3>
+      </div>
+      <span>이미 배운 과목은 관심 분야와 어떻게 이어지는지 돌아보고, 앞으로 선택할 과목은 개설 학기와 선택 묶음을 함께 확인해 보세요.</span>
+    </div>
+    <div class="course-designer-grade-grid">
+      ${["1", "2", "3"].map((grade) => renderCourseDesignerGradeCard(context, selections[grade] || [], grade)).join("")}
+    </div>
+  `;
+}
+
+function renderCourseDesignerGradeCard(context, selectedCourses, grade) {
+  const foundations = getCourseDesignerFoundationCourses(context, grade);
+  return `
+    <article class="course-designer-grade-card grade-${grade}">
+      <header>
+        <span>${grade}</span>
+        <div>
+          <h4>${grade}학년</h4>
+          <small>${getCourseDesignerGradeFocus(grade)}</small>
+        </div>
+      </header>
+      <div class="course-designer-foundation">
+        <b>학교에서 기본으로 배우는 과목 <small>따로 고르지 않음</small></b>
+        <div>
+          ${foundations.length
+            ? foundations.map((course) => `<span>${escapeHtml(course.name)}</span>`).join("")
+            : `<span class="empty">선택한 분야와 바로 연결해 보여줄 기본 과목은 없지만, 다른 기본 과목도 학업 역량을 쌓는 데 중요합니다.</span>`}
+        </div>
+      </div>
+      <div class="course-designer-grade-courses">
+        <b>관심 분야와 이어서 살펴볼 선택과목</b>
+        ${selectedCourses.length
+          ? selectedCourses.map((candidate) => renderCourseDesignerCourseCard(candidate, grade)).join("")
+          : `<p class="course-designer-grade-empty">이 화면에서 먼저 보여줄 선택과목이 없습니다. 다음 학년 과목을 살펴보거나, 기본 과목에서 관심 분야와 이어지는 질문을 찾아보세요.</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function getCourseDesignerGradeFocus(grade) {
+  return `우리학교에서 ${grade}학년에 배우거나 선택하는 과목`;
+}
+
+function renderCourseDesignerCourseCard(candidate, grade) {
+  const course = candidate.course;
+  const primarySource = getCourseDesignerPrimarySource(candidate);
+  const choiceLabel = getCourseDesignerChoiceLabel(candidate, grade);
+  const linkedSubject = isCourseDesignerLinkedSubject(candidate);
+  return `
+    <article class="course-designer-course-card source-${primarySource}">
+      <div class="course-designer-course-head">
+        ${renderCourseNameWithInfo(course)}
+        <span class="course-designer-source-badge">${escapeHtml(getCourseDesignerSourceLabel(primarySource))}</span>
+      </div>
+      <div class="course-designer-course-meta">
+        <span>${escapeHtml(course.area || "교과군 확인")}</span>
+        <span>${escapeHtml(formatSubjectCategory(course.category || ""))}</span>
+        <span>${escapeHtml(choiceLabel)}</span>
+        ${linkedSubject ? `<span class="course-designer-link-candidate">과목명 연결 확인</span>` : ""}
+      </div>
+      <p>${escapeHtml(getCourseDesignerCourseReason(candidate))}</p>
+      ${renderCourseDesignerOfficialEvidence(candidate)}
+      ${renderCourseDesignerPlannerActions(course, grade)}
+    </article>
+  `;
+}
+
+function renderCourseDesignerPlannerActions(course, grade) {
+  const semesters = (course.semesters || [])
+    .filter((semesterKey) => String(semesterKey).startsWith(`${grade}-`))
+    .sort((a, b) => getSemesterSortIndex(a) - getSemesterSortIndex(b))
+    .map((semesterKey) => String(semesterKey).split("-")[1])
+    .filter((semester) => semester === "1" || semester === "2");
+
+  if (!semesters.length) return "";
+  const zone = course.section?.includes("공동교육") ? "joint" : "regular";
+  return `
+    <div class="course-designer-planner-actions" aria-label="${escapeAttribute(course.name)} 내 교육과정 반영">
+      ${semesters.map((semester) => {
+        const selected = isCourseDesignerCoursePlanned(course.id, grade, semester);
+        const availableInMultipleSemesters = semesters.length > 1;
+        const label = selected
+          ? `${availableInMultipleSemesters ? `${semester}학기 ` : ""}반영됨`
+          : availableInMultipleSemesters
+            ? `${semester}학기 반영`
+            : "내 교육과정에 반영";
+        return `
+          <button class="course-designer-add-button${selected ? " selected" : ""}" type="button"
+            data-course-designer-add-course="${escapeAttribute(course.id)}"
+            data-grade="${escapeAttribute(grade)}"
+            data-semester="${escapeAttribute(semester)}"
+            data-zone="${escapeAttribute(zone)}"
+            ${selected ? "disabled" : ""}>${escapeHtml(label)}</button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function isCourseDesignerCoursePlanned(courseId, grade, semester) {
+  const plan = state.plannerPlan === state.courseDesignerPlan
+    ? state.plan
+    : state.plannerPlans[state.courseDesignerPlan];
+  const semesterPlan = plan?.[grade]?.[semester];
+  if (!semesterPlan) return false;
+  return [...(semesterPlan.regular || []), ...(semesterPlan.joint || [])]
+    .some((item) => item.id === courseId);
+}
+
+function addCourseDesignerCourseToPlanner(button) {
+  const courseId = button.dataset.courseDesignerAddCourse;
+  const grade = button.dataset.grade;
+  const semester = button.dataset.semester;
+  const zone = button.dataset.zone || "regular";
+
+  if (state.plannerPlan !== state.courseDesignerPlan) {
+    switchPlannerPlan(state.courseDesignerPlan);
+  }
+
+  const course = getPlannerCourse(courseId);
+  const added = addCourseToPlan(courseId, grade, semester, zone);
+  renderCourseDesignerResults();
+  if (added) {
+    showToast(`${course?.name || "과목"}을 ${grade}학년 ${semester}학기 내 교육과정에 반영했습니다.`);
+  }
+}
+
+function openCourseDesignerPlanner() {
+  if (state.plannerPlan !== state.courseDesignerPlan) {
+    switchPlannerPlan(state.courseDesignerPlan);
+  }
+  setView("planner");
+  setPlannerMode("mine");
+}
+
+function getCourseDesignerChoiceLabel(candidate, grade) {
+  const group = candidate.groupInfos
+    .filter((item) => String(item.semesterKey).startsWith(`${grade}-`))
+    .sort((a, b) => getSemesterSortIndex(a.semesterKey) - getSemesterSortIndex(b.semesterKey))[0];
+  if (group) return `${group.semesterLabel} · ${group.shortLabel} 중 ${group.choiceText}`;
+  const labels = (candidate.course.semesters || [])
+    .filter((semesterKey) => String(semesterKey).startsWith(`${grade}-`))
+    .map(getSemesterLabel);
+  return labels.join(" · ") || `${grade}학년`;
+}
+
+function getCourseDesignerCourseReason(candidate) {
+  const primarySource = getCourseDesignerPrimarySource(candidate);
+  const interests = [...candidate.interests];
+  const interestText = interests.slice(0, 3).join("·") || "선택한 관심";
+  const sourceText = primarySource === "official-core"
+    ? "2028학년도 대학별 자료에서 일부 학과가 핵심과목으로 제시했습니다. 모든 대학이 반드시 요구하는 과목은 아닙니다."
+    : primarySource === "official-recommended"
+      ? "2028학년도 대학별 자료에서 일부 학과가 권장과목으로 제시했습니다. 희망 대학이 정해지면 그 대학의 최신 안내를 다시 확인하세요."
+      : primarySource === "field-guide"
+        ? "관련 학과의 과목 선택 흐름을 참고해 함께 살펴볼 과목입니다. 특정 대학이 공식적으로 지정한 핵심·권장과목은 아닙니다."
+        : "관심 분야를 넓혀 볼 때 함께 살펴볼 과목입니다. 대학이 공식 핵심·권장과목으로 제시한 과목은 아닙니다.";
+  const sourceSubjects = [...candidate.subjects];
+  const renamed = isCourseDesignerLinkedSubject(candidate)
+    ? ` 자료에 나온 ${sourceSubjects.slice(0, 2).join("·")}와 우리학교의 ${candidate.course.name}을 비슷한 흐름의 과목으로 연결했습니다. 두 과목의 내용이 완전히 같다는 뜻은 아닙니다.`
+    : "";
+  return `선택한 ${interestText} 분야를 공부할 때 도움이 될 수 있는 과목입니다. ${sourceText}${renamed}`;
+}
+
+function isCourseDesignerLinkedSubject(candidate) {
+  const courseName = normalizeText(candidate.course?.name || "");
+  const sourceSubjects = [...(candidate.subjects || [])];
+  return Boolean(sourceSubjects.length && !sourceSubjects.some((subject) => normalizeText(subject) === courseName));
+}
+
+function getCourseDesignerPrimarySource(candidate) {
+  const evidence = candidate.officialEvidence || [];
+  if (candidate.sources?.has("core") && evidence.some((item) => item.level === "core")) return "official-core";
+  if (candidate.sources?.has("recommended") && evidence.some((item) => item.level === "recommended")) return "official-recommended";
+  if (candidate.sources?.has("core") || candidate.sources?.has("recommended")) return "field-guide";
+  return "suggested";
+}
+
+function getCourseDesignerSourceLabel(source) {
+  if (source === "official-core") return "대학 자료: 핵심";
+  if (source === "official-recommended") return "대학 자료: 권장";
+  if (source === "field-guide") return "분야 탐색";
+  return "함께 살펴보기";
+}
+
+function renderCourseDesignerOfficialEvidence(candidate) {
+  const evidence = [...(candidate.officialEvidence || [])]
+    .sort((a, b) => (a.level === "core" ? -1 : 1) - (b.level === "core" ? -1 : 1)
+      || String(a.university).localeCompare(String(b.university), "ko")
+      || String(a.department).localeCompare(String(b.department), "ko"));
+  if (!evidence.length) return "";
+  const basis = courseDesignerData.officialBasis || {};
+  const visible = evidence.slice(0, 4);
+  return `
+    <details class="course-designer-evidence">
+      <summary>대학별 제시 사례 보기 (${evidence.length}개 학과·모집단위)</summary>
+      <ul>
+        ${visible.map((item) => `
+          <li><b>${escapeHtml(item.university)}</b> ${escapeHtml(item.department)} <span>${item.level === "core" ? "핵심" : "권장"}</span></li>
+        `).join("")}
+      </ul>
+      ${evidence.length > visible.length ? `<p>이 밖에도 ${evidence.length - visible.length}개 학과·모집단위에서 제시했습니다.</p>` : ""}
+      <small>${escapeHtml(basis.caution || "대학마다 과목을 제시하는 방법이 다르므로 희망 대학의 최신 안내를 다시 확인하세요.")}</small>
+    </details>
+  `;
+}
+
+function renderCourseDesignerAlternativeList(alternatives, planMeta) {
+  const target = $("#courseDesignerAlternatives");
+  if (!target) return;
+  const standard = planMeta?.standard === "2015" ? "15" : "22";
+  target.innerHTML = `
+    <div class="course-designer-alternative-head">
+      <div>
+        <span class="label">우리학교에 없는 과목도 살펴보기</span>
+        <h3>학교에서 열리지 않는 과목은 다른 수강 방법을 알아봅시다</h3>
+      </div>
+      <p>공동교육과정이나 온라인학교에서 들을 수 있는지 알아보고, 내 진로와 학습 계획에 정말 필요한 과목인지 선생님과 함께 살펴보세요.</p>
+    </div>
+    ${alternatives.length ? `
+      <div class="course-designer-alternative-grid">
+        ${alternatives.map((candidate) => {
+          const source = getCourseDesignerPrimarySource(candidate);
+          return `
+            <article class="course-designer-alternative-card source-${source}">
+              <div>
+                <b>${escapeHtml(candidate.subject)}</b>
+                <span>미개설(${standard})</span>
+              </div>
+              <small>${escapeHtml(getCourseDesignerSourceLabel(source))}</small>
+              <p>${escapeHtml([...candidate.interests].join(" · "))} 분야를 더 알아볼 때 도움이 될 수 있는 과목입니다. 실제로 들을 수 있는지와 신청 방법은 선생님께 확인하세요.</p>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    ` : `<div class="empty-note">선택한 관심 분야와 연결되는 주요 과목을 우리학교 교육과정에서 모두 찾았습니다.</div>`}
+  `;
 }
 
 function renderCurriculum() {
@@ -4299,8 +5218,8 @@ function renderCourseNameWithInfo(course) {
     <span class="course-title-with-info">
       <strong>${escapeHtml(course.name)}</strong>
       <button class="subject-info-button" type="button"
-        aria-label="${escapeHtml(`${course.name} 관련 학과 보기`)}"
-        title="관련 학과 보기"
+        aria-label="${escapeHtml(`${course.name} 과목 안내 보기`)}"
+        title="과목 안내 보기"
         data-subject-info
         data-subject-name="${escapeHtml(course.name)}"
         data-subject-area="${escapeHtml(course.area || "")}"
@@ -4317,12 +5236,46 @@ function openSubjectInfoPopup(course) {
   if (!modal || !title || !content || !course.name) return;
 
   const relation = getSubjectRelationInfo(course);
-  if (label) label.textContent = "관련 학과 예시";
+  const guide = getSubjectGuideInfo(course, relation);
+  const offerings = getSubjectGuideOfferings(course.name);
+  if (label) label.textContent = "과목 선택 안내";
   title.textContent = course.name;
   content.innerHTML = `
-    <p class="subject-info-copy">${escapeHtml(relation.description || getSubjectConnectionPoint(course))}</p>
-    <div class="subject-info-section">
-      <b>관련 계열·학과 예시</b>
+    <div class="subject-guide-meta" aria-label="과목 기본 정보">
+      <span>${escapeHtml(course.area || "교과 확인")}</span>
+      <span>${escapeHtml(formatSubjectCategory(course.category))}</span>
+      ${(guide.badges || []).map((badge) => `<span class="subject-guide-badge">${escapeHtml(badge)}</span>`).join("")}
+    </div>
+    <section class="subject-guide-opening">
+      <b>우리학교 개설 정보</b>
+      ${renderSubjectGuideOfferings(offerings, course.name)}
+    </section>
+    <div class="subject-guide-summary-grid">
+      <section class="subject-guide-summary-card is-learning">
+        <span>무엇을 배우나요</span>
+        <p>${escapeHtml(guide.learning)}</p>
+      </section>
+      <section class="subject-guide-summary-card">
+        <span>준비하면 좋은 역량</span>
+        <div class="subject-guide-chip-list">
+          ${guide.competencies.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+        </div>
+      </section>
+    </div>
+    <section class="subject-guide-detail-section">
+      <b>수업에서 해볼 수 있는 활동</b>
+      <ul>${guide.activities.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+    ${guide.relatedSubjects.length ? `
+      <section class="subject-guide-detail-section">
+        <b>함께 살펴볼 과목</b>
+        <div class="subject-guide-related-list">
+          ${guide.relatedSubjects.map((subject) => `<span>${escapeHtml(subject)}</span>`).join("")}
+        </div>
+      </section>
+    ` : ""}
+    <details class="subject-guide-major-details">
+      <summary>관련 계열·학과 예시 보기</summary>
       <div class="subject-info-track-list">
         ${relation.tracks.map((track) => `
           <section class="subject-info-track-card">
@@ -4333,15 +5286,62 @@ function openSubjectInfoPopup(course) {
           </section>
         `).join("")}
       </div>
-    </div>
+    </details>
+    <p class="subject-guide-basis">안내 기준 · ${escapeHtml(guide.basisLabel)} · ${escapeHtml(formatDateLabel(subjectGuideData.updated))}</p>
     <p class="subject-info-caution">
-      이 목록은 과목과 진로를 연결해 생각하기 위한 예시입니다. 대학의 공식 핵심·권장 과목이라는 뜻은 아니며, 실제 반영 여부는 대학별 자료에서 따로 확인해야 합니다. 희망 학과와 바로 연결되지 않아 보여도 필요 없는 과목은 아닙니다. 수업 속 질문 만들기, 자료 해석, 토론, 발표, 협업, 성찰을 통해 학업역량과 공동체역량을 보여줄 수 있습니다.
+      이 안내는 과목 선택을 돕는 참고 자료이며 대학의 공식 핵심·권장 과목을 뜻하지 않습니다. 실제 수업 내용과 개설 여부는 학교 안내를, 대학 반영 여부는 해당 학년도 대학 자료를 확인하세요. 희망 진로와 직접 연결되지 않는 과목도 질문·자료 해석·토론·협업을 통해 학업역량과 공동체역량을 보여줄 수 있습니다.
     </p>
   `;
 
   modal.hidden = false;
   document.body.classList.add("modal-open");
   $(".subject-info-close")?.focus();
+}
+
+function getSubjectGuideInfo(course, relation) {
+  const areaProfile = subjectGuideData.areaProfiles?.[course.area] || {};
+  const groupProfile = subjectGuideData.groupProfiles?.[relation.title] || {};
+  return {
+    learning: groupProfile.learning || relation.description || areaProfile.learning || getSubjectConnectionPoint(course),
+    activities: groupProfile.activities || areaProfile.activities || ["수업 개념에서 질문 만들기", "자료를 찾아 근거 비교하기", "결과와 한계를 자신의 말로 정리하기"],
+    competencies: groupProfile.competencies || areaProfile.competencies || ["질문 만들기", "자료 해석", "성찰"],
+    relatedSubjects: groupProfile.relatedSubjects || [],
+    badges: groupProfile.badges || ["과목 탐색"],
+    basisLabel: subjectGuideData.basisLabel || "교육과정·전공 연계 참고"
+  };
+}
+
+function formatSubjectCategory(category) {
+  const value = String(category || "").trim();
+  if (!value) return "과목 유형 확인";
+  if (value.endsWith("선택") || value === "공통") return value;
+  return `${value}선택`;
+}
+
+function getSubjectGuideOfferings(subject) {
+  return recommendationCurriculumPlans.flatMap((plan) => {
+    return getSubjectCurriculumMatches(subject, plan.key).map((match) => ({
+      ...plan,
+      name: match.name,
+      semesters: match.semesters || []
+    }));
+  });
+}
+
+function renderSubjectGuideOfferings(offerings, subject) {
+  if (!offerings.length) {
+    return `<p class="subject-guide-opening-empty">우리학교 교육과정에서 개설 정보를 찾지 못했습니다. 공동교육과정과 학교 밖 교육 가능 여부를 상담해 보세요.</p>`;
+  }
+
+  return `
+    <div class="subject-guide-offering-list">
+      ${offerings.map((offering) => {
+        const semesterLabel = offering.semesters.map((semesterKey) => getSemesterLabel(semesterKey)).join(" · ") || "학년·학기 확인";
+        const actualName = normalizeText(offering.name) === normalizeText(subject) ? "" : ` · ${offering.name}`;
+        return `<span class="subject-guide-offering ${offering.className}"><b>${escapeHtml(offering.shortLabel)}</b> · ${escapeHtml(semesterLabel)}${escapeHtml(actualName)}</span>`;
+      }).join("")}
+    </div>
+  `;
 }
 
 function openSelfEvalHelpPopup(helpKey) {
@@ -4868,7 +5868,8 @@ function getSubjectCompareNames(subject, planKey) {
     "영어Ⅰ": ["공통영어1", "공통영어2"],
     "영어Ⅱ": ["공통영어1", "공통영어2"],
     "세계사(지리)": ["세계사", "세계시민과 지리"],
-    "세계지리": ["세계시민과 지리"]
+    "세계지리": ["세계시민과 지리"],
+    "심리학": ["인간과 심리"]
   };
   const to2015 = {
     "대수": ["수학Ⅰ"],
@@ -4883,7 +5884,8 @@ function getSubjectCompareNames(subject, planKey) {
     "주제 탐구 독서": ["독서"],
     "공통영어1": ["영어Ⅰ"],
     "공통영어2": ["영어Ⅱ"],
-    "세계시민과 지리": ["세계지리"]
+    "세계시민과 지리": ["세계지리"],
+    "인간과 심리": ["심리학"]
   };
   const equivalents = plan?.standard === "2015" ? to2015 : to2022;
   return [...new Set([subject, ...(equivalents[subject] || [])])];
@@ -6646,24 +7648,24 @@ function removeAdditionalCourseFromPlan(grade, semester, index) {
 
 function addCourseToPlan(courseId, grade, semester, zone) {
   const course = getPlannerCourse(courseId);
-  if (!course) return;
+  if (!course) return false;
   const semesterKey = `${grade}-${semester}`;
 
   if (course.semesters?.length && !course.semesters.includes(semesterKey)) {
     showToast("이 과목은 해당 학기에 편성된 과목이 아닙니다.");
-    return;
+    return false;
   }
 
   const list = state.plan[grade][semester][zone];
   if (list.some((item) => item.id === course.id)) {
     showToast("이미 이 학기에 추가한 과목입니다.");
-    return;
+    return false;
   }
 
   const actionState = getPlannerCourseActionState(course, grade, semester);
   if (actionState.disabledByLimit) {
     showToast(`이 선택 묶음은 ${actionState.limit}과목까지만 선택할 수 있습니다.`);
-    return;
+    return false;
   }
 
   list.push({ id: course.id, credits: getPlannerCourseCredits(course, grade, semester) });
@@ -6672,12 +7674,13 @@ function addCourseToPlan(courseId, grade, semester, zone) {
   if (zone === "joint" && jointCredits > 6) {
     list.pop();
     showToast("공동교육과정은 학기당 최대 6학점까지 입력합니다.");
-    return;
+    return false;
   }
 
   saveState(false);
   renderCoursePool();
   renderPlanner();
+  return true;
 }
 
 function removeCourseFromPlan(courseId, grade, semester, zone) {
@@ -6894,6 +7897,8 @@ function renderAdmissionDetailPage(pageKey, page, tabs) {
     <nav class="in-page-tabs admission-page-tabs ${page.tone === "holistic" ? "holistic-tabs" : ""}" aria-label="${escapeHtml(page.title)} 세부 안내">
       ${tabs.map((tab) => `<a class="${tab.key === pageKey ? "active" : ""}" href="${escapeAttribute(tab.href)}">${escapeHtml(tab.label)}</a>`).join("")}
     </nav>
+
+    ${page.basis ? `<aside class="admission-basis-note"><strong>자료 기준</strong><span>${escapeHtml(page.basis)}</span><small>최근 확인 2026.07.18</small></aside>` : ""}
 
     <div class="detail-hero ${page.tone === "holistic" ? "holistic-hero" : "subject-hero"}">
       <div>

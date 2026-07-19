@@ -1,4 +1,20 @@
-const state = { manifest: null, allRows: [], trends: new Map(), rows: [], filtered: [], selectedYear: "", targetSlot: 0, targetBucket: "" };
+const RESULTS_PER_PAGE = 40;
+const state = {
+  manifest: null,
+  trends: new Map(),
+  trendRowIds: new Set(),
+  historyRowsById: new Map(),
+  lineageOptionsByHistoryId: new Map(),
+  lineageLoadedCodes: new Set(),
+  searchAliases: new Map(),
+  historyLoadedCodes: new Set(),
+  rows: [],
+  filtered: [],
+  selectedYear: "",
+  visibleCount: RESULTS_PER_PAGE,
+  targetSlot: 0,
+  targetBucket: ""
+};
 const byId = (id) => document.getElementById(id);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -109,7 +125,10 @@ function sortRows(rows) {
   const metric = (row) => {
     if (metricName === "grade") return gradeMetricValue(row);
     if (metricName === "competition") return numericValue(row.competition_rate);
-    if (metricName === "additional") return numericValue(row.additional_admits || row.waitlist_last_rank);
+    if (metricName === "additional") {
+      const additional = additionalMetricInfo(row);
+      return additional.comparable ? numericValue(additional.rawValue) : null;
+    }
     if (metricName === "quota") return numericValue(row.quota);
     if (metricName === "coverage") return coverageScore(row);
     return null;
@@ -152,10 +171,39 @@ function verificationClass(value) {
   return "is-consensus";
 }
 
+function aliasText(row) {
+  const alias = row.searchAlias || {};
+  return [
+    ...(alias.currentDepartments || []),
+    ...(alias.currentAdmissions || [])
+  ].join(" ");
+}
+
+function aliasMatch(row, query) {
+  if (!query || !row.searchAlias) return false;
+  const current = aliasText(row).toLocaleLowerCase("ko");
+  const historical = `${row.department} ${row.admission}`.toLocaleLowerCase("ko");
+  return current.includes(query) && !historical.includes(query);
+}
+
+function aliasNotice(row) {
+  const alias = row.searchAlias || {};
+  const departments = [...new Set(alias.currentDepartments || [])];
+  const admissions = [...new Set(alias.currentAdmissions || [])];
+  const labels = [
+    departments.length ? `학과 ${departments.join("·")}` : "",
+    admissions.length ? `전형 ${admissions.join("·")}` : ""
+  ].filter(Boolean);
+  return labels.length
+    ? `<p class="official-alias-notice"><strong>2027 공식 명칭으로 연결</strong><span>${escapeHtml(labels.join(" / "))}</span></p>`
+    : "";
+}
+
 const FIELD_LABELS = {
   quota: "모집인원",
   competition_rate: "경쟁률",
-  additional_admits: "충원",
+  additional_admits: "추합·충원 관련값",
+  waitlist_last_rank: "최종 충원순위",
   result_mean: "평균등급",
   result_50: "50%컷",
   result_70: "70%컷",
@@ -186,18 +234,24 @@ function fieldList(values) {
 }
 
 function verificationNote(row) {
+  const derivedCompetition = (row.derivedFields || []).includes("competition_rate")
+    ? " 경쟁률은 대학이 공개한 모집인원과 지원자 수로 계산했습니다."
+    : "";
+  const metricDefinition = row.metric_definition_status === "needs_review"
+    ? " 추합·충원 공개값은 인원과 최종 순위 중 의미가 확인되지 않아 비율 계산과 충원인원 정렬에서 제외했습니다."
+    : "";
   if (row.verification === "adiga_reference_snapshot") {
-    return "현재 화면에서 다시 확인하기 어려운 과거 대학어디가 공개값을 확인해 보완한 자료입니다.";
+    return `현재 화면에서 다시 확인하기 어려운 과거 대학어디가 공개값을 확인해 보완한 자료입니다.${derivedCompetition}${metricDefinition}`;
   }
   if (row.verification === "reference_snapshot_supplemented") {
     const fields = fieldList(row.supplementedFields);
-    return `대학어디가 원문을 기준으로${fields ? `, 비어 있던 ${fields}은` : " 일부 빈 값은"} 과거 공개자료로 보완했습니다.`;
+    return `대학어디가 원문을 기준으로${fields ? `, 비어 있던 ${fields}은` : " 일부 빈 값은"} 과거 공개자료로 보완했습니다.${derivedCompetition}${metricDefinition}`;
   }
   if (row.verification === "official_primary_partial") {
     const fields = fieldList(row.suppressedFields);
-    return `대학어디가 원문에서 확인된 값만 표시합니다.${fields ? ` 자료의 의미가 달랐던 ${fields}은 표시하지 않았습니다.` : " 서로 다르게 확인된 값은 표시하지 않았습니다."}`;
+    return `대학어디가 원문에서 확인된 값만 표시합니다.${fields ? ` 자료의 의미가 달랐던 ${fields}은 표시하지 않았습니다.` : " 서로 다르게 확인된 값은 표시하지 않았습니다."}${derivedCompetition}${metricDefinition}`;
   }
-  return "";
+  return `${derivedCompetition}${metricDefinition}`.trim();
 }
 
 function savedIds() {
@@ -235,6 +289,62 @@ function trendKey(row) {
   return [row.university, row.category, admissionKeyForTrend(row.admission), row.department].map((value) => String(value || "").replace(/\s/g, "")).join("|");
 }
 
+function indexTrendRows(rows) {
+  rows.forEach((row) => {
+    const identity = row.id || [row.year, row.universityCode, row.admission, row.department].join("|");
+    if (row.id) state.historyRowsById.set(row.id, row);
+    if (state.trendRowIds.has(identity)) return;
+    state.trendRowIds.add(identity);
+    const key = trendKey(row);
+    if (!state.trends.has(key)) state.trends.set(key, []);
+    state.trends.get(key).push(row);
+  });
+}
+
+function registerLineagePayload(payload) {
+  (payload?.options || []).forEach((option) => {
+    const registered = { ...option, lineageUniversityCode: payload.universityCode || "" };
+    (option.approvedHistoryIds || []).forEach((historyId) => {
+      const current = state.lineageOptionsByHistoryId.get(historyId) || [];
+      if (!current.some((entry) => entry.optionId === registered.optionId)) current.push(registered);
+      state.lineageOptionsByHistoryId.set(historyId, current);
+    });
+  });
+}
+
+async function ensureHistoryCode(code) {
+  const normalized = String(code || "").trim();
+  if (!normalized || state.historyLoadedCodes.has(normalized)) return;
+  state.historyLoadedCodes.add(normalized);
+  try {
+    const historyRows = await AdmissionDataLoader.loadUniversityHistory(state.manifest, normalized);
+    indexTrendRows(historyRows);
+  } catch (error) {
+    state.historyLoadedCodes.delete(normalized);
+    throw error;
+  }
+}
+
+async function ensureUniversityHistory(row) {
+  const historyCode = String(row.universityCode || "").trim();
+  const currentCode = String(row.searchAlias?.universityCode || historyCode).trim();
+  if (!historyCode && !currentCode) return;
+  let lineagePayload = null;
+  if (currentCode && !state.lineageLoadedCodes.has(currentCode)) {
+    lineagePayload = await AdmissionDataLoader.loadUniversityLineage(state.manifest, currentCode);
+    if (lineagePayload) registerLineagePayload(lineagePayload);
+    state.lineageLoadedCodes.add(currentCode);
+  } else if (currentCode) {
+    lineagePayload = await AdmissionDataLoader.loadUniversityLineage(state.manifest, currentCode);
+  }
+  const historyCodes = [
+    historyCode,
+    currentCode,
+    ...(lineagePayload?.historyUniversityCodes || [])
+  ];
+  await Promise.all([...new Set(historyCodes.filter(Boolean))].map(ensureHistoryCode));
+}
+
 function admissionKeyForTrend(value) {
   let text = String(value || "").replace(/\s|[()[\]{}.,·・\-_]/g, "");
   ["학생부위주교과", "학생부위주종합", "학생부교과", "학생부종합", "논술위주", "실기위주", "전형"].forEach((token) => {
@@ -264,7 +374,7 @@ function gradeCutMetric(row) {
   const content = `<span class="grade-cut-list">${slots.map(({ field, label }) => {
     const value = field ? row[field] : "";
     const undisclosed = field ? suppressed.has(field) : false;
-    const rendered = value || (undisclosed ? "미공개" : "-");
+    const rendered = value || (undisclosed ? "미공개" : "자료 없음");
     return `<span class="grade-cut${value ? "" : " is-empty"}"><b>${escapeHtml(label)}</b><strong>${escapeHtml(rendered)}</strong></span>`;
   }).join("")}</span>`;
 
@@ -277,21 +387,58 @@ function countWithUnit(value, unit) {
   return /[가-힣]/.test(text) ? text : `${text}${unit}`;
 }
 
-function admissionVolume(row) {
-  const quota = countWithUnit(row.quota, "명");
-  if (row.additional_admits) {
-    return { label: "모집 / 충원", value: `${quota} / ${countWithUnit(row.additional_admits, "명")}` };
+function additionalMetricInfo(row) {
+  const type = String(row.additional_metric_type || "").trim()
+    || (row.waitlist_last_rank ? "waitlist_last_rank" : row.additional_admits ? "unknown" : "none");
+  if (type === "additional_count" && row.additional_admits) {
+    return {
+      type,
+      label: row.additional_metric_label || "충원인원",
+      value: countWithUnit(row.additional_admits, "명"),
+      rawValue: row.additional_admits,
+      comparable: true
+    };
   }
-  if (row.waitlist_last_rank) {
-    return { label: "모집 / 최종 예비", value: `${quota} / ${countWithUnit(row.waitlist_last_rank, "번")}` };
+  if (type === "waitlist_last_rank" && row.waitlist_last_rank) {
+    return {
+      type,
+      label: row.additional_metric_label || "최종 충원순위",
+      value: countWithUnit(row.waitlist_last_rank, "번"),
+      rawValue: row.waitlist_last_rank,
+      comparable: false
+    };
+  }
+  if ((row.additional_admits || row.waitlist_last_rank) && type === "unknown") {
+    return {
+      type,
+      label: row.additional_metric_label || "추합·충원 공개값",
+      value: String(row.additional_admits || row.waitlist_last_rank),
+      rawValue: row.additional_admits || row.waitlist_last_rank,
+      comparable: false
+    };
   }
   const suppressed = new Set(row.suppressedFields || []);
-  return { label: "모집 / 충원", value: `${quota} / ${suppressed.has("additional_admits") ? "미공개" : "-"}` };
+  return {
+    type: "none",
+    label: "추합·충원 관련값",
+    value: suppressed.has("additional_admits") || suppressed.has("waitlist_last_rank") ? "미공개" : "-",
+    rawValue: "",
+    comparable: false
+  };
+}
+
+function admissionVolume(row) {
+  const quota = countWithUnit(row.quota, "명");
+  const additional = additionalMetricInfo(row);
+  return { label: `모집 / ${additional.label}`, value: `${quota} / ${additional.value}` };
 }
 
 function competitionSummary(row) {
   const value = String(row.competition_rate || "").trim();
-  if (value) return value.includes(":") ? value : `${value}:1`;
+  if (value) {
+    const displayed = value.includes(":") ? value : `${value}:1`;
+    return (row.derivedFields || []).includes("competition_rate") ? `${displayed} · 계산` : displayed;
+  }
   return (row.suppressedFields || []).includes("competition_rate") ? "미공개" : "-";
 }
 
@@ -317,29 +464,68 @@ function trendBasisLabel(row) {
   return text ? "성적 공개 기준 확인" : "성적 기준 미표기";
 }
 
+function compactTrendText(value) {
+  return String(value || "").replace(/\s|[()[\]{}.,·・\-_]/g, "");
+}
+
+function lineageOptionForRow(row) {
+  const options = state.lineageOptionsByHistoryId.get(row.id) || [];
+  if (options.length <= 1) return options[0] || null;
+  const aliasDepartments = new Set((row.searchAlias?.currentDepartments || []).map(compactTrendText));
+  const aliasAdmissions = new Set((row.searchAlias?.currentAdmissions || []).map(admissionKeyForTrend));
+  const aliasMatch = options.filter((option) => (
+    (!aliasDepartments.size || aliasDepartments.has(compactTrendText(option.department)))
+    && (!aliasAdmissions.size || aliasAdmissions.has(admissionKeyForTrend(option.admissionName)))
+  ));
+  if (aliasMatch.length === 1) return aliasMatch[0];
+  const exact = options.filter((option) => compactTrendText(option.department) === compactTrendText(row.department)
+    && admissionKeyForTrend(option.admissionName) === admissionKeyForTrend(row.admission));
+  return exact.length === 1 ? exact[0] : null;
+}
+
+function lineageRelationDisplay(relation) {
+  return {
+    admission_changed_candidate: "공식 전형명 변경 확인",
+    renamed_candidate: "공식 학과명 변경 확인",
+    university_predecessor_candidate: "통합 전 대학 계보 확인",
+    merged_candidate: "공식 학과 통합 확인",
+    split_candidate: "공식 학과 분리 확인",
+    similar_reference: "공식 계보 확인"
+  }[relation] || "공식 계보 확인";
+}
+
 function trendConnectionLabel(item, selected) {
+  if (item._lineageConnectionStatus === "approved_official_evidence") {
+    return lineageRelationDisplay(item._lineageRelation);
+  }
   if (item.department !== selected.department) return "유사 모집단위 참고";
   if (cleanAdmissionName(item.admission) !== cleanAdmissionName(selected.admission)) return "전형명 변경 연결";
   return "동일 모집단위·전형";
 }
 
 function trendAdditionalSummary(row) {
-  const suppressed = new Set(row.suppressedFields || []);
-  if (row.additional_admits) {
+  const info = additionalMetricInfo(row);
+  if (info.type === "additional_count") {
     const quota = numericValue(row.quota);
     const additional = numericValue(row.additional_admits);
     const rate = quota && additional !== null ? ` · ${Math.round((additional / quota) * 100)}%` : "";
-    return { label: "충원", value: `${countWithUnit(row.additional_admits, "명")}${rate}` };
+    return { label: info.label, value: `${info.value}${rate}` };
   }
-  if (row.waitlist_last_rank) {
-    return { label: "최종 예비", value: countWithUnit(row.waitlist_last_rank, "번") };
-  }
-  return { label: "충원", value: suppressed.has("additional_admits") ? "미공개" : "-" };
+  return { label: info.label, value: info.value };
 }
 
 function trendRows(row) {
   const key = trendKey(row);
-  const same = [...(state.trends.get(key) || [])];
+  const lineageOption = lineageOptionForRow(row);
+  const lineageRows = (lineageOption?.approvedHistoryIds || [])
+    .map((historyId) => state.historyRowsById.get(historyId))
+    .filter(Boolean)
+    .map((entry) => ({
+      ...entry,
+      _lineageConnectionStatus: lineageOption.connectionStatus || "approved_exact",
+      _lineageRelation: lineageOption.approvedRelation || "same"
+    }));
+  const same = lineageRows.length ? lineageRows : [...(state.trends.get(key) || [])];
   const byYear = new Map();
   same.sort((a, b) => {
     const exactA = a.admission === row.admission ? 0 : 1;
@@ -359,11 +545,72 @@ function trendRows(row) {
         result_85: candidate.result_85 || linked.result_85 || "",
         result_90: candidate.result_90 || linked.result_90 || "",
         additional_admits: candidate.additional_admits || linked.additional_admits || "",
+        waitlist_last_rank: candidate.waitlist_last_rank || linked.waitlist_last_rank || "",
+        additional_metric_type: candidate.additional_metric_type || linked.additional_metric_type || "",
+        additional_metric_label: candidate.additional_metric_label || linked.additional_metric_label || "",
+        metric_definition_status: candidate.metric_definition_status || linked.metric_definition_status || "",
         verifiedRow: true
       });
     }
   });
   return ["2024", "2025", "2026"].map((year) => byYear.get(year) || { year });
+}
+
+function trendReferenceGroups(row) {
+  const option = lineageOptionForRow(row);
+  const groups = { similarDepartments: [], otherAdmissions: [] };
+  if (!option) return groups;
+  const seen = new Set();
+  (option.candidates || [])
+    .filter((candidate) => !["approved_trend", "rejected"].includes(candidate.reviewStatus))
+    .forEach((candidate) => {
+      const entries = (candidate.historicalRecordIds || [])
+        .map((historyId) => state.historyRowsById.get(historyId))
+        .filter(Boolean)
+        .sort((left, right) => Number(right.year) - Number(left.year));
+      const entry = entries[0];
+      if (!entry) return;
+      const key = `${entry.year}|${entry.department}|${entry.admission}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const reference = {
+        ...entry,
+        _lineageRelation: candidate.relation || "similar_reference",
+        _lineageReviewStatus: candidate.reviewStatus || "manual_review",
+        _lineageEvidence: candidate.reviewEvidence || {}
+      };
+      const sameDepartment = compactTrendText(candidate.department) === compactTrendText(option.department);
+      const differentAdmission = admissionKeyForTrend(candidate.admission) !== admissionKeyForTrend(option.admissionName);
+      if (sameDepartment && differentAdmission) groups.otherAdmissions.push(reference);
+      else groups.similarDepartments.push(reference);
+    });
+  return groups;
+}
+
+function trendReferenceLabel(entry) {
+  if (entry._lineageReviewStatus === "approved_reference") return "공식 참고 관계";
+  return {
+    admission_changed_candidate: "다른 전형",
+    renamed_candidate: "학과명 변경 후보",
+    university_predecessor_candidate: "통합 전 대학 후보",
+    merged_candidate: "학과 통합 후보",
+    split_candidate: "학과 분리 후보",
+    duplicate_current_identity_candidate: "동일 명칭 구분 필요",
+    similar_reference: "유사 모집단위"
+  }[entry._lineageRelation] || "참고 후보";
+}
+
+function renderTrendReferenceGroup(entries, type) {
+  if (!entries.length) return "";
+  const otherAdmission = type === "other-admission";
+  return `<details class="trend-reference-group${otherAdmission ? " is-other-admission" : ""}">
+    <summary>${otherAdmission ? "같은 모집단위의 다른 전형 참고" : "유사 모집단위 참고"} ${entries.length}건</summary>
+    <p>${otherAdmission ? "같은 학과라도 전형별 평가방법과 지원자 집단이 달라 확정 추이에 합치지 않습니다." : "명칭 변경·통합·분리 가능성 또는 학문 분야가 비슷한 자료이며, 공식 계보가 확인되기 전에는 확정 추이에 합치지 않습니다."}</p>
+    <div>${entries.map((entry) => {
+      const evidenceUrl = entry._lineageEvidence?.sourceUrl || entry.officeSourceUrl || entry.sourceUrl;
+      return `<span><b>${escapeHtml(trendReferenceLabel(entry))}</b><strong>${escapeHtml(entry.year)}학년도 ${escapeHtml(entry.department)}</strong><em>${escapeHtml(entry.admission || "전형명 확인 필요")}</em><i>경쟁률 ${escapeHtml(competitionSummary(entry))} · ${escapeHtml(gradeSummary(entry))}</i>${evidenceUrl ? `<a href="${escapeHtml(evidenceUrl)}" target="_blank" rel="noopener noreferrer">근거 보기</a>` : ""}</span>`;
+    }).join("")}</div>
+  </details>`;
 }
 
 function gradeValue(row) {
@@ -373,18 +620,20 @@ function gradeValue(row) {
 
 function trendChart(row) {
   const rows = trendRows(row);
+  const references = trendReferenceGroups(row);
   const visibleCount = rows.filter((item) => item.id).length;
   return `
     <section class="trend-section" aria-label="3개년 입결 추이">
       <div class="trend-head">
-        <div><strong>3개년 입결 추이</strong><span>동일 대학·학과·전형 세부 유형을 연결한 결과입니다.</span></div>
+        <div><strong>확정 3개년 입결 추이</strong><span>동일 명칭 또는 대학 공식 근거로 계보가 확인된 자료만 연결합니다.</span></div>
         <em>${visibleCount}/3개년 확인</em>
       </div>
+      <p class="trend-identity-note">수능최저·모집인원·전형방법·반영비율이 달라졌다는 이유만으로 다른 모집단위로 분리하지 않습니다. 다만 전형명이 달라진 경우에는 대학 공식 근거를 확인한 뒤 연결하며, 바뀐 조건은 학년도별로 따로 보여줍니다.</p>
       <div class="trend-grid">
         ${rows.map((item) => {
           if (!item.id) return `<article class="trend-year is-empty">
             <header class="trend-year-head"><strong>${item.year}학년도</strong><span>모집 -</span></header>
-            <p>동일 모집단위·전형 연결 자료 없음</p>
+            <p>확정 연결 자료 없음</p>
           </article>`;
           const additional = trendAdditionalSummary(item);
           const sourceUrl = item.officeSourceUrl || item.sourceUrl;
@@ -405,6 +654,8 @@ function trendChart(row) {
         }).join("")}
       </div>
       ${renderGradeTrack(rows)}
+      ${renderTrendReferenceGroup(references.similarDepartments, "similar-department")}
+      ${renderTrendReferenceGroup(references.otherAdmissions, "other-admission")}
     </section>`;
 }
 
@@ -425,7 +676,8 @@ function renderGradeTrack(rows) {
   </div>`;
 }
 
-function render() {
+function render(resetLimit = false) {
+  if (resetLimit) state.visibleCount = RESULTS_PER_PAGE;
   const university = byId("universityFilter").value;
   const category = byId("categoryFilter").value;
   const admissionType = byId("admissionTypeFilter").value;
@@ -452,7 +704,7 @@ function render() {
       if (gradeMax !== null && grade > gradeMax) return false;
     }
     if (query) {
-      const haystack = `${row.university} ${row.admission} ${row.admissionType} ${row.department} ${row.departmentGroup} ${row.region} ${row.ownershipGroup}`.toLocaleLowerCase("ko");
+      const haystack = `${row.university} ${row.admission} ${row.admissionType} ${row.department} ${row.departmentGroup} ${row.region} ${row.ownershipGroup} ${aliasText(row)}`.toLocaleLowerCase("ko");
       if (!haystack.includes(query)) return false;
     }
     return true;
@@ -464,7 +716,8 @@ function render() {
     ? `<strong>${escapeHtml(special.name)}</strong><span>표준화된 3개년 입결 자료가 없어 임의의 등급 행을 만들지 않았습니다. 2027학년도 공식 모집요강을 확인해 상담카드에 직접 작성하세요.</span><a href="./grade3-consultation-card.html?bucket=exempt">상담카드 별도 지원란에서 작성</a>`
     : "조건에 맞는 결과가 없습니다.";
   const cardIds = savedIds();
-  byId("resultList").innerHTML = state.filtered.slice(0, 300).map((row) => {
+  const visibleRows = state.filtered.slice(0, state.visibleCount);
+  byId("resultList").innerHTML = visibleRows.map((row) => {
     const isSaved = cardIds.has(row.id);
     const admissionName = cleanAdmissionName(row.admission);
     const buttonText = state.targetBucket === "exempt"
@@ -475,6 +728,7 @@ function render() {
     const sourceNote = verificationNote(row);
     const sourceLinkLabel = row.verification === "adiga_reference_snapshot" ? "대학어디가 대학 정보" : "대학어디가 원문";
     const volume = admissionVolume(row);
+    const showAlias = aliasMatch(row, query);
     return `
     <article class="result-item">
       <div class="result-identity">
@@ -490,15 +744,18 @@ function render() {
         <strong>${escapeHtml(admissionName)}</strong>
         <span class="verification-chip ${verificationClass(row.verification)}">${escapeHtml(verificationLabel(row.verification))}</span>
       </div>
+      ${showAlias ? aliasNotice(row) : ""}
       <div class="result-metrics">
         ${gradeCutMetric(row)}
         ${metric("경쟁률", competitionSummary(row))}
         ${metric(volume.label, volume.value)}
       </div>
       <div class="result-controls">
-        <details class="result-detail">
+        <details class="result-detail" data-history-id="${escapeHtml(row.id)}">
           <summary>3개년·상세 보기</summary>
-          ${trendChart(row)}
+          <div class="trend-content" data-trend-id="${escapeHtml(row.id)}">
+            <p class="trend-loading">상세보기를 열면 이 대학의 3개년 자료를 불러옵니다.</p>
+          </div>
           <section class="target-2027">
             <strong>2027학년도 지원 전형</strong>
             <p>상담카드에서 2027 공식 모집요강의 학과·전형명을 확인해 입력합니다. 현재 표시된 전형명은 ${escapeHtml(row.year)}학년도 입결 기준이며 2027 전형명으로 간주하지 않습니다.</p>
@@ -532,22 +789,61 @@ function render() {
       </div>
     </article>`;
   }).join("");
-  if (state.filtered.length > 300) {
-    byId("resultList").insertAdjacentHTML("beforeend", '<div class="empty-state">검색 결과가 많아 처음 300개만 표시합니다. 조건을 더 좁혀주세요.</div>');
-  }
+  const remaining = Math.max(0, state.filtered.length - visibleRows.length);
+  const loadMore = byId("loadMoreResults");
+  loadMore.hidden = remaining === 0;
+  loadMore.textContent = remaining
+    ? `다음 ${Math.min(RESULTS_PER_PAGE, remaining)}개 보기 · ${visibleRows.length.toLocaleString("ko-KR")}/${state.filtered.length.toLocaleString("ko-KR")}`
+    : "";
 }
 
-byId("resultList").addEventListener("click", (event) => {
+byId("resultList").addEventListener("toggle", async (event) => {
+  const detail = event.target.closest("details[data-history-id]");
+  if (!detail?.open || detail.dataset.loaded === "true") return;
+  const row = state.rows.find((item) => item.id === detail.dataset.historyId);
+  const content = detail.querySelector("[data-trend-id]");
+  if (!row || !content) return;
+  detail.dataset.loaded = "loading";
+  content.innerHTML = '<p class="trend-loading">3개년 자료를 불러오는 중입니다.</p>';
+  try {
+    await ensureUniversityHistory(row);
+    content.innerHTML = trendChart(row);
+    detail.dataset.loaded = "true";
+  } catch (error) {
+    content.innerHTML = `<p class="trend-loading is-error">${escapeHtml(error.message)} 원문 링크에서 직접 확인해주세요.</p>`;
+    detail.dataset.loaded = "error";
+  }
+}, true);
+
+byId("resultList").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-card-id]");
   if (!button) return;
-  const row = state.allRows.find((item) => item.id === button.dataset.cardId);
+  const row = state.rows.find((item) => item.id === button.dataset.cardId);
   if (!row) return;
   if (state.targetBucket === "exempt" && !ConsultationCardStore.isExemptUniversity(row.university)) {
     showToast("현재 이 대학은 지원 횟수 제한 제외 목록으로 분류되지 않았습니다.");
     return;
   }
+  button.disabled = true;
+  button.textContent = "3개년 자료 확인 중";
+  try {
+    await ensureUniversityHistory(row);
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "상담카드에 추가";
+    showToast("3개년 자료를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    return;
+  }
   const history = trendRows(row).filter((entry) => entry.id);
   const result = ConsultationCardStore.place({ ...row, history }, state.targetSlot || undefined);
+  if (!result.added) {
+    button.disabled = false;
+    button.textContent = state.targetBucket === "exempt"
+      ? "별도 지원에 담기"
+      : state.targetSlot
+        ? `${slotLabel(state.targetSlot)}에 담기`
+        : "상담카드에 추가";
+  }
   if (result.added) {
     updateCardCount();
     render();
@@ -565,20 +861,27 @@ byId("resultList").addEventListener("click", (event) => {
   }
 });
 
-async function loadAllYears() {
-  const years = [...state.manifest.years].sort((a, b) => a.year.localeCompare(b.year));
-  const payloads = await Promise.all(years.map(async (entry) => {
-    const response = await fetch(`./admission-data/${entry.file}?v=${encodeURIComponent(state.manifest.generatedAt || "20260716f")}`);
-    if (!response.ok) throw new Error(`자료를 불러오지 못했습니다: ${response.status}`);
-    return response.json();
-  }));
-  state.allRows = payloads.flat();
-  state.trends = new Map();
-  state.allRows.forEach((row) => {
-    const key = trendKey(row);
-    if (!state.trends.has(key)) state.trends.set(key, []);
-    state.trends.get(key).push(row);
-  });
+function coverageRow(year, coverage) {
+  if (!coverage) return "";
+  return `<div class="coverage-year">
+    <strong>${escapeHtml(year)}학년도</strong>
+    <span>학생부 성적 <b>${coverage.gradePercent}%</b></span>
+    <span>경쟁률 <b>${coverage.competitionPercent}%</b></span>
+    <span>모집인원 <b>${coverage.quotaPercent}%</b></span>
+    <span>추합·충원 관련값 <b>${coverage.additionalPercent}%</b></span>
+  </div>`;
+}
+
+function renderCoverageSummary() {
+  const rows = (state.manifest.years || []).map((entry) => {
+    const coverage = entry.coverage || state.manifest.yearCoverage?.[entry.year];
+    return coverageRow(entry.year, coverage);
+  }).join("");
+  const totalRows = (state.manifest.years || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const totalUniversities = Number(state.manifest.universityCount || 0);
+  byId("metadataStatus").innerHTML = `
+    <p>${totalRows.toLocaleString("ko-KR")}건의 2024~2026학년도 입시결과와 ${totalUniversities}개 대학 정보를 조회할 수 있습니다.</p>
+    ${rows ? `<details class="coverage-summary"><summary>연도별 공개 범위 확인</summary><div>${rows}</div><p>‘자료 없음’은 0점이나 불합격을 뜻하지 않습니다. 대학이 공개하지 않았거나 현재 원문에서 확인되지 않은 값입니다.</p></details>` : ""}`;
 }
 
 function renderAdvancedMetadata() {
@@ -590,21 +893,29 @@ function renderAdvancedMetadata() {
     const alias = SPECIAL_UNIVERSITY_ALIASES[item.name];
     return `<button type="button" data-special-university="${escapeHtml(item.name)}">${escapeHtml(alias || item.name)} · ${escapeHtml(item.region)}</button>`;
   }).join("");
-  const totalRows = (state.manifest.years || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
-  const totalUniversities = Number(state.manifest.universityCount || 0);
-  byId("metadataStatus").textContent = `${totalRows.toLocaleString("ko-KR")}건의 2024~2026학년도 입시결과와 ${totalUniversities}개 대학 정보를 조회할 수 있습니다.`;
+  renderCoverageSummary();
 }
 
-function selectYear(year) {
+async function selectYear(year) {
   state.selectedYear = year;
-  state.rows = state.allRows.filter((row) => row.year === year);
+  state.visibleCount = RESULTS_PER_PAGE;
+  byId("resultCount").textContent = `${year}학년도 자료를 불러오는 중`;
+  byId("resultList").innerHTML = '<div class="empty-state">선택한 학년도의 입시결과를 불러오고 있습니다.</div>';
+  byId("loadMoreResults").hidden = true;
+  const rows = await AdmissionDataLoader.loadYear(state.manifest, year);
+  state.rows = rows.map((row) => {
+    const searchAlias = state.searchAliases.get(row.id);
+    return searchAlias ? { ...row, searchAlias } : row;
+  });
+  indexTrendRows(state.rows);
   fillUniversitySelect();
   fillSelect(byId("admissionTypeFilter"), uniqueValues("admissionType"), "전체 세부 유형");
   fillSelect(byId("groupFilter"), uniqueValues("departmentGroup"), "전체 계열");
   const entry = state.manifest.years.find((item) => item.year === year);
-  byId("dataScope").textContent = `${entry.universities.length}개 대학 · 상세에서 3개년 추이 확인`;
+  const coverage = entry.coverage || state.manifest.yearCoverage?.[year] || AdmissionDataLoader.coverage(state.rows);
+  byId("dataScope").textContent = `${entry.universities.length}개 대학 · 성적 공개 ${coverage.gradePercent}% · 경쟁률 공개 ${coverage.competitionPercent}% · 상세에서 대학별 3개년 확인`;
   byId("disclosureLegend").hidden = !state.rows.some((row) => row.suppressedFields?.length);
-  render();
+  render(true);
 }
 
 async function init() {
@@ -622,27 +933,36 @@ async function init() {
     } else {
       state.targetSlot = 0;
     }
-    const response = await fetch("./admission-data/manifest.json", { cache: "no-store" });
-    if (!response.ok) throw new Error(`목록을 불러오지 못했습니다: ${response.status}`);
-    state.manifest = await response.json();
+    state.manifest = await AdmissionDataLoader.loadManifest();
+    const aliasPayload = await AdmissionDataLoader.loadSearchAliases(state.manifest.generatedAt || "current");
+    state.searchAliases = new Map(Object.entries(aliasPayload.historyAliases || {}));
     const years = [...state.manifest.years].sort((a, b) => b.year.localeCompare(a.year));
     byId("yearFilter").innerHTML = years.map((item) => `<option value="${item.year}">${item.year}학년도 입결</option>`).join("");
-    await loadAllYears();
     renderAdvancedMetadata();
-    selectYear(years[0].year);
+    await selectYear(years[0].year);
   } catch (error) {
     byId("resultList").innerHTML = `<div class="empty-state">${escapeHtml(error.message)} 로컬 서버에서 다시 확인해주세요.</div>`;
   }
 }
 
-byId("yearFilter").addEventListener("change", (event) => selectYear(event.target.value));
-["universityFilter", "categoryFilter", "admissionTypeFilter", "groupFilter", "sortFilter", "gradeMetricFilter", "ownershipFilter", "publishedGradeFilter"].forEach((id) => byId(id).addEventListener("change", render));
-["gradeMinFilter", "gradeMaxFilter"].forEach((id) => byId(id).addEventListener("input", render));
-byId("textFilter").addEventListener("input", render);
-byId("regionOptions").addEventListener("change", render);
+byId("yearFilter").addEventListener("change", async (event) => {
+  try {
+    await selectYear(event.target.value);
+  } catch (error) {
+    byId("resultList").innerHTML = `<div class="empty-state">${escapeHtml(error.message)} 잠시 후 다시 시도해주세요.</div>`;
+  }
+});
+["universityFilter", "categoryFilter", "admissionTypeFilter", "groupFilter", "sortFilter", "gradeMetricFilter", "ownershipFilter", "publishedGradeFilter"].forEach((id) => byId(id).addEventListener("change", () => render(true)));
+["gradeMinFilter", "gradeMaxFilter"].forEach((id) => byId(id).addEventListener("input", () => render(true)));
+byId("textFilter").addEventListener("input", () => render(true));
+byId("regionOptions").addEventListener("change", () => render(true));
+byId("loadMoreResults").addEventListener("click", () => {
+  state.visibleCount += RESULTS_PER_PAGE;
+  render();
+});
 byId("clearRegions").addEventListener("click", () => {
   document.querySelectorAll('input[name="regionFilter"]').forEach((input) => { input.checked = false; });
-  render();
+  render(true);
 });
 byId("toggleAdvancedFilters").addEventListener("click", () => {
   const panel = byId("advancedFilters");
@@ -655,7 +975,7 @@ byId("specialUniversityList").addEventListener("click", (event) => {
   const button = event.target.closest("[data-special-university]");
   if (!button) return;
   byId("universityFilter").value = button.dataset.specialUniversity;
-  render();
+  render(true);
   byId("resultCount").scrollIntoView({ behavior: "smooth", block: "center" });
 });
 byId("resetFilters").addEventListener("click", () => {
@@ -664,7 +984,7 @@ byId("resetFilters").addEventListener("click", () => {
   byId("gradeMetricFilter").value = "auto";
   byId("publishedGradeFilter").checked = false;
   document.querySelectorAll('input[name="regionFilter"]').forEach((input) => { input.checked = false; });
-  render();
+  render(true);
 });
 window.addEventListener("consultation-card-change", () => {
   updateCardCount();

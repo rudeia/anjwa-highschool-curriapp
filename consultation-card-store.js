@@ -2,7 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "anjwa.admissionConsultationCard.v1";
-  const VERSION = 6;
+  const VERSION = 9;
   const BASE_SLOT_COUNT = 6;
   const MAX_STANDARD_SLOTS = 9;
   const CONSULTATION_COUNT = 3;
@@ -30,9 +30,29 @@
     return EXEMPT_UNIVERSITY_ALIASES.some((aliases) => aliases.some((alias) => loose(alias) === target));
   }
 
+  function lineageEvidence(entry) {
+    return {
+      decision: clean(entry?.decision),
+      relation: clean(entry?.relation),
+      sourceUrl: clean(entry?.sourceUrl),
+      sourceTitle: clean(entry?.sourceTitle),
+      sourceAcademicYear: clean(entry?.sourceAcademicYear),
+      reviewedAt: clean(entry?.reviewedAt),
+      note: clean(entry?.note)
+    };
+  }
+
   function historyEntry(entry) {
     const suppressedFields = Array.isArray(entry.suppressedFields) ? entry.suppressedFields.map(clean).filter(Boolean) : [];
     const supplementedFields = Array.isArray(entry.supplementedFields) ? entry.supplementedFields.map(clean).filter(Boolean) : [];
+    const additionalAdmits = clean(entry.additionalAdmits ?? entry.additional_admits);
+    const waitlistLastRank = clean(entry.waitlistLastRank ?? entry.waitlist_last_rank);
+    const inferredAdditionalType = waitlistLastRank
+      ? "waitlist_last_rank"
+      : additionalAdmits
+        ? supplementedFields.includes("additional_admits") ? "unknown" : "additional_count"
+        : "none";
+    const additionalMetricType = clean(entry.additionalMetricType ?? entry.additional_metric_type) || inferredAdditionalType;
     return {
       id: clean(entry.id),
       year: clean(entry.year),
@@ -49,15 +69,42 @@
       result80: clean(entry.result80 ?? entry.result_80),
       result85: clean(entry.result85 ?? entry.result_85),
       result90: clean(entry.result90 ?? entry.result_90),
-      additionalAdmits: clean(entry.additionalAdmits ?? entry.additional_admits),
-      waitlistLastRank: clean(entry.waitlistLastRank ?? entry.waitlist_last_rank),
+      additionalAdmits,
+      waitlistLastRank,
+      additionalMetricType,
+      additionalMetricLabel: clean(entry.additionalMetricLabel ?? entry.additional_metric_label) || ({
+        additional_count: "충원인원",
+        waitlist_last_rank: "최종 충원순위",
+        unknown: "추합·충원 공개값",
+        none: "추합·충원 관련값"
+      }[additionalMetricType] || "추합·충원 관련값"),
+      metricDefinitionStatus: clean(entry.metricDefinitionStatus ?? entry.metric_definition_status)
+        || (additionalMetricType === "unknown" ? "needs_review" : additionalMetricType === "none" ? "not_available" : "confirmed"),
       verification: clean(entry.verification),
       suppressedFields,
       supplementedFields,
       sourceUrl: clean(entry.sourceUrl),
       officeSourceUrl: clean(entry.officeSourceUrl),
-      matchType: clean(entry.matchType)
+      matchType: clean(entry.matchType),
+      lineageRelation: clean(entry.lineageRelation),
+      lineageScore: clean(entry.lineageScore),
+      lineageCandidateId: clean(entry.lineageCandidateId),
+      lineageReviewStatus: clean(entry.lineageReviewStatus),
+      lineageEvidence: lineageEvidence(entry.lineageEvidence)
     };
+  }
+
+  function selectionBreakdown(source) {
+    if (!Array.isArray(source)) return [];
+    return source.map((stage) => ({
+      stage: clean(stage?.stage),
+      elements: Array.isArray(stage?.elements)
+        ? stage.elements.map((element) => ({
+          name: clean(element?.name),
+          ratio: Number.isFinite(Number(element?.ratio)) ? Number(element.ratio) : null
+        })).filter((element) => element.name && element.ratio !== null)
+        : []
+    })).filter((stage) => stage.stage && stage.elements.length);
   }
 
   function normalizeItem(row, resetLegacyTarget = false) {
@@ -85,11 +132,19 @@
       targetField: shouldResetTarget ? "" : clean(row.targetField),
       targetQuota: shouldResetTarget ? "" : clean(row.targetQuota),
       targetQuotaStatus: shouldResetTarget ? "" : clean(row.targetQuotaStatus),
+      targetReferenceQuota: shouldResetTarget ? "" : clean(row.targetReferenceQuota),
+      targetQuotaDataStatus: shouldResetTarget ? "" : clean(row.targetQuotaDataStatus),
       targetSelectionMethod: shouldResetTarget ? "" : clean(row.targetSelectionMethod),
+      targetReferenceSelectionMethod: shouldResetTarget ? "" : clean(row.targetReferenceSelectionMethod),
+      targetSelectionMethodDataStatus: shouldResetTarget ? "" : clean(row.targetSelectionMethodDataStatus),
+      targetSelectionBreakdown: shouldResetTarget ? [] : selectionBreakdown(row.targetSelectionBreakdown),
       targetSourceUrl: shouldResetTarget ? "" : clean(row.targetSourceUrl),
       targetMinimum: shouldResetTarget ? "" : clean(row.targetMinimum),
       targetMinimumStatus: shouldResetTarget ? "" : clean(row.targetMinimumStatus),
       targetMinimumOfficial: shouldResetTarget ? "" : clean(row.targetMinimumOfficial),
+      targetReferenceMinimum: shouldResetTarget ? "" : clean(row.targetReferenceMinimum),
+      targetMinimumDataStatus: shouldResetTarget ? "" : clean(row.targetMinimumDataStatus),
+      targetReferenceSourceType: shouldResetTarget ? "" : clean(row.targetReferenceSourceType),
       targetMinimumSubjects: shouldResetTarget ? "" : clean(row.targetMinimumSubjects),
       targetMinimumSourceUrl: shouldResetTarget ? "" : clean(row.targetMinimumSourceUrl),
       targetOverrideFields: shouldResetTarget ? [] : targetOverrideFields,
@@ -100,6 +155,13 @@
       memo: clean(row.memo),
       sourceUrl: clean(row.sourceUrl),
       officeSourceUrl: clean(row.officeSourceUrl),
+      historyEntityId: shouldResetTarget ? "" : clean(row.historyEntityId),
+      historyConnectionStatus: shouldResetTarget ? "" : clean(row.historyConnectionStatus),
+      historyConnectionLabel: shouldResetTarget ? "" : clean(row.historyConnectionLabel),
+      historyMatchMethod: shouldResetTarget ? "" : clean(row.historyMatchMethod),
+      historyReviewCandidateCount: shouldResetTarget ? 0 : Number(row.historyReviewCandidateCount || 0),
+      historyApprovedRelation: shouldResetTarget ? "" : clean(row.historyApprovedRelation),
+      historyApprovalEvidence: shouldResetTarget ? [] : (Array.isArray(row.historyApprovalEvidence) ? row.historyApprovalEvidence.map(lineageEvidence).filter((entry) => entry.sourceUrl || entry.sourceTitle) : []),
       history: shouldResetTarget ? [] : (Array.isArray(row.history) ? row.history.map(historyEntry).filter((entry) => entry.year) : []),
       historySuggestions: shouldResetTarget ? [] : (Array.isArray(row.historySuggestions) ? row.historySuggestions.map(historyEntry).filter((entry) => entry.year) : []),
       exemptFromSixLimit: isExemptUniversity(row.university),

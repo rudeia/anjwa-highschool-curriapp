@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>수시 입시결과 조회 | 진로진학 플랫폼</title>
-    <link rel="stylesheet" href="./admission-search.css?v=20260716t">
+    <link rel="stylesheet" href="./admission-search.css?v=20260719l">
   </head>
   <body>
     <main class="admission-shell">
@@ -72,8 +72,8 @@
                 <option value="grade-desc">등급 숫자 높은 순</option>
                 <option value="competition-asc">경쟁률 낮은 순</option>
                 <option value="competition-desc">경쟁률 높은 순</option>
-                <option value="additional-desc">충원 많은 순</option>
-                <option value="additional-asc">충원 적은 순</option>
+                <option value="additional-desc">충원인원 많은 순</option>
+                <option value="additional-asc">충원인원 적은 순</option>
                 <option value="quota-desc">모집인원 많은 순</option>
                 <option value="quota-asc">모집인원 적은 순</option>
                 <option value="coverage-desc">공개 정보 많은 순</option>
@@ -115,7 +115,7 @@
             <div id="specialUniversityList" class="special-university-list"></div>
             <a href="./grade3-consultation-card.html">별도 지원 작성</a>
           </section>
-          <p id="metadataStatus" class="metadata-status"></p>
+          <div id="metadataStatus" class="metadata-status"></div>
         </div>
       </section>
 
@@ -132,6 +132,7 @@
       </p>
 
       <section id="resultList" class="result-list" aria-live="polite"></section>
+      <button id="loadMoreResults" class="load-more-results" type="button" hidden>다음 40개 보기</button>
       <div id="emptyState" class="empty-state" hidden>조건에 맞는 결과가 없습니다.</div>
 
       <footer class="source-note">
@@ -141,7 +142,8 @@
     </main>
     <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden></div>
     <script src="./consultation-card-store.js?v=20260716p" defer></script>
-    <script src="./admission-search.js?v=20260716t" defer></script>
-    <script src="./site-meta.js?v=20260717" defer></script>
+    <script src="./admission-data-loader.js?v=20260719l" defer></script>
+    <script src="./admission-search.js?v=20260719l" defer></script>
+    <script src="./site-meta.js?v=1.01" defer></script>
   </body>
 </html>

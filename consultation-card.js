@@ -13,17 +13,49 @@ const MANUAL_EXEMPT_UNIVERSITIES = [
   { code: "EXEMPT-KENTECH", name: "한국에너지공과대학교", campus: "본교", manual: true },
   { code: "EXEMPT-NUCH", name: "한국전통문화대학교", campus: "본교", manual: true }
 ];
+const SUCCESSOR_UNIVERSITY_CODES = new Map([
+  ["0000001", "0003363"],
+  ["0000002", "0003364"]
+]);
 const OVERRIDE_CONFIG = {
   quota: { source: "targetQuota", override: "targetQuotaOverride", input: "editorQuotaOverride", fallback: "모집인원 미지정" },
   selectionMethod: { source: "targetSelectionMethod", override: "targetSelectionMethodOverride", input: "editorSelectionMethodOverride", fallback: "원문 확인 피요" },
   minimum: { source: "targetMinimumOfficial", override: "targetMinimumOverride", input: "editorMinimumOverride", fallback: "모집요강 확인 피요" }
 };
+Object.assign(OVERRIDE_CONFIG.quota, {
+  reference: "targetReferenceQuota",
+  status: "targetQuotaDataStatus"
+});
+Object.assign(OVERRIDE_CONFIG.selectionMethod, {
+  reference: "targetReferenceSelectionMethod",
+  status: "targetSelectionMethodDataStatus"
+});
+Object.assign(OVERRIDE_CONFIG.minimum, {
+  reference: "targetReferenceMinimum",
+  status: "targetMinimumDataStatus"
+});
+const DATA_STATUS_LABELS = {
+  official_confirmed: "대학어디가 확인",
+  official_confirmed_reference_conflict: "공식값 우선",
+  counseling_reference_exact: "상담자료 보완",
+  official_not_entered: "원문 미입력",
+  official_non_csat_detail: "별도 기준 확인"
+};
+const DATA_STATUS_DESCRIPTIONS = {
+  official_confirmed: "대학어디가 2027학년도 모집정보에서 확인한 값입니다.",
+  official_confirmed_reference_conflict: "대학어디가 값을 표시합니다. 상담자료와 차이가 있어 모집요강을 다시 확인하세요.",
+  counseling_reference_exact: "대학·학과·전형이 정확히 일치한 상담자료로 빈 값을 보완했습니다. 지원 전 모집요강을 확인하세요.",
+  official_not_entered: "대학어디가에 값이 입력되지 않았습니다. 대학 모집요강을 확인하세요.",
+  official_non_csat_detail: "수능최저가 아닌 별도 지원 기준일 수 있습니다. 대학 모집요강을 확인하세요."
+};
 const dataCache = {
   optionIndexPromise: null,
   historyIndexPromise: null,
+  lineageIndexPromise: null,
   universityLinksPromise: null,
   optionUniversities: new Map(),
   historyUniversities: new Map(),
+  lineageUniversities: new Map(),
   universityLinks: new Map()
 };
 
@@ -97,6 +129,31 @@ function historyValue(entry, field, fallback = "-") {
   return (entry.suppressedFields || []).includes(snakeField) ? "미공개" : fallback;
 }
 
+function historyCountWithUnit(value, unit) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  return /[가-힣]/.test(text) ? text : `${text}${unit}`;
+}
+
+function historyAdditionalInfo(entry) {
+  const type = String(entry.additionalMetricType || "").trim()
+    || (entry.waitlistLastRank ? "waitlist_last_rank" : entry.additionalAdmits ? "unknown" : "none");
+  if (type === "additional_count" && entry.additionalAdmits) {
+    return { label: entry.additionalMetricLabel || "충원인원", value: historyCountWithUnit(entry.additionalAdmits, "명") };
+  }
+  if (type === "waitlist_last_rank" && entry.waitlistLastRank) {
+    return { label: entry.additionalMetricLabel || "최종 충원순위", value: historyCountWithUnit(entry.waitlistLastRank, "번") };
+  }
+  if (type === "unknown" && (entry.additionalAdmits || entry.waitlistLastRank)) {
+    return { label: entry.additionalMetricLabel || "추합·충원 공개값", value: `공개값 ${entry.additionalAdmits || entry.waitlistLastRank}` };
+  }
+  const suppressed = new Set(entry.suppressedFields || []);
+  return {
+    label: "추합·충원 관련값",
+    value: suppressed.has("additional_admits") || suppressed.has("waitlist_last_rank") ? "미공개" : "-"
+  };
+}
+
 function showToast(message) {
   const toast = byId("cardToast");
   toast.textContent = message;
@@ -125,10 +182,34 @@ function hasTargetOverride(item, key) {
   return overrideFields(item).has(key);
 }
 
+function automaticTargetValue(item, key) {
+  const config = OVERRIDE_CONFIG[key];
+  if (!config) return "";
+  const primary = String(item?.[config.source] ?? "").trim();
+  if (primary) return primary;
+  return String(item?.[config.reference] ?? "").trim();
+}
+
+function targetDataStatus(item, key) {
+  const config = OVERRIDE_CONFIG[key];
+  if (!config) return "official_not_entered";
+  const explicit = String(item?.[config.status] ?? "").trim();
+  if (explicit) return explicit;
+  return String(item?.[config.source] ?? "").trim() ? "official_confirmed" : "official_not_entered";
+}
+
+function dataStatusLabel(status) {
+  return DATA_STATUS_LABELS[status] || "자료 상태 확인";
+}
+
+function dataStatusDescription(status) {
+  return DATA_STATUS_DESCRIPTIONS[status] || "모집요강에서 최신 내용을 확인하세요.";
+}
+
 function effectiveTargetValue(item, key) {
   const config = OVERRIDE_CONFIG[key];
   if (!config) return "";
-  return hasTargetOverride(item, key) ? String(item?.[config.override] ?? "") : String(item?.[config.source] ?? "");
+  return hasTargetOverride(item, key) ? String(item?.[config.override] ?? "") : automaticTargetValue(item, key);
 }
 
 function clearedOverrides() {
@@ -156,9 +237,13 @@ function withSuffix(value, suffix = "") {
 }
 
 function allUniversityEntries(index) {
-  const indexed = [...index.universities];
+  const indexed = index.universities.filter((university) => !SUCCESSOR_UNIVERSITY_CODES.has(university.code));
   const codes = new Set(indexed.map((university) => university.code));
   return indexed.concat(MANUAL_EXEMPT_UNIVERSITIES.filter((university) => !codes.has(university.code)));
+}
+
+function activeUniversityCode(code) {
+  return SUCCESSOR_UNIVERSITY_CODES.get(String(code || "")) || String(code || "");
 }
 
 function universityCodeFromUrl(value) {
@@ -167,7 +252,7 @@ function universityCodeFromUrl(value) {
 }
 
 function universityCodeFromItem(item) {
-  if (item?.targetUniversityCode && !isManualUniversity(item)) return item.targetUniversityCode;
+  if (item?.targetUniversityCode && !isManualUniversity(item)) return activeUniversityCode(item.targetUniversityCode);
   const urls = [
     item?.targetSourceUrl,
     item?.targetMinimumSourceUrl,
@@ -273,6 +358,113 @@ function recentResultMarkup(item) {
   return `<strong class="summary-result-line">${parts.join("")}</strong>`;
 }
 
+function historyConnectionMeta(item, targetLinked) {
+  const status = item?.historyConnectionStatus || "";
+  if (status === "approved_exact") {
+    return { status, label: "같은 모집단위·전형명 확인", empty: "해당 학년도 공개값 없음", detail: "동일 명칭 기준" };
+  }
+  if (status === "approved_official_evidence") {
+    return { status, label: "공식 근거로 변경 관계 확인", empty: "해당 학년도 공개값 없음", detail: "공식 개편 자료로 관계 확인" };
+  }
+  if (status === "reviewed_reference") {
+    return { status, label: "공식 참고 관계 확인", empty: "자동 연결하지 않음", detail: "같은 입결 추이로 보지 않음" };
+  }
+  if (status === "reviewed_no_relation") {
+    return { status, label: "과거 동일 전형 아님 확인", empty: "과거 입결 없음", detail: "공식 근거로 관계 없음 확인" };
+  }
+  if (status === "review_required") {
+    return { status, label: "명칭·전형 변경 가능성 검토", empty: "자동 연결하지 않음", detail: "동일 입결인지 확인 전" };
+  }
+  if (status === "new_candidate") {
+    return { status, label: "2027 신설 가능성", empty: "과거 입결 없음", detail: "같은 명칭의 과거 자료 없음" };
+  }
+  if (status === "legacy_exact") {
+    return { status, label: "동일 명칭 기준 연결", empty: "연결 자료 없음", detail: "계보 자료 보완 전" };
+  }
+  return targetLinked
+    ? { status: "lineage_unavailable", label: "연결 상태 확인 필요", empty: "연결 자료 없음", detail: "동일 모집단위·전형 기준" }
+    : { status: "target_unlinked", label: "2027 전형 연결 필요", empty: "연결 자료 없음", detail: "학과·전형을 먼저 선택" };
+}
+
+function lineageRelationLabel(value, confirmed = false) {
+  const suffix = confirmed ? "확인" : "가능성";
+  return {
+    admission_changed_candidate: `전형명 변경 ${suffix}`,
+    renamed_candidate: `학과명 변경 ${suffix}`,
+    university_predecessor_candidate: confirmed ? "통합 전 대학 동일 전형 확인" : "통합 전 대학 동일 전형 후보",
+    merged_candidate: `학과 통합 ${suffix}`,
+    split_candidate: `학과 분리 ${suffix}`,
+    duplicate_current_identity_candidate: "동일 명칭 전형 구분 필요",
+    similar_reference: "유사 모집단위 참고"
+  }[value] || "유사 모집단위 참고";
+}
+
+function normalizedLineageEvidence(entry) {
+  return {
+    decision: String(entry?.decision || ""),
+    relation: String(entry?.relation || ""),
+    sourceUrl: String(entry?.sourceUrl || ""),
+    sourceTitle: String(entry?.sourceTitle || ""),
+    sourceAcademicYear: String(entry?.sourceAcademicYear || ""),
+    reviewedAt: String(entry?.reviewedAt || ""),
+    note: String(entry?.note || "")
+  };
+}
+
+function renderLineageEvidence(item) {
+  const evidence = (item.historyApprovalEvidence || []).find((entry) => entry.sourceUrl || entry.sourceTitle);
+  if (!evidence) return "";
+  const relation = item.historyApprovedRelation || evidence.relation;
+  const confirmed = item.historyConnectionStatus === "approved_official_evidence" || evidence.decision === "approve_trend";
+  const meta = [
+    evidence.sourceAcademicYear ? `${evidence.sourceAcademicYear}학년도 기준` : "",
+    evidence.reviewedAt ? `${evidence.reviewedAt} 확인` : ""
+  ].filter(Boolean).join(" · ");
+  const title = evidence.sourceTitle || "대학 공식 자료";
+  return `<aside class="history-evidence-note">
+    <span>${escapeHtml(item.historyConnectionStatus === "reviewed_reference" ? "공식 참고 근거" : item.historyConnectionStatus === "reviewed_no_relation" ? "관계 없음 확인 근거" : "변경 관계 확인 근거")}</span>
+    <strong>${escapeHtml(title)}</strong>
+    ${relation ? `<small>${escapeHtml(lineageRelationLabel(relation, confirmed))}${meta ? ` · ${escapeHtml(meta)}` : ""}</small>` : meta ? `<small>${escapeHtml(meta)}</small>` : ""}
+    ${evidence.sourceUrl ? `<a href="${escapeHtml(evidence.sourceUrl)}" target="_blank" rel="noopener noreferrer">공식 근거 보기<span aria-hidden="true">↗</span></a>` : ""}
+  </aside>`;
+}
+
+function suggestionRelationLabel(entry) {
+  if (entry.lineageReviewStatus === "approved_reference") return "공식 참고 관계";
+  return lineageRelationLabel(entry.lineageRelation);
+}
+
+function splitHistorySuggestions(item) {
+  const currentDepartment = compact(item.targetDepartment || item.department);
+  const currentAdmission = admissionKey(item.targetAdmission || item.admission);
+  const groups = { similarDepartments: [], otherAdmissions: [] };
+  (item.historySuggestions || []).forEach((entry) => {
+    const sameDepartment = currentDepartment && compact(entry.department) === currentDepartment;
+    const differentAdmission = currentAdmission && admissionKey(entry.admission) !== currentAdmission;
+    if (sameDepartment && differentAdmission) groups.otherAdmissions.push(entry);
+    else groups.similarDepartments.push(entry);
+  });
+  return groups;
+}
+
+function renderHistoryReferenceGroup(entries, type) {
+  if (!entries.length) return "";
+  const isOtherAdmission = type === "other-admission";
+  const title = isOtherAdmission ? "같은 모집단위의 다른 전형 참고" : "유사 모집단위 참고";
+  const description = isOtherAdmission
+    ? "학과가 같아도 전형별 평가방법과 지원자 집단이 다르므로 선택한 전형의 입결로 합치지 않습니다."
+    : "학과명 변경·통합·분리 가능성이 있거나 학문 분야가 비슷한 자료입니다. 공식 계보가 확인되기 전에는 선택한 학과의 입결로 합치지 않습니다.";
+  const officialReferences = entries.filter((entry) => entry.lineageReviewStatus === "approved_reference").length;
+  return `<details class="similar-history history-reference-group${isOtherAdmission ? " is-other-admission" : ""}">
+    <summary>${title} ${entries.length}건${officialReferences ? ` · 공식 참고 ${officialReferences}건` : ""}</summary>
+    <p>${description}</p>
+    <div>${entries.map((entry) => {
+      const metric = gradeMetric(entry);
+      return `<span><b class="${entry.lineageReviewStatus === "approved_reference" ? "is-official" : ""}">${escapeHtml(suggestionRelationLabel(entry))}</b><strong>${escapeHtml(entry.year)}학년도 ${escapeHtml(entry.department)}</strong><em>${escapeHtml(entry.admission || "전형명 확인 필요")}</em> · 경쟁률 ${escapeHtml(competitionWithRatio(entry.competitionRate) || "-")} · ${escapeHtml(metric ? `${metric[0]} ${metric[1]}` : "성적 공개값 없음")}${entry.lineageEvidence?.sourceUrl ? ` · <a href="${escapeHtml(entry.lineageEvidence.sourceUrl)}" target="_blank" rel="noopener noreferrer">근거 보기</a>` : ""}</span>`;
+    }).join("")}</div>
+  </details>`;
+}
+
 function renderHistory(item) {
   if (isManualUniversity(item)) {
     return '<div class="history-placeholder">별도 지원 대학의 입결은 해당 대학 입학처 자료를 확인해 상담 메모에 기록합니다.</div>';
@@ -281,13 +473,14 @@ function renderHistory(item) {
     return '<div class="history-placeholder">학과와 전형을 선택하면 2024~2026학년도 입결을 연결합니다.</div>';
   }
   const targetLinked = Boolean(item.targetOptionId);
+  const connection = historyConnectionMeta(item, targetLinked);
   const historyByYear = new Map((item.history || []).map((entry) => [entry.year, entry]));
   const rows = YEARS.map((year) => {
     const entry = historyByYear.get(year);
     if (!entry) {
       return `<tr class="is-empty" data-year="${year}">
         <th scope="row"><span class="history-year">${year}</span></th>
-        <td colspan="4"><span class="history-empty-copy"><strong>연결 자료 없음</strong><small>동일 모집단위·전형 기준</small></span></td>
+        <td colspan="4"><span class="history-empty-copy"><strong>${escapeHtml(connection.empty)}</strong><small>${escapeHtml(connection.detail)}</small></span></td>
       </tr>`;
     }
     const grades = compactGradeMetrics(entry);
@@ -300,29 +493,32 @@ function renderHistory(item) {
       : `<span class="history-muted">${hasSuppressedGrade ? "미공개" : "공개값 없음"}</span>`;
     const sourceUrl = entry.officeSourceUrl || entry.sourceUrl;
     const quota = entry.quota ? `${escapeHtml(entry.quota)}명` : "-";
-    const additional = escapeHtml(entry.additionalAdmits || entry.waitlistLastRank || historyValue(entry, "additionalAdmits"));
+    const additional = historyAdditionalInfo(entry);
     const competition = competitionWithRatio(historyValue(entry, "competitionRate"));
     const sourceLabel = entry.officeSourceUrl ? "입학처" : "대학어디가";
     return `<tr class="has-data" data-year="${year}">
       <th scope="row"><span class="history-year">${year}<small>학년도</small></span>${historyVerificationBadge(entry)}</th>
       <td><strong class="history-single-value">${escapeHtml(competition)}</strong></td>
       <td>${gradeText}</td>
-      <td><span class="history-admit-values"><strong>${quota}</strong><i>/</i><span>${additional}</span></span></td>
+      <td><span class="history-admit-values"><strong>${quota}</strong><i>/</i><span title="${escapeHtml(additional.label)}">${escapeHtml(additional.value)}</span></span></td>
       <td>${sourceUrl ? `<a class="history-source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">${sourceLabel}<span aria-hidden="true">↗</span></a>` : '<span class="history-muted">-</span>'}</td>
     </tr>`;
   }).join("");
-  const suggestions = (item.historySuggestions || []).slice(0, 3);
+  const suggestionGroups = splitHistorySuggestions(item);
   const connectedYears = YEARS.filter((year) => historyByYear.has(year));
   return `<section class="saved-history" aria-label="3개년 입결">
     <div class="history-head">
-      <div class="history-heading-copy"><strong>3개년 입결</strong><span>${targetLinked ? "동일 대학·모집단위·전형 기준" : "현재 저장된 과거 입결 · 2027 전형 연결 필요"}</span></div>
+      <div class="history-heading-copy"><strong>확정 3개년 입결 추이</strong><span class="history-link-status is-${escapeHtml(connection.status)}">${escapeHtml(connection.label)}</span></div>
       <div class="history-coverage" aria-label="3개년 중 ${connectedYears.length}개년 연결">
         <span class="history-coverage-dots" aria-hidden="true">${YEARS.map((year) => `<i class="${historyByYear.has(year) ? "is-connected" : ""}"></i>`).join("")}</span>
         <strong>${connectedYears.length}<small>/3개년</small></strong>
       </div>
     </div>
-    <div class="history-table-wrap"><table class="history-table"><thead><tr><th>학년도</th><th>경쟁률</th><th>학생부 성적</th><th>모집/충원</th><th>출처</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${suggestions.length ? `<details class="similar-history"><summary>유사 모집단위 참고 ${suggestions.length}건</summary><p>학과 개편 여부를 살피기 위한 참고값이며, 선택한 모집단위의 입결은 아닙니다.</p><div>${suggestions.map((entry) => { const metric = gradeMetric(entry); return `<span><strong>${escapeHtml(entry.year)} ${escapeHtml(entry.department)}</strong> · 경쟁률 ${escapeHtml(entry.competitionRate || "-")} · ${escapeHtml(metric ? `${metric[0]} ${metric[1]}` : "성적 공개값 없음")}</span>`; }).join("")}</div></details>` : ""}
+    ${renderLineageEvidence(item)}
+    <p class="history-identity-note">수능최저·모집인원·전형방법·반영비율이 달라졌다는 이유만으로 다른 모집단위가 되지 않습니다. 전형명까지 달라진 경우에만 대학 공식 근거를 확인한 다음 연결합니다. 연도별로 바뀐 조건은 학년도별 모집요강에서 따로 비교합니다.</p>
+    <div class="history-table-wrap"><table class="history-table"><thead><tr><th>학년도</th><th>경쟁률</th><th>학생부 성적</th><th>모집/추합·충원</th><th>출처</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${renderHistoryReferenceGroup(suggestionGroups.similarDepartments, "similar-department")}
+    ${renderHistoryReferenceGroup(suggestionGroups.otherAdmissions, "other-admission")}
   </section>`;
 }
 
@@ -350,11 +546,36 @@ function optionValueBlock(item, key, label, value, fallback, suffix = "") {
   const config = OVERRIDE_CONFIG[key];
   const overridden = hasTargetOverride(item, key);
   const manual = isManualUniversity(item) && overridden;
-  const source = String(item?.[config.source] ?? "");
+  const source = automaticTargetValue(item, key);
+  const dataStatus = targetDataStatus(item, key);
   const shown = value ? withSuffix(value, suffix) : fallback;
   const status = overridden ? `<span class="option-value-status">${manual ? "직접 입력" : "직접 수정"}</span>` : "";
+  const sourceStatus = overridden ? "" : `<span class="option-source-status ${dataStatusClass(dataStatus)}" title="${escapeHtml(dataStatusDescription(dataStatus))}">${escapeHtml(dataStatusLabel(dataStatus))}</span>`;
   const original = overridden ? `<small class="option-original">자동값: ${escapeHtml(source ? withSuffix(source, suffix) : "입력 없음")}</small>` : "";
-  return `<div><span>${escapeHtml(label)}${status}</span><strong>${escapeHtml(shown)}</strong>${original}</div>`;
+  return `<div><span>${escapeHtml(label)}${status}${sourceStatus}</span><strong>${escapeHtml(shown)}</strong>${original}</div>`;
+}
+
+function dataStatusClass(status) {
+  if (status === "counseling_reference_exact") return "is-reference";
+  if (status === "official_confirmed_reference_conflict") return "is-conflict";
+  if (status === "official_confirmed") return "is-official";
+  return "is-missing";
+}
+
+function formatRatio(value) {
+  const ratio = Number(value);
+  if (!Number.isFinite(ratio)) return "";
+  return `${Number.isInteger(ratio) ? ratio : ratio.toFixed(1)}%`;
+}
+
+function selectionBreakdownMarkup(item) {
+  if (hasTargetOverride(item, "selectionMethod")) return "";
+  const stages = Array.isArray(item?.targetSelectionBreakdown) ? item.targetSelectionBreakdown : [];
+  if (!stages.length) return "";
+  return `<div class="selection-breakdown" aria-label="전형방법 단계별 구성">
+    <span class="selection-breakdown-title">단계별 반영</span>
+    <div>${stages.map((stage) => `<span class="selection-stage"><b>${escapeHtml(stage.stage)}</b>${stage.elements.map((element) => `<em>${escapeHtml(element.name)} ${escapeHtml(formatRatio(element.ratio))}</em>`).join("")}</span>`).join("")}</div>
+  </div>`;
 }
 
 function renderOptionSummaryV2(item, bucket = "standard") {
@@ -378,13 +599,17 @@ function renderOptionSummaryV2(item, bucket = "standard") {
       <div class="option-connect-notice"><span><strong>모집요강을 확인해 정보를 보완하세요.</strong> 수정값은 이 상담카드에만 저장됩니다.</span><button type="button" data-edit-id="${escapeHtml(item.id)}" data-edit-bucket="${escapeHtml(bucket)}">정보 입력</button></div>
     </section>`;
   }
-  const minimumFallback = item.targetMinimumStatus === "official_not_entered"
+  const minimumStatus = targetDataStatus(item, "minimum");
+  const minimumFallback = minimumStatus === "official_not_entered"
     ? "대학어디가 입력 없음 · 모집요강 확인"
-    : "모집요강 확인 필요";
+    : minimumStatus === "official_non_csat_detail"
+      ? "수능최저 외 별도 기준 확인"
+      : "모집요강 확인 필요";
   return `<section class="option-summary" aria-label="2027 전형 정보">
     ${optionValueBlock(item, "quota", "2027 모집인원", quota, "모집인원 미지정", "명")}
     ${optionValueBlock(item, "selectionMethod", "반영 요소·비율", selectionMethod, "원문 확인 필요")}
     ${optionValueBlock(item, "minimum", "수능최저학력기준", minimum, minimumFallback)}
+    ${selectionBreakdownMarkup(item)}
     ${item.targetMinimumSubjects ? `<details><summary>수능최저 반영 영역 보기</summary><p>${escapeHtml(item.targetMinimumSubjects)}</p></details>` : ""}
   </section>`;
 }
@@ -682,6 +907,16 @@ async function loadHistoryIndex() {
   return dataCache.historyIndexPromise;
 }
 
+async function loadLineageIndex() {
+  if (!dataCache.lineageIndexPromise) {
+    dataCache.lineageIndexPromise = fetch("./admission-data/entity-lineage/index.json?v=20260719a").then((response) => {
+      if (!response.ok) throw new Error(`모집단위 연결 목록을 불러오지 못했습니다: ${response.status}`);
+      return response.json();
+    });
+  }
+  return dataCache.lineageIndexPromise;
+}
+
 async function loadOptionUniversity(code) {
   if (!code) return null;
   if (!dataCache.optionUniversities.has(code)) {
@@ -707,11 +942,47 @@ async function loadHistoryUniversity(code) {
   return dataCache.historyUniversities.get(code);
 }
 
+async function loadHistoryUniversities(codes) {
+  const uniqueCodes = [...new Set((codes || []).filter(Boolean))];
+  if (!uniqueCodes.length) return { rows: [] };
+  const payloads = await Promise.all(uniqueCodes.map((code) => loadHistoryUniversity(code)));
+  const rowsById = new Map();
+  payloads.forEach((payload) => {
+    (payload?.rows || []).forEach((row) => {
+      const key = row.id || `${row.year}|${row.universityCode || ""}|${row.department}|${row.admission}`;
+      const current = rowsById.get(key);
+      if (!current || rowMetricCount(row) > rowMetricCount(current)) rowsById.set(key, row);
+    });
+  });
+  return { rows: [...rowsById.values()] };
+}
+
+function lineageHistoryCodes(lineageData, currentCode) {
+  const configured = Array.isArray(lineageData?.historyUniversityCodes)
+    ? lineageData.historyUniversityCodes
+    : [];
+  return [...new Set([currentCode, ...configured].filter(Boolean))];
+}
+
+async function loadLineageUniversity(code) {
+  if (!code) return { options: [] };
+  const index = await loadLineageIndex();
+  const entry = index.universities.find((university) => university.code === code);
+  if (!entry) return { options: [] };
+  if (!dataCache.lineageUniversities.has(code)) {
+    dataCache.lineageUniversities.set(code, fetch(`./admission-data/entity-lineage/${entry.file}?v=${encodeURIComponent(index.generatedAt)}`).then((response) => {
+      if (!response.ok) throw new Error(`모집단위 연결 자료를 불러오지 못했습니다: ${response.status}`);
+      return response.json();
+    }));
+  }
+  return dataCache.lineageUniversities.get(code);
+}
+
 function matchingUniversity(index, item) {
   const manual = MANUAL_EXEMPT_UNIVERSITIES.find((university) => university.code === item.targetUniversityCode);
   if (manual) return manual;
   if (item.targetUniversityCode) {
-    const exactCode = index.universities.find((university) => university.code === item.targetUniversityCode);
+    const exactCode = index.universities.find((university) => university.code === activeUniversityCode(item.targetUniversityCode));
     if (exactCode) return exactCode;
   }
   const sameName = index.universities.filter((university) => compactUniversity(university.name) === compactUniversity(item.university));
@@ -756,7 +1027,7 @@ function rowMetricCount(row) {
   ].filter(Boolean).length;
 }
 
-function matchHistory(rows, departmentName, option) {
+function legacyHistoryMatch(rows, departmentName, option) {
   const departmentKey = compact(departmentName);
   const optionAdmission = admissionKey(option.admissionName);
   const optionCategory = categoryKey(option.category);
@@ -767,21 +1038,97 @@ function matchHistory(rows, departmentName, option) {
     const current = byYear.get(row.year);
     if (!current || rowMetricCount(row) > rowMetricCount(current)) byYear.set(row.year, { ...row, matchType: "exact" });
   });
-  const suggestions = sameAdmission
+  const similarDepartments = sameAdmission
     .filter((row) => compact(row.department) !== departmentKey)
-    .map((row) => ({ ...row, similarity: diceSimilarity(row.department, departmentName), matchType: "similar" }))
+    .map((row) => ({ ...row, similarity: diceSimilarity(row.department, departmentName), matchType: "similar", lineageRelation: "similar_reference" }))
     .filter((row) => row.similarity >= 0.34)
     .sort((left, right) => right.similarity - left.similarity || Number(right.year) - Number(left.year));
+  const otherAdmissions = rows
+    .filter((row) => categoryKey(row.category) === optionCategory
+      && compact(row.department) === departmentKey
+      && admissionKey(row.admission) !== optionAdmission)
+    .map((row) => ({ ...row, matchType: "similar", lineageRelation: "admission_changed_candidate" }))
+    .sort((left, right) => Number(right.year) - Number(left.year) || rowMetricCount(right) - rowMetricCount(left));
   const uniqueSuggestions = [];
   const seen = new Set();
-  suggestions.forEach((row) => {
-    const key = `${row.year}|${row.department}`;
-    if (!seen.has(key) && uniqueSuggestions.length < 3) {
+  [...otherAdmissions, ...similarDepartments].forEach((row) => {
+    const key = `${row.year}|${row.department}|${row.admission}`;
+    if (!seen.has(key) && uniqueSuggestions.length < 6) {
       seen.add(key);
       uniqueSuggestions.push(row);
     }
   });
   return { history: YEARS.map((year) => byYear.get(year)).filter(Boolean), suggestions: uniqueSuggestions };
+}
+
+function matchHistory(rows, departmentName, option, lineagePayload = null) {
+  const lineage = (lineagePayload?.options || []).find((entry) => entry.optionId === option.optionId);
+  if (!lineage) {
+    const fallback = legacyHistoryMatch(rows, departmentName, option);
+    return {
+      ...fallback,
+      connectionStatus: fallback.history.length ? "legacy_exact" : "lineage_unavailable",
+      connectionLabel: fallback.history.length ? "동일 명칭 기준 연결" : "연결 자료 확인 필요",
+      entityId: "",
+      matchMethod: "legacy_exact_normalized_identity",
+      reviewCandidateCount: fallback.suggestions.length
+    };
+  }
+
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  const approved = (lineage.approvedHistoryIds || [])
+    .map((id) => rowsById.get(id))
+    .filter(Boolean)
+    .map((row) => ({
+      ...row,
+      matchType: "exact",
+      lineageRelation: lineage.approvedRelation || "same",
+      lineageScore: "1",
+      lineageReviewStatus: lineage.connectionStatus === "approved_official_evidence" ? "approved_trend" : "approved_exact"
+    }));
+  const byYear = new Map();
+  approved.forEach((row) => {
+    const current = byYear.get(row.year);
+    if (!current || rowMetricCount(row) > rowMetricCount(current)) byYear.set(row.year, row);
+  });
+
+  const suggestions = [];
+  const seen = new Set();
+  [...(lineage.candidates || [])]
+    .filter((candidate) => !["approved_trend", "rejected"].includes(candidate.reviewStatus))
+    .sort((left, right) => Number(right.reviewStatus === "approved_reference") - Number(left.reviewStatus === "approved_reference"))
+    .forEach((candidate) => {
+      const candidateRows = (candidate.historicalRecordIds || [])
+        .map((id) => rowsById.get(id))
+        .filter(Boolean)
+        .sort((left, right) => Number(right.year) - Number(left.year) || rowMetricCount(right) - rowMetricCount(left));
+      const row = candidateRows[0];
+      if (!row) return;
+      const key = `${row.year}|${row.department}|${row.admission}`;
+      if (seen.has(key) || suggestions.length >= 6) return;
+      seen.add(key);
+      suggestions.push({
+        ...row,
+        matchType: "similar",
+        lineageRelation: candidate.relation || "similar_reference",
+        lineageScore: String(candidate.score ?? ""),
+        lineageCandidateId: candidate.candidateId || "",
+        lineageReviewStatus: candidate.reviewStatus || "manual_review",
+        lineageEvidence: normalizedLineageEvidence(candidate.reviewEvidence)
+      });
+    });
+
+  return {
+    history: YEARS.map((year) => byYear.get(year)).filter(Boolean),
+    suggestions,
+    connectionStatus: lineage.connectionStatus || "lineage_unavailable",
+    connectionLabel: lineage.connectionLabel || "연결 상태 확인 필요",
+    entityId: lineage.entityId || "",
+    matchMethod: lineage.matchMethod || "",
+    reviewCandidateCount: Number(lineage.reviewCandidateCount || 0),
+    approvedRelation: lineage.approvedRelation || "",
+    approvalEvidence: (lineage.approvalEvidence || []).map(normalizedLineageEvidence).filter((entry) => entry.sourceUrl || entry.sourceTitle)
+  };
 }
 
 function targetChanges(data, department, option, matched) {
@@ -800,12 +1147,27 @@ function targetChanges(data, department, option, matched) {
     targetField: option.field || "",
     targetQuota: option.quota == null ? "" : String(option.quota),
     targetQuotaStatus: option.quotaStatus || "",
+    targetReferenceQuota: option.referenceQuota == null ? "" : String(option.referenceQuota),
+    targetQuotaDataStatus: option.quotaDataStatus || "official_not_entered",
     targetSelectionMethod: option.selectionMethod || "",
+    targetReferenceSelectionMethod: option.referenceSelectionMethod || "",
+    targetSelectionMethodDataStatus: option.selectionMethodDataStatus || "official_not_entered",
+    targetSelectionBreakdown: Array.isArray(option.selectionBreakdown) ? option.selectionBreakdown : [],
     targetSourceUrl: option.sourceUrl || "",
     targetMinimumStatus: option.minimumStatus || "",
     targetMinimumOfficial: option.minimumStandard || "",
+    targetReferenceMinimum: option.referenceMinimum || "",
+    targetMinimumDataStatus: option.minimumDataStatus || option.minimumStatus || "official_not_entered",
+    targetReferenceSourceType: option.referenceSourceType || "",
     targetMinimumSubjects: option.minimumSubjects || "",
     targetMinimumSourceUrl: option.minimumSourceUrl || "",
+    historyEntityId: matched.entityId || "",
+    historyConnectionStatus: matched.connectionStatus || "",
+    historyConnectionLabel: matched.connectionLabel || "",
+    historyMatchMethod: matched.matchMethod || "",
+    historyReviewCandidateCount: Number(matched.reviewCandidateCount || 0),
+    historyApprovedRelation: matched.approvedRelation || "",
+    historyApprovalEvidence: matched.approvalEvidence || [],
     history: matched.history,
     historySuggestions: matched.suggestions
   };
@@ -824,7 +1186,8 @@ function setAdmissionOptions(select, department, selectedId) {
   }
   select.disabled = false;
   select.innerHTML = '<option value="">전형 선택</option>' + department.options.map((option) => {
-    const quota = option.quota == null ? "모집인원 미지정" : `${option.quota}명`;
+    const effectiveQuota = option.quota == null ? option.referenceQuota : option.quota;
+    const quota = effectiveQuota == null ? "모집인원 미지정" : `${effectiveQuota}명`;
     return `<option value="${escapeHtml(option.optionId)}"${option.optionId === selectedId ? " selected" : ""}>${escapeHtml(cleanAdmissionName(option.admissionName))} · ${escapeHtml(quota)}</option>`;
   }).join("");
 }
@@ -845,12 +1208,27 @@ function resetTarget(entry) {
     targetField: "",
     targetQuota: "",
     targetQuotaStatus: "",
+    targetReferenceQuota: "",
+    targetQuotaDataStatus: "",
     targetSelectionMethod: "",
+    targetReferenceSelectionMethod: "",
+    targetSelectionMethodDataStatus: "",
+    targetSelectionBreakdown: [],
     targetSourceUrl: "",
     targetMinimumStatus: "",
     targetMinimumOfficial: "",
+    targetReferenceMinimum: "",
+    targetMinimumDataStatus: "",
+    targetReferenceSourceType: "",
     targetMinimumSubjects: "",
     targetMinimumSourceUrl: "",
+    historyEntityId: "",
+    historyConnectionStatus: "",
+    historyConnectionLabel: "",
+    historyMatchMethod: "",
+    historyReviewCandidateCount: 0,
+    historyApprovedRelation: "",
+    historyApprovalEvidence: [],
     history: [],
     historySuggestions: []
   };
@@ -866,11 +1244,14 @@ function renderEditorPreview(item) {
   const quota = effectiveTargetValue(item, "quota");
   const selectionMethod = effectiveTargetValue(item, "selectionMethod");
   const minimum = effectiveTargetValue(item, "minimum");
+  const historyStatus = ["approved_exact", "approved_official_evidence"].includes(item.historyConnectionStatus)
+    ? `${item.history?.length || 0}/3개년 확인`
+    : item.historyConnectionLabel || `${item.history?.length || 0}/3개년 연결`;
   return `<div class="editor-preview-grid">
     <div><span>2027 모집</span><strong>${escapeHtml(quota ? withSuffix(quota, "명") : "인원 미지정")}</strong></div>
     <div><span>전형방법</span><strong>${escapeHtml(selectionMethod || "원문 확인 필요")}</strong></div>
     <div><span>수능최저</span><strong>${escapeHtml(minimum || "모집요강 확인 필요")}</strong></div>
-    <div><span>과거 입결</span><strong>${escapeHtml(manual ? "입학처 확인" : `${item.history?.length || 0}/3개년 연결`)}</strong></div>
+    <div><span>과거 입결</span><strong>${escapeHtml(manual ? "입학처 확인" : historyStatus)}</strong></div>
   </div>`;
 }
 
@@ -878,7 +1259,8 @@ function syncOverrideEditor(item, { writeInputs = true } = {}) {
   const fields = overrideFields(item);
   Object.entries(OVERRIDE_CONFIG).forEach(([key, config]) => {
     const input = byId(config.input);
-    const source = String(item?.[config.source] ?? "").trim();
+    const source = automaticTargetValue(item, key);
+    const sourceStatus = targetDataStatus(item, key);
     const overridden = fields.has(key);
     const value = overridden ? String(item?.[config.override] ?? "") : source;
     if (writeInputs) input.value = value;
@@ -888,10 +1270,12 @@ function syncOverrideEditor(item, { writeInputs = true } = {}) {
     const sourceNote = document.querySelector(`[data-override-source="${key}"]`);
     const reset = document.querySelector(`[data-reset-override="${key}"]`);
     const manual = overridden && !source;
-    status.textContent = overridden ? (manual ? "직접 입력" : "직접 수정") : (source ? "자동값" : "입력 전");
+    status.textContent = overridden ? (manual ? "직접 입력" : "직접 수정") : (source ? dataStatusLabel(sourceStatus) : "입력 전");
     status.classList.toggle("is-edited", overridden && !manual);
     status.classList.toggle("is-manual", manual);
-    sourceNote.textContent = source ? `공식 원본: ${key === "quota" ? withSuffix(source, "명") : source}` : "공식 원본 입력 없음";
+    sourceNote.textContent = source
+      ? `${dataStatusLabel(sourceStatus)}: ${key === "quota" ? withSuffix(source, "명") : source}`
+      : "자동 입력값 없음 · 모집요강 확인";
     reset.disabled = !overridden;
   });
 
@@ -1032,9 +1416,10 @@ async function configureEditorUniversity(entry, existing = null) {
     editorSession.department = department;
     editorSession.option = option;
     if (department && option) {
-      const historyData = await loadHistoryUniversity(data.code);
+      const lineageData = await loadLineageUniversity(data.code);
+      const historyData = await loadHistoryUniversities(lineageHistoryCodes(lineageData, data.code));
       if (!editorSession || sequence !== editorSequence) return;
-      const matched = matchHistory(historyData.rows || [], department.name, option);
+      const matched = matchHistory(historyData.rows || [], department.name, option, lineageData);
       editorDraft = { ...editorDraft, ...targetChanges(data, department, option, matched), ...preserved };
     } else if (department) {
       editorDraft = { ...editorDraft, department: department.name, targetDepartment: department.name };
@@ -1139,8 +1524,23 @@ function handleEditorDepartmentChange() {
     targetAdmission: "",
     targetCategory: "",
     targetQuota: "",
+    targetReferenceQuota: "",
+    targetQuotaDataStatus: "",
     targetSelectionMethod: "",
+    targetReferenceSelectionMethod: "",
+    targetSelectionMethodDataStatus: "",
+    targetSelectionBreakdown: [],
     targetMinimumOfficial: "",
+    targetReferenceMinimum: "",
+    targetMinimumDataStatus: "",
+    targetReferenceSourceType: "",
+    historyEntityId: "",
+    historyConnectionStatus: "",
+    historyConnectionLabel: "",
+    historyMatchMethod: "",
+    historyReviewCandidateCount: 0,
+    historyApprovedRelation: "",
+    historyApprovalEvidence: [],
     history: [],
     historySuggestions: []
   };
@@ -1157,6 +1557,31 @@ async function handleEditorAdmissionChange() {
       ...clearedOverrides(),
       targetOptionId: "",
       targetAdmission: "",
+      targetCategory: "",
+      targetField: "",
+      targetQuota: "",
+      targetQuotaStatus: "",
+      targetReferenceQuota: "",
+      targetQuotaDataStatus: "",
+      targetSelectionMethod: "",
+      targetReferenceSelectionMethod: "",
+      targetSelectionMethodDataStatus: "",
+      targetSelectionBreakdown: [],
+      targetSourceUrl: "",
+      targetMinimumStatus: "",
+      targetMinimumOfficial: "",
+      targetReferenceMinimum: "",
+      targetMinimumDataStatus: "",
+      targetReferenceSourceType: "",
+      targetMinimumSubjects: "",
+      targetMinimumSourceUrl: "",
+      historyEntityId: "",
+      historyConnectionStatus: "",
+      historyConnectionLabel: "",
+      historyMatchMethod: "",
+      historyReviewCandidateCount: 0,
+      historyApprovedRelation: "",
+      historyApprovalEvidence: [],
       history: [],
       historySuggestions: []
     };
@@ -1166,9 +1591,12 @@ async function handleEditorAdmissionChange() {
   const sequence = ++editorSequence;
   byId("editorPreview").textContent = "2027 모집정보와 과거 입결을 연결하는 중입니다.";
   try {
-    const historyData = await loadHistoryUniversity(editorSession.data.code);
+    const lineageData = await loadLineageUniversity(editorSession.data.code);
+    const historyData = await loadHistoryUniversities(
+      lineageHistoryCodes(lineageData, editorSession.data.code)
+    );
     if (!editorSession || sequence !== editorSequence) return;
-    const matched = matchHistory(historyData.rows || [], editorSession.department.name, option);
+    const matched = matchHistory(historyData.rows || [], editorSession.department.name, option, lineageData);
     editorDraft = {
       ...editorDraft,
       ...targetChanges(editorSession.data, editorSession.department, option, matched)

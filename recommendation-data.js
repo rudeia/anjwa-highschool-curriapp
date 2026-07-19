@@ -1,5 +1,9 @@
 window.ANJWA_RECOMMENDATION_DATA = {
   updated: "2026-07-10",
+  basis: {
+    type: "field-guide",
+    description: "계열별 탐색을 위해 대학·대교협 자료와 학문 연계를 종합한 대표 데이터입니다. 특정 대학·모집단위의 공통 필수과목을 뜻하지 않습니다."
+  },
   records: [
     {
       id: "engineering_general_2028",
@@ -86,7 +90,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["간호학과", "간호대학", "서울대 간호학과"],
       coreSubjects: ["생명과학", "화학", "세포와 물질대사", "생물의 유전"],
       recommendedSubjects: ["미적분Ⅱ", "확률과 통계", "물질과 에너지", "화학 반응의 세계"],
-      suggestedSubjects: ["보건", "생활과 과학", "사회와 문화", "데이터 과학", "생명과학 실험", "심리학"],
+      suggestedSubjects: ["보건", "생활과 과학", "사회와 문화", "데이터 과학", "생명과학 실험", "인간과 심리"],
       note: "간호학과는 생명과학·화학 흐름을 기본으로 보되, 보건정책, 의료 의사소통, 지역의료, 보건의료 데이터처럼 사람과 제도를 함께 보는 탐구도 의미가 있습니다."
     },
     {
@@ -97,7 +101,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["보건관리학과", "물리치료학과", "작업치료학과", "임상병리학과", "방사선학과", "응급구조학과", "치위생학과", "스포츠의학과"],
       coreSubjects: ["생명과학", "화학"],
       recommendedSubjects: ["세포와 물질대사", "물질과 에너지", "확률과 통계"],
-      suggestedSubjects: ["보건", "생활과 과학", "사회와 문화", "스포츠 과학", "심리학", "데이터 과학"],
+      suggestedSubjects: ["보건", "생활과 과학", "사회와 문화", "스포츠 과학", "인간과 심리", "데이터 과학"],
       note: "보건·재활·치료 계열은 인체, 질병, 재활, 건강관리의 이해가 중요합니다. 생명과학·화학을 바탕으로 통계, 보건, 사회문제 탐구를 연결하면 상담 자료로 쓰기 좋습니다."
     },
     {
@@ -130,7 +134,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["사회학과", "사회복지학과", "심리학과", "미디어커뮤니케이션학과", "신문방송학과", "광고홍보학과"],
       coreSubjects: ["확률과 통계", "사회와 문화"],
       recommendedSubjects: ["경제", "윤리와 사상", "정치와 법"],
-      suggestedSubjects: ["심리학", "데이터 과학", "매체 의사소통", "사회문제 탐구", "비교 문화"],
+      suggestedSubjects: ["인간과 심리", "데이터 과학", "매체 의사소통", "사회문제 탐구", "비교 문화"],
       note: "사회학·심리·미디어 계열은 사람과 사회 현상을 자료로 읽고 해석하는 역량이 중요합니다. 통계, 사회문화, 윤리, 미디어 자료 분석을 함께 연결하면 좋습니다."
     },
     {
@@ -163,7 +167,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["교육학과", "초등교육과", "유아교육과", "특수교육과", "교육공학과"],
       coreSubjects: [],
       recommendedSubjects: [],
-      suggestedSubjects: ["교육의 이해", "심리학", "사회와 문화", "생활과 윤리", "독서 토론과 글쓰기", "철학"],
+      suggestedSubjects: ["교육의 이해", "인간과 심리", "사회와 문화", "생활과 윤리", "독서 토론과 글쓰기", "철학"],
       note: "교육학과와 교과교육과는 요구되는 역량이 다릅니다. 교육학·초등교육은 인간 발달, 학습, 학교 제도, 공동체 문제를 수업과 연결해 보는 방향이 좋습니다."
     },
     {
@@ -174,7 +178,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["국어교육과", "영어교육과", "언어교육과"],
       coreSubjects: [],
       recommendedSubjects: [],
-      suggestedSubjects: ["교육의 이해", "문학", "고전 읽기", "독서 토론과 글쓰기", "심리학", "매체 의사소통"],
+      suggestedSubjects: ["교육의 이해", "문학", "고전 읽기", "독서 토론과 글쓰기", "인간과 심리", "매체 의사소통"],
       note: "언어 교과교육은 전공 교과 이해와 학생에게 설명하는 힘이 함께 필요합니다. 문학·독서 활동을 교육적 질문과 연결하면 자연스럽습니다."
     },
     {
@@ -185,7 +189,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["사회교육과", "일반사회교육과", "역사교육과", "지리교육과", "윤리교육과", "환경교육과"],
       coreSubjects: ["사회와 문화"],
       recommendedSubjects: ["정치와 법", "경제", "한국지리", "세계지리", "생활과 윤리", "윤리와 사상"],
-      suggestedSubjects: ["교육의 이해", "심리학", "기후변화와 지속가능한 세계", "사회문제 탐구"],
+      suggestedSubjects: ["교육의 이해", "인간과 심리", "기후변화와 지속가능한 세계", "사회문제 탐구"],
       note: "사회계열 교과교육은 전공 교과 지식과 수업 설계 관점을 함께 봅니다. 지리교육은 지리 과목과 자료 해석, 윤리교육은 가치 판단과 토론, 역사교육은 사료 해석 흐름이 중요합니다."
     },
     {
@@ -196,7 +200,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["수학교육과"],
       coreSubjects: ["미적분Ⅱ", "기하"],
       recommendedSubjects: ["확률과 통계", "미적분Ⅰ"],
-      suggestedSubjects: ["교육의 이해", "심리학", "인공지능 수학"],
+      suggestedSubjects: ["교육의 이해", "인간과 심리", "인공지능 수학"],
       note: "수학교육은 수학 자체의 이해와 학생에게 설명하는 힘을 함께 보여야 합니다. 교육학과 달리 전공 수학 과목의 깊이가 중요합니다."
     },
     {
@@ -207,7 +211,7 @@ window.ANJWA_RECOMMENDATION_DATA = {
       departments: ["과학교육과", "물리교육과", "화학교육과", "생물교육과", "지구과학교육과"],
       coreSubjects: ["물리학", "화학", "생명과학", "지구과학"],
       recommendedSubjects: ["역학과 에너지", "전자기와 양자", "물질과 에너지", "화학 반응의 세계", "세포와 물질대사", "지구시스템과학"],
-      suggestedSubjects: ["교육의 이해", "심리학"],
+      suggestedSubjects: ["교육의 이해", "인간과 심리"],
       note: "과학교육은 희망 교과에 맞는 과학 과목을 따로 확인해야 합니다. 물리교육, 화학교육, 생물교육, 지구과학교육은 같은 교육계열이어도 필요한 과목 흐름이 다릅니다."
     },
     {
