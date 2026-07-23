@@ -151,6 +151,8 @@
       targetQuotaOverride: shouldResetTarget ? "" : clean(row.targetQuotaOverride),
       targetSelectionMethodOverride: shouldResetTarget ? "" : clean(row.targetSelectionMethodOverride),
       targetMinimumOverride: shouldResetTarget ? "" : clean(row.targetMinimumOverride),
+      targetAnnouncementDate: shouldResetTarget ? "" : clean(row.targetAnnouncementDate),
+      targetAnnouncementDateOverride: shouldResetTarget ? "" : clean(row.targetAnnouncementDateOverride),
       strategy: ["상향", "적정", "안정"].includes(row.strategy) ? row.strategy : "",
       memo: clean(row.memo),
       sourceUrl: clean(row.sourceUrl),

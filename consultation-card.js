@@ -20,7 +20,8 @@ const SUCCESSOR_UNIVERSITY_CODES = new Map([
 const OVERRIDE_CONFIG = {
   quota: { source: "targetQuota", override: "targetQuotaOverride", input: "editorQuotaOverride", fallback: "모집인원 미지정" },
   selectionMethod: { source: "targetSelectionMethod", override: "targetSelectionMethodOverride", input: "editorSelectionMethodOverride", fallback: "원문 확인 피요" },
-  minimum: { source: "targetMinimumOfficial", override: "targetMinimumOverride", input: "editorMinimumOverride", fallback: "모집요강 확인 피요" }
+  minimum: { source: "targetMinimumOfficial", override: "targetMinimumOverride", input: "editorMinimumOverride", fallback: "모집요강 확인 피요" },
+  announcementDate: { source: "targetAnnouncementDate", override: "targetAnnouncementDateOverride", input: "editorAnnouncementDateOverride", fallback: "직접 입력 필요" }
 };
 Object.assign(OVERRIDE_CONFIG.quota, {
   reference: "targetReferenceQuota",
@@ -187,13 +188,13 @@ function automaticTargetValue(item, key) {
   if (!config) return "";
   const primary = String(item?.[config.source] ?? "").trim();
   if (primary) return primary;
-  return String(item?.[config.reference] ?? "").trim();
+  return config.reference ? String(item?.[config.reference] ?? "").trim() : "";
 }
 
 function targetDataStatus(item, key) {
   const config = OVERRIDE_CONFIG[key];
   if (!config) return "official_not_entered";
-  const explicit = String(item?.[config.status] ?? "").trim();
+  const explicit = config.status ? String(item?.[config.status] ?? "").trim() : "";
   if (explicit) return explicit;
   return String(item?.[config.source] ?? "").trim() ? "official_confirmed" : "official_not_entered";
 }
@@ -217,7 +218,8 @@ function clearedOverrides() {
     targetOverrideFields: [],
     targetQuotaOverride: "",
     targetSelectionMethodOverride: "",
-    targetMinimumOverride: ""
+    targetMinimumOverride: "",
+    targetAnnouncementDateOverride: ""
   };
 }
 
@@ -226,7 +228,8 @@ function copiedOverrides(item) {
     targetOverrideFields: [...overrideFields(item)],
     targetQuotaOverride: String(item?.targetQuotaOverride ?? ""),
     targetSelectionMethodOverride: String(item?.targetSelectionMethodOverride ?? ""),
-    targetMinimumOverride: String(item?.targetMinimumOverride ?? "")
+    targetMinimumOverride: String(item?.targetMinimumOverride ?? ""),
+    targetAnnouncementDateOverride: String(item?.targetAnnouncementDateOverride ?? "")
   };
 }
 
@@ -533,10 +536,12 @@ function renderOptionSummary(item) {
   const minimum = item.targetMinimumOfficial || (
     item.targetMinimumStatus === "official_not_entered" ? "대학어디가 입력 없음 · 모집요강 확인" : "모집요강 확인 필요"
   );
+  const announcementDate = effectiveTargetValue(item, "announcementDate") || "직접 입력 필요";
   return `<section class="option-summary" aria-label="2027 전형 정보">
     <div><span>2027 모집인원</span><strong>${escapeHtml(quota)}</strong></div>
     <div><span>전형방법·반영비율</span><strong>${escapeHtml(item.targetSelectionMethod || "원문 확인 필요")}</strong></div>
     <div><span>수능최저</span><strong>${escapeHtml(minimum)}</strong></div>
+    <div><span>최종 합격자 발표일</span><strong>${escapeHtml(announcementDate)}</strong></div>
     ${item.targetMinimumSubjects ? `<details><summary>수능최저 반영 영역 보기</summary><p>${escapeHtml(item.targetMinimumSubjects)}</p></details>` : ""}
     <nav>${item.targetSourceUrl ? `<a href="${escapeHtml(item.targetSourceUrl)}" target="_blank" rel="noopener noreferrer">2027 모집정보 원문</a>` : ""}${item.targetMinimumSourceUrl ? `<a href="${escapeHtml(item.targetMinimumSourceUrl)}" target="_blank" rel="noopener noreferrer">수능최저 상세</a>` : ""}</nav>
   </section>`;
@@ -550,7 +555,11 @@ function optionValueBlock(item, key, label, value, fallback, suffix = "") {
   const dataStatus = targetDataStatus(item, key);
   const shown = value ? withSuffix(value, suffix) : fallback;
   const status = overridden ? `<span class="option-value-status">${manual ? "직접 입력" : "직접 수정"}</span>` : "";
-  const sourceStatus = overridden ? "" : `<span class="option-source-status ${dataStatusClass(dataStatus)}" title="${escapeHtml(dataStatusDescription(dataStatus))}">${escapeHtml(dataStatusLabel(dataStatus))}</span>`;
+  const sourceStatus = overridden
+    ? ""
+    : key === "announcementDate"
+      ? '<span class="option-source-status is-missing" title="모집요강 확인 후 직접 입력하세요.">직접 입력</span>'
+      : `<span class="option-source-status ${dataStatusClass(dataStatus)}" title="${escapeHtml(dataStatusDescription(dataStatus))}">${escapeHtml(dataStatusLabel(dataStatus))}</span>`;
   const original = overridden ? `<small class="option-original">자동값: ${escapeHtml(source ? withSuffix(source, suffix) : "입력 없음")}</small>` : "";
   return `<div><span>${escapeHtml(label)}${status}${sourceStatus}</span><strong>${escapeHtml(shown)}</strong>${original}</div>`;
 }
@@ -584,18 +593,21 @@ function renderOptionSummaryV2(item, bucket = "standard") {
       <div><span>2027 모집인원</span><strong>전형 연결 후 표시</strong></div>
       <div><span>반영 요소·비율</span><strong>전형 연결 후 표시</strong></div>
       <div><span>수능최저학력기준</span><strong>전형 연결 후 표시</strong></div>
+      <div><span>최종 합격자 발표일</span><strong>직접 입력 필요</strong></div>
       <div class="option-connect-notice"><span><strong>2027 학과·전형을 연결하세요.</strong> 모집인원, 반영비율, 수능최저가 자동으로 채워집니다.</span><button type="button" data-edit-id="${escapeHtml(item.id)}" data-edit-bucket="${escapeHtml(bucket)}">2027 전형 연결</button></div>
     </section>`;
   }
   const quota = effectiveTargetValue(item, "quota");
   const selectionMethod = effectiveTargetValue(item, "selectionMethod");
   const minimum = effectiveTargetValue(item, "minimum");
-  const hasManualData = [quota, selectionMethod, minimum].some(Boolean);
+  const announcementDate = effectiveTargetValue(item, "announcementDate");
+  const hasManualData = [quota, selectionMethod, minimum, announcementDate].some(Boolean);
   if (isManualUniversity(item) && !hasManualData) {
     return `<section class="option-summary is-unlinked" aria-label="2027 전형 정보 직접 입력">
       <div><span>2027 모집인원</span><strong>직접 입력 필요</strong></div>
       <div><span>반영 요소·비율</span><strong>직접 입력 필요</strong></div>
       <div><span>수능최저학력기준</span><strong>직접 입력 필요</strong></div>
+      <div><span>최종 합격자 발표일</span><strong>직접 입력 필요</strong></div>
       <div class="option-connect-notice"><span><strong>모집요강을 확인해 정보를 보완하세요.</strong> 수정값은 이 상담카드에만 저장됩니다.</span><button type="button" data-edit-id="${escapeHtml(item.id)}" data-edit-bucket="${escapeHtml(bucket)}">정보 입력</button></div>
     </section>`;
   }
@@ -609,6 +621,7 @@ function renderOptionSummaryV2(item, bucket = "standard") {
     ${optionValueBlock(item, "quota", "2027 모집인원", quota, "모집인원 미지정", "명")}
     ${optionValueBlock(item, "selectionMethod", "반영 요소·비율", selectionMethod, "원문 확인 필요")}
     ${optionValueBlock(item, "minimum", "수능최저학력기준", minimum, minimumFallback)}
+    ${optionValueBlock(item, "announcementDate", "최종 합격자 발표일", announcementDate, "직접 입력 필요")}
     ${selectionBreakdownMarkup(item)}
     ${item.targetMinimumSubjects ? `<details><summary>수능최저 반영 영역 보기</summary><p>${escapeHtml(item.targetMinimumSubjects)}</p></details>` : ""}
   </section>`;
@@ -1161,6 +1174,7 @@ function targetChanges(data, department, option, matched) {
     targetReferenceSourceType: option.referenceSourceType || "",
     targetMinimumSubjects: option.minimumSubjects || "",
     targetMinimumSourceUrl: option.minimumSourceUrl || "",
+    targetAnnouncementDate: option.announcementDate || "",
     historyEntityId: matched.entityId || "",
     historyConnectionStatus: matched.connectionStatus || "",
     historyConnectionLabel: matched.connectionLabel || "",
@@ -1222,6 +1236,7 @@ function resetTarget(entry) {
     targetReferenceSourceType: "",
     targetMinimumSubjects: "",
     targetMinimumSourceUrl: "",
+    targetAnnouncementDate: "",
     historyEntityId: "",
     historyConnectionStatus: "",
     historyConnectionLabel: "",
@@ -1244,6 +1259,7 @@ function renderEditorPreview(item) {
   const quota = effectiveTargetValue(item, "quota");
   const selectionMethod = effectiveTargetValue(item, "selectionMethod");
   const minimum = effectiveTargetValue(item, "minimum");
+  const announcementDate = effectiveTargetValue(item, "announcementDate");
   const historyStatus = ["approved_exact", "approved_official_evidence"].includes(item.historyConnectionStatus)
     ? `${item.history?.length || 0}/3개년 확인`
     : item.historyConnectionLabel || `${item.history?.length || 0}/3개년 연결`;
@@ -1251,6 +1267,7 @@ function renderEditorPreview(item) {
     <div><span>2027 모집</span><strong>${escapeHtml(quota ? withSuffix(quota, "명") : "인원 미지정")}</strong></div>
     <div><span>전형방법</span><strong>${escapeHtml(selectionMethod || "원문 확인 필요")}</strong></div>
     <div><span>수능최저</span><strong>${escapeHtml(minimum || "모집요강 확인 필요")}</strong></div>
+    <div><span>최종 발표일</span><strong>${escapeHtml(announcementDate || "직접 입력 필요")}</strong></div>
     <div><span>과거 입결</span><strong>${escapeHtml(manual ? "입학처 확인" : historyStatus)}</strong></div>
   </div>`;
 }
@@ -1270,12 +1287,15 @@ function syncOverrideEditor(item, { writeInputs = true } = {}) {
     const sourceNote = document.querySelector(`[data-override-source="${key}"]`);
     const reset = document.querySelector(`[data-reset-override="${key}"]`);
     const manual = overridden && !source;
-    status.textContent = overridden ? (manual ? "직접 입력" : "직접 수정") : (source ? dataStatusLabel(sourceStatus) : "입력 전");
+    const manualEntryRequired = key === "announcementDate" && !source;
+    status.textContent = overridden ? (manual ? "직접 입력" : "직접 수정") : (source ? dataStatusLabel(sourceStatus) : manualEntryRequired ? "직접 입력" : "입력 전");
     status.classList.toggle("is-edited", overridden && !manual);
-    status.classList.toggle("is-manual", manual);
+    status.classList.toggle("is-manual", manual || manualEntryRequired);
     sourceNote.textContent = source
       ? `${dataStatusLabel(sourceStatus)}: ${key === "quota" ? withSuffix(source, "명") : source}`
-      : "자동 입력값 없음 · 모집요강 확인";
+      : key === "announcementDate"
+        ? "일정 데이터 없음 · 모집요강 확인 후 직접 입력"
+        : "자동 입력값 없음 · 모집요강 확인";
     reset.disabled = !overridden;
   });
 
@@ -1534,6 +1554,7 @@ function handleEditorDepartmentChange() {
     targetReferenceMinimum: "",
     targetMinimumDataStatus: "",
     targetReferenceSourceType: "",
+    targetAnnouncementDate: "",
     historyEntityId: "",
     historyConnectionStatus: "",
     historyConnectionLabel: "",
@@ -1575,6 +1596,7 @@ async function handleEditorAdmissionChange() {
       targetReferenceSourceType: "",
       targetMinimumSubjects: "",
       targetMinimumSourceUrl: "",
+      targetAnnouncementDate: "",
       historyEntityId: "",
       historyConnectionStatus: "",
       historyConnectionLabel: "",

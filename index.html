@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>진로 진학 교육과정 설계 플랫폼</title>
-    <link rel="stylesheet" href="./styles.css?v=20260718d" />
+    <link rel="stylesheet" href="./styles.css?v=20260723g" />
   </head>
   <body>
     <div class="app-shell">
@@ -233,35 +233,65 @@
                 </h2>
                 <button class="ghost-button back-home-button" data-view="home">첫 화면으로</button>
               </div>
-              <p>내 학년과 관심 분야를 고른 뒤, 우리학교에서 배울 수 있는 과목과 더 알아볼 과목을 비교해 봅니다.</p>
+              <p>지금 필요한 진로 도움을 고르고, 관심 분야와 우리학교 과목을 차근차근 연결해 봅니다.</p>
             </div>
           </div>
 
-          <section class="course-designer-setup" aria-labelledby="course-designer-setup-title">
+          <div class="course-designer-document-bar">
+            <label>
+              학번
+              <input id="courseDesignerStudentNumber" type="text" inputmode="numeric" maxlength="12"
+                autocomplete="off" placeholder="예: 10101" />
+            </label>
+            <div>
+              <button class="ghost-button" id="courseDesignerSaveButton" type="button">저장</button>
+              <button class="primary-button" id="courseDesignerExportButton" type="button">PDF 내보내기</button>
+            </div>
+            <span id="courseDesignerSaveStatus">입력 내용은 이 기기의 브라우저에 저장됩니다.</span>
+          </div>
+
+          <div class="course-designer-step-tabs" id="courseDesignerStepTabs" role="tablist" aria-label="진로와 교과목 설계 단계">
+            <button class="active" type="button" role="tab" aria-selected="true" data-course-designer-step="setup">
+              <span>1</span><b>관심 분야</b>
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-course-designer-step="courses" disabled>
+              <span>2</span><b>관련 과목</b>
+            </button>
+            <button type="button" role="tab" aria-selected="false" data-course-designer-step="review" disabled>
+              <span>3</span><b>선택 검토</b>
+            </button>
+          </div>
+
+          <section class="course-designer-setup" id="courseDesignerSetup"
+            data-course-designer-panel="setup" aria-labelledby="course-designer-setup-title">
             <div class="course-designer-control-grid">
               <label>
                 내 학년도
                 <select id="courseDesignerPlanSelect"></select>
               </label>
               <fieldset class="course-designer-status-fieldset">
-                <legend>지금 내 진로 고민</legend>
+                <legend>지금 어떤 도움이 필요한가요?</legend>
                 <div class="course-designer-status-switch" id="courseDesignerStatusSwitch">
-                  <button type="button" data-course-designer-status="clear">희망 분야가 분명함</button>
-                  <button class="active" type="button" data-course-designer-status="considering">두세 분야 고민 중</button>
-                  <button type="button" data-course-designer-status="exploring">아직 탐색 중</button>
+                  <button type="button" data-course-designer-status="clear">한 분야를 깊게 확인</button>
+                  <button class="active" type="button" data-course-designer-status="considering">2~3개 분야를 비교</button>
+                  <button type="button" data-course-designer-status="exploring">좋아하는 활동에서 탐색</button>
                 </div>
               </fieldset>
             </div>
 
+            <div class="course-designer-path-guide" id="courseDesignerPathGuide"></div>
+            <div class="course-designer-exploration" id="courseDesignerExploration" hidden></div>
+
             <div class="course-designer-interest-head">
               <div>
                 <span class="label">관심 분야</span>
-                <h3 id="course-designer-setup-title">관심 있는 분야를 최대 3개 골라 보세요</h3>
-                <p class="course-designer-limit-note">한 화면에서 비교하기 위해 3개까지만 고를 수 있습니다. 진로를 반드시 3개 안에서 정해야 한다는 뜻은 아닙니다.</p>
+                <h3 id="course-designer-setup-title">비교할 관심 분야를 골라 보세요</h3>
+                <p class="course-designer-limit-note" id="courseDesignerLimitNote"></p>
               </div>
               <strong id="courseDesignerInterestCount">0 / 3</strong>
             </div>
             <div class="course-designer-interest-groups" id="courseDesignerInterestGroups"></div>
+            <div class="course-designer-priority-list" id="courseDesignerPriorityList" hidden></div>
 
             <div class="course-designer-actions">
               <p id="courseDesignerSelectionSummary">관심 분야를 한 개 이상 선택하세요.</p>
@@ -274,26 +304,48 @@
 
           <div class="course-designer-version-notice" id="courseDesignerVersionNotice" hidden></div>
 
-          <section class="course-designer-results" id="courseDesignerResults" aria-live="polite" hidden>
+          <section class="course-designer-results" id="courseDesignerResults"
+            data-course-designer-panel="courses" aria-live="polite" hidden>
             <div class="course-designer-result-head">
               <div>
-                <span class="label">비교 결과</span>
-                <h3>같은 관심 분야라도 과목은 여러 방식으로 고를 수 있습니다</h3>
+                <span class="label">나의 진로·과목 연결 결과</span>
+                <h3 id="courseDesignerResultTitle">관심 분야와 과목의 연결을 확인해 봅시다</h3>
                 <p class="course-designer-no-rank">어느 선택안이 더 좋은 것은 아닙니다. 내 관심과 학습 계획에 맞는 안을 비교해 보세요.</p>
-                <p class="course-designer-scope-note">내 학년을 선택해도 1·2·3학년 과목을 모두 볼 수 있습니다. 2학년이라면 이미 들은 1학기 과목도 진로와 어떤 관련이 있었는지 돌아볼 수 있도록 함께 보여줍니다. 화면에는 비교하기 좋은 과목 3~4개를 먼저 제시하므로, 보이지 않는 과목이 관련 없다는 뜻은 아닙니다.</p>
+                <p class="course-designer-scope-note">선택한 입학년도의 1·2·3학년 교육과정을 함께 보여줍니다. 이미 배운 과목은 내 학습 경험을 돌아보고, 앞으로 배울 과목은 개설 학기와 선택 묶음을 확인하는 데 활용하세요. 관련성이 확인된 과목을 학년별 최대 5개까지 보여주며, 비슷한 후보는 일반선택·진로선택·융합선택 순으로 살펴봅니다.</p>
               </div>
               <div class="course-designer-result-tools">
                 <span id="courseDesignerResultBasis"></span>
-                <button class="ghost-button" id="courseDesignerOpenPlannerButton" type="button">내 교육과정 보기</button>
+                <div>
+                  <button class="ghost-button" id="courseDesignerOpenPlannerButton" type="button">내 교육과정 보기</button>
+                  <button class="primary-button" id="courseDesignerReviewButton" type="button">선택 검토하기</button>
+                </div>
               </div>
             </div>
             <div class="course-designer-option-tabs" id="courseDesignerOptionTabs" role="tablist" aria-label="과목 선택안 비교"></div>
             <div class="course-designer-option-intro" id="courseDesignerOptionIntro"></div>
+            <div class="course-designer-comparison" id="courseDesignerComparison"></div>
             <div class="course-designer-map" id="courseDesignerMap"></div>
             <div class="course-designer-alternatives" id="courseDesignerAlternatives"></div>
             <div class="course-designer-caution">
               <b>선택 전에 확인하세요</b>
               <p>이 화면은 과목 선택을 생각해 보는 참고 자료이며, 합격 조건이나 반드시 들어야 하는 과목 목록이 아닙니다. 같은 선택 묶음에서는 정해진 수만큼만 고를 수 있으니, 최종 결정 전에는 우리학교 교육과정과 희망 대학의 최신 안내를 선생님과 함께 확인하세요.</p>
+            </div>
+          </section>
+
+          <section class="course-designer-review" id="courseDesignerReview"
+            data-course-designer-panel="review" aria-live="polite" hidden>
+            <div class="course-designer-review-head">
+              <div>
+                <span class="label">상담 전 최종 점검</span>
+                <h3>관심 분야와 과목별 선택 판단을 한곳에서 확인합니다</h3>
+                <p>아직 판단하지 않은 과목도 함께 보면서 선생님과 확인할 질문을 정리해 보세요.</p>
+              </div>
+              <button class="ghost-button" id="courseDesignerBackToCoursesButton" type="button">관련 과목 다시 보기</button>
+            </div>
+            <div id="courseDesignerReviewContent"></div>
+            <div class="course-designer-review-actions">
+              <button class="ghost-button" id="courseDesignerReviewSaveButton" type="button">저장</button>
+              <button class="primary-button" id="courseDesignerReviewExportButton" type="button">상담용 PDF 내보내기</button>
             </div>
           </section>
 
@@ -437,9 +489,16 @@
                 내 학년도
                 <select id="plannerPlanSelect"></select>
               </label>
+              <label>
+                학번
+                <input id="plannerStudentNumber" type="text" inputmode="numeric" maxlength="12"
+                  autocomplete="off" placeholder="예: 10101" />
+              </label>
               <button class="ghost-button" id="savePlanButton">저장</button>
               <button class="primary-button" id="loadPlanButton">저장 내용 불러오기</button>
+              <button class="primary-button" id="plannerExportButton" type="button">PDF 내보내기</button>
               <button class="ghost-button reset-button" id="resetPlanButton" type="button">현재 학년도 초기화</button>
+              <span class="planner-save-status" id="plannerSaveStatus">입력 내용은 이 기기의 브라우저에 저장됩니다.</span>
             </div>
           </div>
 
@@ -700,11 +759,11 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./curriculum-data.js?v=20260710b"></script>
     <script src="./subject-guide-data.js?v=20260718b"></script>
-    <script src="./recommendation-data.js?v=20260718b"></script>
+    <script src="./recommendation-data.js?v=20260723g"></script>
     <script src="./university-recommendation-data.js?v=20260710b"></script>
-    <script src="./course-designer-data.js?v=20260718c"></script>
+    <script src="./course-designer-data.js?v=20260723g"></script>
     <script src="./topic-data.js?v=20260710b"></script>
-    <script src="./app.js?v=20260718i"></script>
-    <script src="./site-meta.js?v=1.01.00" defer></script>
+    <script src="./app.js?v=20260723g"></script>
+    <script src="./site-meta.js?v=1.02.00" defer></script>
   </body>
 </html>

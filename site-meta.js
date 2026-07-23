@@ -1,7 +1,7 @@
 (() => {
   const RELEASE = Object.freeze({
-    version: "1.01.00",
-    releasedAt: "2026-07-20T08:41:00+09:00"
+    version: "1.02.00",
+    releasedAt: "2026-07-23T08:34:00+09:00"
   });
 
   function seoulDateParts(value) {
@@ -28,6 +28,7 @@
       <span>버전</span>
       <strong>${RELEASE.version}</strong>
       <time datetime="${RELEASE.releasedAt}">(${displayDate})</time>
+      <a class="teacher-dashboard-link" href="./teacher-dashboard.html">교사 상담용</a>
     `;
     document.body.append(footer);
   }
@@ -54,6 +55,20 @@
       }
       .site-update-footer strong { color: #17211c; }
       .site-update-footer time { color: #66736d; font-weight: 600; }
+      .site-update-footer .teacher-dashboard-link {
+        min-height: 28px;
+        margin-left: 5px;
+        padding: 4px 8px;
+        border: 1px solid #d9e1dc;
+        border-radius: 5px;
+        background: #fff;
+        color: #405149;
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 18px;
+        text-decoration: none;
+      }
+      .site-update-footer .teacher-dashboard-link:hover { border-color: #267a55; color: #267a55; }
       @media (max-width: 620px) {
         .site-update-footer { width: calc(100% - 24px); margin-top: 24px; }
       }

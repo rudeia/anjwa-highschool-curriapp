@@ -1,0 +1,104 @@
+:root {
+  color-scheme: light;
+  --ink: #17211c;
+  --muted: #66736d;
+  --line: #d7e0db;
+  --soft: #f3f6f4;
+  --green: #1f7651;
+  --green-soft: #edf7f2;
+  --blue: #235f9f;
+  --blue-soft: #eef5fc;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #f7f9f7; color: var(--ink); letter-spacing: 0; }
+button { font: inherit; letter-spacing: 0; }
+[hidden] { display: none !important; }
+
+.viewer-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 20px; }
+.viewer-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.eyebrow { margin: 0 0 7px; color: var(--green); font-size: 14px; font-weight: 800; }
+.viewer-head h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.15; }
+.viewer-head p:last-child { margin: 10px 0 0; color: var(--muted); }
+.head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.primary-button, .secondary-button { min-height: 42px; padding: 9px 14px; border-radius: 6px; font-weight: 800; cursor: pointer; }
+.primary-button { border: 1px solid var(--ink); background: var(--ink); color: #fff; }
+.secondary-button { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+button:disabled { cursor: not-allowed; opacity: .45; }
+
+.source-note { display: grid; gap: 5px; margin: 24px 0 16px; padding: 15px 18px; border-left: 4px solid var(--green); background: var(--green-soft); }
+.source-note span { color: #52625a; line-height: 1.6; }
+.view-switch { display: flex; gap: 6px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--line); background: #fff; }
+.view-switch button { flex: 1; min-height: 42px; border: 0; background: transparent; color: var(--muted); font-weight: 800; cursor: pointer; }
+.view-switch button.is-active { background: var(--ink); color: #fff; }
+.card-status { padding: 22px; border: 1px solid var(--line); background: #fff; color: var(--muted); }
+.card-content { display: grid; gap: 18px; }
+.card-summary { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); background: #fff; }
+.card-summary div { display: grid; gap: 4px; min-width: 0; padding: 14px 16px; border-right: 1px solid var(--line); }
+.card-summary div:last-child { border-right: 0; }
+.card-summary span { color: var(--muted); font-size: 13px; }
+.card-summary strong { font-size: 20px; overflow-wrap: anywhere; }
+.card-content > section { padding: 20px; border: 1px solid var(--line); background: #fff; }
+.section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 14px; }
+.section-head span:first-child { color: var(--muted); font-size: 13px; }
+.section-head h2, .opinion-panel h2, .revision-panel h2 { margin: 3px 0 0; font-size: 22px; }
+.source-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.source-teacher { background: var(--blue-soft); color: var(--blue); }
+.source-student { background: var(--green-soft); color: var(--green); }
+
+.plan-list { display: grid; gap: 10px; }
+.plan-card { border: 1px solid var(--line); }
+.plan-main { display: grid; grid-template-columns: 72px minmax(160px, 1.2fr) minmax(180px, 1fr); gap: 12px; align-items: center; padding: 14px; }
+.plan-rank { color: var(--green); font-weight: 850; }
+.plan-identity, .plan-admission { display: grid; gap: 4px; min-width: 0; }
+.plan-identity strong, .plan-admission strong { overflow-wrap: anywhere; }
+.plan-identity span, .plan-admission span { color: var(--muted); font-size: 13px; }
+.plan-facts { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: var(--soft); }
+.plan-facts div { display: grid; gap: 4px; min-width: 0; padding: 12px 14px; border-right: 1px solid var(--line); }
+.plan-facts div:last-child { border-right: 0; }
+.plan-facts span { color: var(--muted); font-size: 12px; }
+.plan-facts strong { font-size: 14px; overflow-wrap: anywhere; }
+.history-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 10px 14px 14px; border-top: 1px solid var(--line); }
+.history-item { padding: 10px; border: 1px solid var(--line); background: #fff; }
+.history-item strong { display: block; margin-bottom: 4px; }
+.history-item span { display: block; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.opinion-panel p { min-height: 72px; margin: 12px 0 0; padding: 14px; background: var(--soft); color: #415048; line-height: 1.7; white-space: pre-wrap; }
+.revision-panel { display: grid; gap: 10px; }
+.revision-entry { display: grid; grid-template-columns: 155px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.revision-entry time { color: var(--muted); font-size: 13px; }
+.revision-entry p { margin: 0; line-height: 1.55; }
+.empty-row { padding: 20px; border: 1px dashed var(--line); color: var(--muted); text-align: center; }
+
+@media (max-width: 760px) {
+  .viewer-shell { width: min(100% - 20px, 1180px); padding-top: 20px; }
+  .viewer-head { display: grid; }
+  .head-actions { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .head-actions button { min-width: 0; padding-inline: 8px; font-size: 13px; }
+  .card-summary { grid-template-columns: repeat(2, 1fr); }
+  .card-summary div:nth-child(2) { border-right: 0; }
+  .card-summary div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .plan-main { grid-template-columns: 58px minmax(0, 1fr); }
+  .plan-admission { grid-column: 2; }
+  .plan-facts { grid-template-columns: 1fr; }
+  .plan-facts div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .plan-facts div:last-child { border-bottom: 0; }
+  .history-list { grid-template-columns: 1fr; }
+  .revision-entry { grid-template-columns: 1fr; gap: 3px; }
+}
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body { background: #fff; }
+  .viewer-shell { width: 100%; padding: 0; }
+  .head-actions, .source-note, .view-switch, .revision-panel, .site-update-footer { display: none !important; }
+  .viewer-head { display: block; }
+  .viewer-head h1 { font-size: 24px; }
+  .card-content { gap: 10px; }
+  .card-content > section { padding: 12px; break-inside: avoid; }
+  .plan-list { gap: 6px; }
+  .plan-card { break-inside: avoid; }
+  .plan-main { padding: 8px; }
+  .plan-facts div { padding: 7px 9px; }
+  .history-list { padding: 7px 9px 9px; }
+}

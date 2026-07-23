@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>교사 상담용 대시보드 | 진로진학 플랫폼</title>
+    <link rel="stylesheet" href="./teacher-dashboard.css?v=20260723c">
+  </head>
+  <body>
+    <div id="teacherGate" class="teacher-gate">
+      <form id="teacherGateForm" class="gate-panel">
+        <p class="eyebrow">교사 상담용</p>
+        <h1>상담 대시보드</h1>
+        <p>이 화면은 학생 상담카드를 반별로 정리하는 기기 내부 도구입니다.</p>
+        <label>
+          접속 비밀번호
+          <input id="teacherPassword" type="password" inputmode="numeric" autocomplete="current-password" required>
+        </label>
+        <p id="gateError" class="form-error" role="alert" hidden></p>
+        <button class="primary-button" type="submit">접속</button>
+        <a href="./index.html">첫 화면으로</a>
+      </form>
+    </div>
+
+    <main id="teacherApp" class="dashboard-shell" hidden>
+      <header class="dashboard-head">
+        <div>
+          <p class="eyebrow">교사 상담용</p>
+          <h1>수시 상담 대시보드</h1>
+          <p>학생이 제출한 상담카드와 교사가 확인한 수정 내용을 한 기기에서 이어서 관리합니다.</p>
+        </div>
+        <div class="head-actions">
+          <button id="lockDashboard" class="secondary-button" type="button">잠금</button>
+          <button id="openSelectedStudentCard" class="secondary-button" type="button" disabled>선택 학생 카드</button>
+          <a class="secondary-button link-button" href="./index.html">첫 화면으로</a>
+        </div>
+      </header>
+
+      <section class="storage-note">
+        <strong>반과 학생 자료는 이 브라우저에 계속 보관됩니다.</strong>
+        <span>학생 파일을 다시 불러오면 새 제출본을 보관하면서 기존 교사 수정값을 다시 적용합니다. 삭제는 교사가 직접 선택할 때만 실행됩니다.</span>
+      </section>
+
+      <section class="class-toolbar" aria-label="반 관리">
+        <label>
+          반 선택
+          <select id="classSelect"></select>
+        </label>
+        <button id="addClass" class="secondary-button" type="button">반 추가</button>
+        <button id="renameClass" class="secondary-button" type="button">반 이름 수정</button>
+        <button id="deleteClass" class="danger-button" type="button">현재 반 삭제</button>
+        <button id="importStudents" class="primary-button" type="button">상담카드 불러오기</button>
+        <input id="studentFiles" type="file" accept=".anjwacard,.json,application/json" multiple hidden>
+      </section>
+
+      <section class="class-summary">
+        <div><strong id="classStudentCount">0명</strong><span>저장 학생</span></div>
+        <div><strong id="classPlanCount">0개</strong><span>전체 지원안</span></div>
+        <div><strong id="classReviewCount">0명</strong><span>교사 검토 학생</span></div>
+        <div class="class-export-actions">
+          <button id="printClass" class="secondary-button" type="button">반 전체 PDF</button>
+          <button id="exportClassCsv" class="secondary-button" type="button">반 요약 엑셀(.csv)</button>
+          <button id="backupClass" class="secondary-button" type="button">반 전체 백업</button>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <aside class="student-pane">
+          <div class="pane-head">
+            <div>
+              <span class="label">학생 목록</span>
+              <h2 id="studentListTitle">반을 선택하세요</h2>
+            </div>
+            <input id="studentSearch" type="search" placeholder="학번 검색" aria-label="학번 검색">
+          </div>
+          <div id="studentList" class="student-list"></div>
+        </aside>
+
+        <section class="detail-pane">
+          <div id="emptyStudent" class="empty-state">
+            <strong>학생 상담카드를 선택하세요.</strong>
+            <p>학번순 목록에서 학생을 고르면 제출 내용과 교사 수정 이력을 확인할 수 있습니다.</p>
+          </div>
+
+          <div id="studentDetail" hidden>
+            <header class="student-detail-head">
+              <div>
+                <span class="source-badge source-student">학생 제출본 보존</span>
+                <h2 id="detailStudentNumber"></h2>
+                <p id="detailTimestamp"></p>
+              </div>
+              <div class="detail-actions">
+                <button id="exportStudent" class="secondary-button" type="button">학생 JSON</button>
+                <button id="printStudent" class="secondary-button" type="button">학생 PDF</button>
+                <button id="deleteStudent" class="danger-button" type="button">학생 삭제</button>
+              </div>
+            </header>
+
+            <section class="provenance-panel">
+              <div><span class="source-badge source-student">학생 입력</span><p>최근 불러온 학생 파일의 원본 값입니다.</p></div>
+              <div><span class="source-badge source-teacher">교사 수정</span><p>학생 제출본 위에 별도로 적용되며 다시 불러와도 유지됩니다.</p></div>
+              <div><span class="source-badge source-official">공식자료 확인</span><p>대학별 자료를 선택할 때만 불러와 상담카드에 적용합니다.</p></div>
+            </section>
+
+            <section class="official-lookup" aria-labelledby="officialLookupTitle">
+              <header>
+                <div>
+                  <span class="label">상담 중 자료 확인</span>
+                  <h3 id="officialLookupTitle">2027 대학·학과·전형 조회</h3>
+                </div>
+                <span id="lookupStatus">대학을 선택할 때 해당 대학 자료만 불러옵니다.</span>
+              </header>
+              <div class="lookup-grid">
+                <label>적용 위치<select id="lookupTarget"></select></label>
+                <label>대학·캠퍼스<select id="lookupUniversity" disabled><option>대학 목록 불러오는 중</option></select></label>
+                <label>학과·모집단위<select id="lookupDepartment" disabled><option>대학을 먼저 선택하세요</option></select></label>
+                <label>지원 전형<select id="lookupOption" disabled><option>학과를 먼저 선택하세요</option></select></label>
+              </div>
+              <div id="lookupPreview" class="lookup-preview">대학·학과·전형을 선택하면 모집인원, 전형방법, 수능최저와 연결 가능한 과거 입결을 확인합니다.</div>
+              <button id="applyOfficialOption" class="primary-button" type="button" disabled>선택 내용을 상담카드에 적용</button>
+            </section>
+
+            <section id="supportPlans" class="support-plans"></section>
+
+            <section class="teacher-document-edit">
+              <label>
+                담임교사 종합 의견 <span class="source-badge source-teacher">교사 수정</span>
+                <textarea id="teacherOverallOpinion" placeholder="상담 결과와 다음 확인 사항을 정리하세요."></textarea>
+              </label>
+              <button id="saveOverallOpinion" class="secondary-button" type="button">종합 의견 저장</button>
+            </section>
+
+            <section class="revision-panel">
+              <header><h3>수정 이력</h3><button id="restoreTeacherEdits" class="secondary-button" type="button">교사 수정 전체 되돌리기</button></header>
+              <div id="revisionList"></div>
+            </section>
+          </div>
+        </section>
+      </div>
+
+      <div id="dashboardToast" class="dashboard-toast" role="status" aria-live="polite" hidden></div>
+    </main>
+
+    <script src="./admission-data-loader.js?v=20260723a" defer></script>
+    <script src="./teacher-dashboard.js?v=20260723d" defer></script>
+    <script src="./site-meta.js?v=1.02.00" defer></script>
+  </body>
+</html>

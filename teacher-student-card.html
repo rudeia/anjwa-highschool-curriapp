@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>학생 상담카드 | 교사 상담용</title>
+    <link rel="stylesheet" href="./teacher-student-card.css?v=20260723b">
+  </head>
+  <body>
+    <main class="viewer-shell">
+      <header class="viewer-head">
+        <div>
+          <p class="eyebrow">교사 상담용 · 읽기 전용</p>
+          <h1 id="studentTitle">학생 상담카드</h1>
+          <p id="studentMeta">학생 자료를 불러오는 중입니다.</p>
+        </div>
+        <div class="head-actions">
+          <button id="exportStudentJson" class="secondary-button" type="button" disabled>현재 카드 JSON</button>
+          <button id="printStudentCard" class="secondary-button" type="button" disabled>A4 PDF</button>
+          <button id="backDashboard" class="primary-button" type="button">대시보드로</button>
+        </div>
+      </header>
+
+      <section class="source-note">
+        <strong>일반 상담카드 저장소와 분리된 교사용 조회 화면입니다.</strong>
+        <span>이 화면은 교사용 대시보드에 불러온 학생 파일만 읽으며, 이 PC에서 별도로 작성한 상담카드는 사용하지 않습니다.</span>
+      </section>
+
+      <nav class="view-switch" aria-label="상담카드 보기 방식">
+        <button id="showTeacherView" class="is-active" type="button">교사 확인본</button>
+        <button id="showStudentSource" type="button">학생 제출 원본</button>
+      </nav>
+
+      <section id="cardStatus" class="card-status" aria-live="polite"></section>
+      <section id="cardContent" class="card-content" hidden>
+        <div class="card-summary">
+          <div><span>반</span><strong id="className">-</strong></div>
+          <div><span>학번</span><strong id="studentNumber">-</strong></div>
+          <div><span>지원안</span><strong id="planCount">0개</strong></div>
+          <div><span>교사 수정</span><strong id="teacherEditCount">0건</strong></div>
+        </div>
+
+        <section aria-labelledby="plansTitle">
+          <div class="section-head">
+            <div><span>지원 현황</span><h2 id="plansTitle">수시 지원 상담카드</h2></div>
+            <span id="viewLabel" class="source-badge source-teacher">교사 확인본</span>
+          </div>
+          <div id="planList" class="plan-list"></div>
+        </section>
+
+        <section class="opinion-panel" aria-labelledby="opinionTitle">
+          <h2 id="opinionTitle">상담 의견</h2>
+          <p id="overallOpinion">작성된 의견이 없습니다.</p>
+        </section>
+
+        <section class="revision-panel" aria-labelledby="revisionTitle">
+          <h2 id="revisionTitle">교사 확인 이력</h2>
+          <div id="revisionList"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./teacher-student-card.js?v=20260723b" defer></script>
+    <script src="./site-meta.js?v=1.02.00" defer></script>
+  </body>
+</html>
