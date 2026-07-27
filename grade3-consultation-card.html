@@ -75,16 +75,16 @@
       <section class="consultation-area" aria-labelledby="consultationHeading">
         <header class="consultation-head">
           <div>
-            <p class="eyebrow">상담 기록</p>
-            <h2 id="consultationHeading">수시 지원 상담란</h2>
-            <p>지원안을 비교한 메모와 다음 행동을 함께 정리하세요.</p>
+            <p class="eyebrow">상담 기록</p>
+            <h2 id="consultationHeading">수시 지원 상담란</h2>
+            <p>지원안을 비교한 메모와 다음 행동을 함께 정리하세요.</p>
           </div>
-          <span class="consultation-save-note">자도 저장</span>
+          <span class="consultation-save-note">자동 저장</span>
         </header>
         <div id="consultationSessions" class="consultation-sessions"></div>
         <label class="overall-opinion">
-          <span>담임교사 종합 의견</span>
-          <textarea id="overallOpinion" placeholder="전체 수, 수넝최저 충족 여부, 면접·서루 준비와 최종 지원 방향을 종합해 적어보세요."></textarea>
+          <span>담임교사 종합 의견</span>
+          <textarea id="overallOpinion" placeholder="전체 지원안, 수능최저 충족 여부, 면접·서류 준비 상황과 최종 지원 방향을 종합해 적어보세요."></textarea>
         </label>
       </section>
 
@@ -152,22 +152,22 @@
           </div>
 
           <details id="editorOverrides" class="override-editor">
-            <summary><span>자도 채움 정보 확인·수정</span><strong id="editorOverrideCount">자도 값</strong></summary>
-            <p>수정값은 이 상담카드에만 저장되며, 공식 원본은 별도로 유지됩니다.</p>
+            <summary><span>자동 채움 정보 확인·수정</span><strong id="editorOverrideCount">자동 값</strong></summary>
+            <p>수정값은 이 상담카드에만 저장되며, 공식 원본은 별도로 유지됩니다.</p>
             <div class="override-fields">
               <label data-override-field="quota">
-                <span>2027 모집인원 <em data-override-status="quota">자도</em></span>
-                <div><input id="editorQuotaOverride" type="text" inputmode="numeric" placeholder="모집인원"><button type="button" data-reset-override="quota">원래값</button></div>
+                <span>2027 모집인원 <em data-override-status="quota">자동</em></span>
+                <div><input id="editorQuotaOverride" type="text" inputmode="numeric" placeholder="모집인원"><button type="button" data-reset-override="quota">원래 값</button></div>
                 <small data-override-source="quota"></small>
               </label>
               <label data-override-field="selectionMethod">
-                <span>전형방법·반영비율 <em data-override-status="selectionMethod">자도</em></span>
-                <div><textarea id="editorSelectionMethodOverride" placeholder="전형방법·반영비율"></textarea><button type="button" data-reset-override="selectionMethod">원래값</button></div>
+                <span>전형방법·반영비율 <em data-override-status="selectionMethod">자동</em></span>
+                <div><textarea id="editorSelectionMethodOverride" placeholder="전형방법·반영비율"></textarea><button type="button" data-reset-override="selectionMethod">원래 값</button></div>
                 <small data-override-source="selectionMethod"></small>
               </label>
               <label data-override-field="minimum">
-                <span>수넝최저학력기준 <em data-override-status="minimum">자도</em></span>
-                <div><textarea id="editorMinimumOverride" placeholder="수넝최저 없음 또는 기준"></textarea><button type="button" data-reset-override="minimum">원래값</button></div>
+                <span>수능 최저학력기준 <em data-override-status="minimum">자동</em></span>
+                <div><textarea id="editorMinimumOverride" placeholder="수능최저 없음 또는 기준"></textarea><button type="button" data-reset-override="minimum">원래 값</button></div>
                 <small data-override-source="minimum"></small>
               </label>
               <label data-override-field="announcementDate">

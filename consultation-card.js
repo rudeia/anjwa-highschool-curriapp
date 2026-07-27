@@ -18,9 +18,9 @@ const SUCCESSOR_UNIVERSITY_CODES = new Map([
   ["0000002", "0003364"]
 ]);
 const OVERRIDE_CONFIG = {
-  quota: { source: "targetQuota", override: "targetQuotaOverride", input: "editorQuotaOverride", fallback: "모집인원 미지정" },
-  selectionMethod: { source: "targetSelectionMethod", override: "targetSelectionMethodOverride", input: "editorSelectionMethodOverride", fallback: "원문 확인 피요" },
-  minimum: { source: "targetMinimumOfficial", override: "targetMinimumOverride", input: "editorMinimumOverride", fallback: "모집요강 확인 피요" },
+  quota: { source: "targetQuota", override: "targetQuotaOverride", input: "editorQuotaOverride", fallback: "모집인원 미지정" },
+  selectionMethod: { source: "targetSelectionMethod", override: "targetSelectionMethodOverride", input: "editorSelectionMethodOverride", fallback: "원문 확인 필요" },
+  minimum: { source: "targetMinimumOfficial", override: "targetMinimumOverride", input: "editorMinimumOverride", fallback: "모집요강 확인 필요" },
   announcementDate: { source: "targetAnnouncementDate", override: "targetAnnouncementDateOverride", input: "editorAnnouncementDateOverride", fallback: "직접 입력 필요" }
 };
 Object.assign(OVERRIDE_CONFIG.quota, {
@@ -554,7 +554,7 @@ function optionValueBlock(item, key, label, value, fallback, suffix = "") {
   const source = automaticTargetValue(item, key);
   const dataStatus = targetDataStatus(item, key);
   const shown = value ? withSuffix(value, suffix) : fallback;
-  const status = overridden ? `<span class="option-value-status">${manual ? "직접 입력" : "직접 수정"}</span>` : "";
+  const status = overridden ? `<span class="option-value-status">${manual ? "직접 입력" : "직접 수정"}</span>` : "";
   const sourceStatus = overridden
     ? ""
     : key === "announcementDate"
