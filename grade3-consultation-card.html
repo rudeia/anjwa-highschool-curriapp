@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>수시 지원 상담카드 | 진로진학 플랫폼</title>
-    <link rel="stylesheet" href="./consultation-card.css?v=20260719f">
+    <link rel="stylesheet" href="./consultation-card.css?v=20260730c">
   </head>
   <body>
     <main class="card-shell">
       <header class="page-head">
         <div>
-          <p class="eyebrow">고3 상담 준비</p>
+          <p class="eyebrow">안좌고 진로진학 · 지원 설계</p>
           <h1>수시 지원 상담카드</h1>
           <p class="page-summary">대학·학과·전형을 선택하면 과거 입결과 2027 모집정보를 한 카드에서 확인합니다.</p>
         </div>
@@ -46,14 +46,99 @@
         <div class="save-time" aria-live="polite">
           <span>최근 저장</span>
           <strong id="lastSavedAt">아직 저장 전</strong>
-          <small id="lastExportedAt">상담카드 파일 저장 이력 없음</small>
+          <small id="lastExportedAt">수시카드 파일 저장 이력 없음</small>
           <small id="lastPrintedAt">인쇄·PDF 기록 없음</small>
         </div>
         <div class="file-actions">
-          <button id="exportCard" class="primary-button" type="button">상담카드 저장</button>
-          <button id="importCard" class="secondary-button" type="button">상담카드 불러오기</button>
+          <button id="exportCard" class="primary-button" type="button">수시카드 저장</button>
+          <button id="importCard" class="secondary-button" type="button">수시카드 불러오기</button>
+          <button id="restoreFeedbackBackup" class="secondary-button" type="button" hidden>피드백 적용 전 복원</button>
           <input id="importCardFile" type="file" accept=".anjwacard,.json,application/json" hidden>
         </div>
+      </section>
+
+      <section id="teacherFeedbackReceipt" class="teacher-feedback-receipt" aria-live="polite" hidden>
+        <div>
+          <span>최근 교사 피드백</span>
+          <strong id="teacherFeedbackReceiptTitle">교사 확인본 적용 완료</strong>
+          <small id="teacherFeedbackReceiptMeta"></small>
+        </div>
+        <details>
+          <summary>확인 이력 보기</summary>
+          <div id="teacherFeedbackReceiptHistory"></div>
+        </details>
+      </section>
+
+      <section class="grade-records-area" aria-labelledby="gradeRecordsHeading">
+        <header class="grade-records-head">
+          <div>
+            <p class="eyebrow">학생부 성적</p>
+            <h2 id="gradeRecordsHeading">과목별 성적 입력</h2>
+            <p>대학별 환산점수 계산에 필요한 과목·이수단위·등급을 입력합니다. 성적 자료도 이 기기와 수시카드 파일에만 저장됩니다.</p>
+          </div>
+          <div class="grade-record-actions">
+            <button id="openGradePaste" class="secondary-button" type="button">여러 과목 붙여넣기</button>
+            <button id="openGradeEditor" class="primary-button" type="button">과목 추가</button>
+          </div>
+        </header>
+
+        <div class="academic-profile">
+          <label>
+            <span>학생 구분</span>
+            <select id="schoolStatus">
+              <option value="current">재학생</option>
+              <option value="graduated">졸업생</option>
+            </select>
+          </label>
+          <label>
+            <span>졸업(예정) 연도</span>
+            <input id="graduationYear" type="number" min="1980" max="2100" step="1" inputmode="numeric" placeholder="예: 2027">
+          </label>
+          <div class="grade-record-summary" aria-live="polite">
+            <span><strong id="gradeRecordCount">0</strong>과목</span>
+            <span>공통·일반 <strong id="generalRecordCount">0</strong></span>
+            <span>진로선택 <strong id="careerRecordCount">0</strong></span>
+            <span>총 이수단위 <strong id="gradeCreditSum">0</strong></span>
+          </div>
+        </div>
+
+        <p id="gradeRecordStatus" class="grade-record-status">입력한 과목이 없습니다. 대학 환산점수는 과목별 자료가 있어야 계산할 수 있습니다.</p>
+
+        <aside class="calculator-verification-note">
+          <strong>환산 결과는 상담용 참고값입니다.</strong>
+          <span>실제 지원 전 반드시 드림스쿨과 대학의 최신 모집요강에서 다시 확인하세요.</span>
+        </aside>
+
+        <section id="universityGradeCalculator" class="university-grade-calculator" aria-labelledby="universityCalculatorHeading">
+          <header>
+            <div class="calculator-university-intro">
+              <span class="calculator-pilot-label">공식 검증 시범 대학</span>
+              <h3 id="universityCalculatorHeading">대학별 2027 학생부 환산</h3>
+              <p id="universityCalculatorDescription">대학과 지원 계열을 선택하면 입력한 과목을 해당 대학 기준으로 계산합니다.</p>
+            </div>
+            <div class="calculator-selectors">
+              <label>
+                <span>대학 선택</span>
+                <select id="calculatorUniversity">
+                  <option value="sejong">세종대학교</option>
+                  <option value="kookmin">국민대학교</option>
+                  <option value="dongguk">동국대학교(서울)</option>
+                </select>
+              </label>
+              <label>
+                <span>지원 계열</span>
+                <select id="calculatorTrack"></select>
+              </label>
+            </div>
+          </header>
+          <div id="universityCalculatorResult" class="calculator-result" aria-live="polite"></div>
+          <footer>
+            <span>드림스쿨과 대학 모집요강에서 환산 결과를 재확인하세요.</span>
+            <a id="calculatorSourceLink" href="https://ipsi.sejong.ac.kr/board/upload_file/pdf/20266159234314522.pdf" target="_blank" rel="noopener noreferrer">2027 수시모집요강 22쪽 확인 <b aria-hidden="true">↗</b></a>
+          </footer>
+        </section>
+
+        <div id="gradeRecordList" class="grade-record-list"></div>
       </section>
 
       <section id="cardList" class="card-list" aria-live="polite"></section>
@@ -202,9 +287,207 @@
       </section>
     </div>
 
+    <div id="similarDepartmentEditor" class="editor-layer" hidden>
+      <div class="editor-backdrop" data-close-similar-departments></div>
+      <section class="editor-panel similar-department-panel" role="dialog" aria-modal="true" aria-labelledby="similarDepartmentTitle">
+        <header class="editor-head">
+          <div>
+            <p class="eyebrow">2027 유사학과 탐색</p>
+            <h2 id="similarDepartmentTitle">유사학과 추천</h2>
+          </div>
+          <button class="editor-close" type="button" data-close-similar-departments aria-label="유사학과 추천 창 닫기">×</button>
+        </header>
+        <div class="similar-department-body">
+          <div id="similarDepartmentSource" class="similar-department-source"></div>
+          <div class="similar-department-filters">
+            <label>
+              <span>지역</span>
+              <select id="similarDepartmentRegion">
+                <option value="">전체 지역</option>
+              </select>
+            </label>
+            <label>
+              <span>전형 유형</span>
+              <select id="similarDepartmentCategory">
+                <option value="">전체 전형 유형</option>
+              </select>
+            </label>
+            <label>
+              <span>내 참고등급</span>
+              <input id="similarDepartmentReferenceGrade" type="number" min="1" max="9" step="0.01" inputmode="decimal" placeholder="선택 입력">
+            </label>
+            <label class="similar-department-query">
+              <span>결과 안에서 찾기</span>
+              <input id="similarDepartmentQuery" type="search" autocomplete="off" placeholder="대학 또는 학과명">
+            </label>
+          </div>
+          <div class="similar-department-result-head">
+            <strong id="similarDepartmentResultCount">후보를 불러오는 중입니다.</strong>
+            <span id="similarDepartmentReferenceStatus">최근 공개 입결은 동일 명칭 모집단위의 단순 참고값입니다.</span>
+          </div>
+          <section id="similarDepartmentCompare" class="similar-department-compare" aria-labelledby="similarDepartmentCompareTitle" hidden>
+            <header>
+              <div>
+                <strong id="similarDepartmentCompareTitle">비교 후보</strong>
+                <span id="similarDepartmentCompareCount">0/3</span>
+              </div>
+              <button type="button" data-clear-similar-comparison>모두 비우기</button>
+            </header>
+            <div id="similarDepartmentCompareGrid" class="similar-department-compare-grid"></div>
+          </section>
+          <div id="similarDepartmentResults" class="similar-department-results" aria-live="polite"></div>
+          <p class="similar-department-disclaimer">유사학과는 학과명 주제어를 기준으로 찾은 탐색 참고자료이며 적성·교육과정 일치나 합격 가능성을 뜻하지 않습니다. 입결은 대학·전형별 산출 방식이 다른 공개값을 단순 비교한 것이므로, 드림스쿨과 학과 교육과정 및 대학 모집요강에서 반드시 다시 확인하세요.</p>
+        </div>
+      </section>
+    </div>
+
+    <div id="feedbackEditor" class="editor-layer" hidden>
+      <div class="editor-backdrop" data-close-feedback></div>
+      <section class="editor-panel feedback-panel" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+        <header class="editor-head">
+          <div>
+            <p class="eyebrow">교사 피드백 확인본</p>
+            <h2 id="feedbackTitle">변경 내용을 확인하세요</h2>
+          </div>
+          <button class="editor-close" type="button" data-close-feedback aria-label="교사 피드백 확인 창 닫기">×</button>
+        </header>
+        <div class="feedback-body">
+          <div id="feedbackMeta" class="feedback-meta"></div>
+          <p id="feedbackStudentMismatch" class="feedback-warning" role="alert" hidden></p>
+          <div id="feedbackSummary" class="feedback-summary" aria-live="polite"></div>
+          <div id="feedbackChanges" class="feedback-changes"></div>
+          <details class="feedback-history">
+            <summary>교사 확인 이력</summary>
+            <div id="feedbackHistory"></div>
+          </details>
+          <label class="feedback-confirm">
+            <input id="feedbackConfirm" type="checkbox">
+            <span>변경 내용을 확인했으며 현재 상담카드에 적용합니다. 적용 전 상태는 이 기기에 백업됩니다.</span>
+          </label>
+          <div class="editor-actions">
+            <button class="secondary-button" type="button" data-close-feedback>취소</button>
+            <button id="applyTeacherFeedback" class="primary-button" type="button" disabled>교사 피드백 적용</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="gradeEditor" class="editor-layer" hidden>
+      <div class="editor-backdrop" data-close-grade-editor></div>
+      <section class="editor-panel grade-editor-panel" role="dialog" aria-modal="true" aria-labelledby="gradeEditorTitle">
+        <header class="editor-head">
+          <div>
+            <p class="eyebrow">학생부 성적</p>
+            <h2 id="gradeEditorTitle">과목 추가</h2>
+          </div>
+          <button class="editor-close" type="button" data-close-grade-editor aria-label="성적 입력 창 닫기">×</button>
+        </header>
+        <form id="gradeEditorForm" class="editor-form grade-editor-form">
+          <div class="grade-editor-grid">
+            <label>
+              <span>학년</span>
+              <select id="gradeSchoolYear" required>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+              </select>
+            </label>
+            <label>
+              <span>학기</span>
+              <select id="gradeSemester" required>
+                <option value="1">1학기</option>
+                <option value="2">2학기</option>
+              </select>
+            </label>
+            <label>
+              <span>교과군</span>
+              <select id="gradeSubjectGroup" required></select>
+            </label>
+            <label class="grade-editor-wide">
+              <span>과목명</span>
+              <input id="gradeSubjectName" type="text" autocomplete="off" placeholder="예: 수학Ⅰ" required>
+            </label>
+            <label>
+              <span>과목 유형</span>
+              <select id="gradeCourseType" required>
+                <option value="common-general">공통·일반선택</option>
+                <option value="career">진로선택</option>
+              </select>
+            </label>
+            <label>
+              <span>교육과정 구분</span>
+              <select id="gradeCurriculumCategory" required>
+                <option value="regular">보통교과</option>
+                <option value="specialized">전문교과</option>
+              </select>
+            </label>
+            <label>
+              <span>이수단위·학점</span>
+              <input id="gradeCredits" type="number" min="0.1" max="30" step="0.1" inputmode="decimal" placeholder="예: 4" required>
+            </label>
+            <label id="rankGradeField">
+              <span id="rankGradeLabel">석차등급</span>
+              <input id="gradeRankGrade" type="number" min="1" max="9" step="1" inputmode="numeric" placeholder="1~9">
+            </label>
+            <label id="achievementField">
+              <span>성취도</span>
+              <select id="gradeAchievement">
+                <option value="">선택 안 함</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+              </select>
+            </label>
+            <label class="grade-pass-fail grade-editor-wide">
+              <input id="gradePassFail" type="checkbox">
+              <span>P/F 과목으로 기록하기</span>
+            </label>
+            <label class="grade-editor-wide">
+              <span>메모 <small>선택</small></span>
+              <input id="gradeNote" type="text" autocomplete="off" placeholder="예: 공동교육과정, 전문교과">
+            </label>
+          </div>
+          <p id="gradeEditorError" class="editor-error" role="alert" hidden></p>
+          <div class="editor-actions">
+            <button class="secondary-button" type="button" data-close-grade-editor>취소</button>
+            <button class="primary-button" type="submit">저장</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="gradePasteEditor" class="editor-layer" hidden>
+      <div class="editor-backdrop" data-close-grade-paste></div>
+      <section class="editor-panel grade-paste-panel" role="dialog" aria-modal="true" aria-labelledby="gradePasteTitle">
+        <header class="editor-head">
+          <div>
+            <p class="eyebrow">학생부 성적</p>
+            <h2 id="gradePasteTitle">여러 과목 붙여넣기</h2>
+          </div>
+          <button class="editor-close" type="button" data-close-grade-paste aria-label="여러 과목 붙여넣기 창 닫기">×</button>
+        </header>
+        <form id="gradePasteForm" class="editor-form grade-paste-form">
+          <p>엑셀이나 스프레드시트에서 아래 열 순서로 복사해 붙여넣으세요. 첫 줄의 제목 행은 자동으로 건너뜁니다.</p>
+          <code>학년　학기　교과군　과목명　과목유형　이수단위　석차등급　성취도　교육과정구분</code>
+          <textarea id="gradePasteText" rows="10" spellcheck="false" placeholder="1&#9;1&#9;국어&#9;국어&#9;공통·일반선택&#9;4&#9;2&#9;&#9;보통교과&#10;1&#9;1&#9;과학&#9;과학탐구실험&#9;진로선택&#9;1&#9;&#9;A&#9;보통교과"></textarea>
+          <p class="grade-paste-help">과목유형은 공통·일반선택 또는 진로선택으로 입력합니다. 교육과정구분을 비우면 보통교과로 저장하며, 쉼표로 구분한 자료도 불러올 수 있습니다.</p>
+          <p id="gradePasteError" class="editor-error" role="alert" hidden></p>
+          <div class="editor-actions">
+            <button class="secondary-button" type="button" data-close-grade-paste>취소</button>
+            <button class="primary-button" type="submit">과목 추가</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <div id="cardToast" class="card-toast" role="status" aria-live="polite" hidden></div>
-    <script src="./consultation-card-store.js?v=20260723a" defer></script>
-    <script src="./consultation-card.js?v=20260723g" defer></script>
-    <script src="./site-meta.js?v=1.02.00" defer></script>
+    <script src="./consultation-card-store.js?v=20260730b" defer></script>
+    <script src="./admission-grade-calculators.js?v=20260729c" defer></script>
+    <script src="./department-recommendations.js?v=20260729b" defer></script>
+    <script src="./susi-card-transfer.js?v=20260730c" defer></script>
+    <script src="./consultation-card.js?v=20260730c" defer></script>
+    <script src="./site-meta.js?v=1.03.00" defer></script>
   </body>
 </html>

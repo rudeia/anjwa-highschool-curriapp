@@ -8,6 +8,7 @@
   let historyIndexPromise;
   let lineageIndexPromise;
   let searchAliasesPromise;
+  let departmentSearchGroupsPromise;
 
   function numericValue(value) {
     const normalized = String(value ?? "").replaceAll(",", "").trim();
@@ -114,6 +115,16 @@
     return searchAliasesPromise;
   }
 
+  function loadDepartmentSearchGroups(version = "") {
+    if (!departmentSearchGroupsPromise) {
+      departmentSearchGroupsPromise = fetchJson(
+        "./admission-data/department-search-groups.json",
+        version
+      ).catch(() => ({ groups: [] }));
+    }
+    return departmentSearchGroupsPromise;
+  }
+
   function loadLineageIndex(version = "") {
     if (!lineageIndexPromise) {
       lineageIndexPromise = fetchJson("./admission-data/entity-lineage/index.json", version)
@@ -184,6 +195,7 @@
     loadUniversityHistory,
     loadUniversityLineage,
     loadSearchAliases,
+    loadDepartmentSearchGroups,
     normalizeRow,
     coverage
   });

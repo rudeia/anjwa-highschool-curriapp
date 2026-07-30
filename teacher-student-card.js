@@ -111,14 +111,47 @@
   }
 
   function renderHistory(item) {
-    const history = [...(item.history || [])].sort((a, b) => Number(a.year) - Number(b.year)).slice(-3);
+    const officialByYear = new Map((item.history || []).map((entry) => [clean(entry.year), entry]));
+    const referenceByYear = new Map((item.historyUserReferences || []).map((entry) => [clean(entry.year), entry]));
+    const history = ["2024", "2025", "2026"].map((year) => {
+      const official = officialByYear.get(year);
+      if (official) return { ...official, userReference: false };
+      const reference = referenceByYear.get(year);
+      return reference ? { ...reference, userReference: true } : null;
+    }).filter(Boolean);
     if (!history.length) return '<div class="history-list"><div class="empty-row">연결된 과거 입결이 없습니다.</div></div>';
     return `<div class="history-list">${history.map((entry) => {
       const rate = clean(entry.competitionRate || entry.competition_rate);
       const quota = clean(entry.quota);
       const additional = clean(entry.additionalAdmits || entry.additional_admits);
-      return `<div class="history-item"><strong>${escapeHtml(entry.year)}학년도</strong><span>경쟁률 ${escapeHtml(rate ? `${rate}:1` : "미공개")}</span><span>${escapeHtml(resultValue(entry))}</span><span>모집 ${escapeHtml(quota || "-")} · 충원 ${escapeHtml(additional || "-")}</span></div>`;
+      return `<div class="history-item${entry.userReference ? " is-user-reference" : ""}"><strong>${escapeHtml(entry.year)}학년도${entry.userReference ? "<em>사용자 선택 참고</em>" : ""}</strong>${entry.userReference ? `<small>${escapeHtml(entry.department || "유사 모집단위")} · ${escapeHtml(entry.admission || "전형명 확인 필요")}</small>` : ""}<span>경쟁률 ${escapeHtml(rate ? `${rate}:1` : "미공개")}</span><span>${escapeHtml(resultValue(entry))}</span><span>모집 ${escapeHtml(quota || "-")} · 충원 ${escapeHtml(additional || "-")}</span></div>`;
     }).join("")}</div>`;
+  }
+
+  function similarCandidateGradeText(candidate) {
+    const ranges = candidate?.gradeRanges || {};
+    const range = ranges.all || ranges.subject || ranges.holistic || ranges.essay || ranges.performance;
+    if (!range) return "동일 명칭 공개 입결 없음";
+    const minimum = Number(range.min);
+    const maximum = Number(range.max);
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) return "동일 명칭 공개 입결 없음";
+    const grades = minimum === maximum ? minimum.toFixed(2) : `${minimum.toFixed(2)}~${maximum.toFixed(2)}`;
+    return `${clean(range.year) || "최근"}학년도 ${grades}등급`;
+  }
+
+  function renderSimilarCandidates(item) {
+    const candidates = Array.isArray(item.similarDepartmentCandidates) ? item.similarDepartmentCandidates.slice(0, 3) : [];
+    if (!candidates.length) return "";
+    return `<section class="viewer-similar-candidates">
+      <header><strong>검토 중인 유사학과</strong><span>${candidates.length}/3개 · 학생 제출 내용</span></header>
+      <div>${candidates.map((candidate) => `<article>
+        <strong>${escapeHtml(candidate.university)}${candidate.campus ? ` · ${escapeHtml(candidate.campus)}` : ""}</strong>
+        <span>${escapeHtml(candidate.department)}</span>
+        <small>${escapeHtml(candidate.region || "지역 확인")} · ${escapeHtml((candidate.categories || []).join(" · ") || "전형 확인")}</small>
+        <em>${escapeHtml(similarCandidateGradeText(candidate))}</em>
+        ${candidate.note ? `<p>${escapeHtml(candidate.note)}</p>` : ""}
+      </article>`).join("")}</div>
+    </section>`;
   }
 
   function renderPlan(item, index) {
@@ -134,8 +167,55 @@
         <div><span>수능최저</span><strong>${escapeHtml(effectiveValue(item, "minimum"))}</strong></div>
         <div><span>최종 합격자 발표일</span><strong>${escapeHtml(effectiveValue(item, "announcementDate"))}</strong></div>
       </div>
+      ${renderSimilarCandidates(item)}
       ${renderHistory(item)}
     </article>`;
+  }
+
+  function gradeRecordValue(record) {
+    if (record.passFail) return "P/F";
+    if (record.courseType === "career") {
+      return [
+        record.achievement ? `성취도 ${record.achievement}` : "성취도 미입력",
+        record.rankGrade ? `${record.rankGrade}등급` : ""
+      ].filter(Boolean).join(" · ");
+    }
+    return record.rankGrade ? `${record.rankGrade}등급` : "석차등급 미입력";
+  }
+
+  function renderGradeRecords(payload) {
+    const records = Array.isArray(payload.gradeRecords) ? payload.gradeRecords : [];
+    const credits = records.reduce((sum, record) => sum + (Number(record.credits) || 0), 0);
+    const profile = payload.academicProfile || {};
+    const profileText = `${profile.schoolStatus === "graduated" ? "졸업생" : "재학생"}${profile.graduationYear ? ` · ${profile.graduationYear}년 졸업${profile.schoolStatus === "graduated" ? "" : " 예정"}` : ""}`;
+    const sejongTrackId = payload.gradeCalculatorSelections?.sejong2027 || "humanities";
+    const kookminTrackId = payload.gradeCalculatorSelections?.kookmin2027 || "humanities";
+    const donggukTrackId = payload.gradeCalculatorSelections?.dongguk2027 || "humanities";
+    const calculations = window.AdmissionGradeCalculators ? [
+      {
+        label: "세종대 2027",
+        result: window.AdmissionGradeCalculators.calculateSejong2027(records, sejongTrackId)
+      },
+      {
+        label: "국민대 2027",
+        result: window.AdmissionGradeCalculators.calculateKookmin2027(records, kookminTrackId, profile)
+      },
+      {
+        label: "동국대(서울) 2027",
+        result: window.AdmissionGradeCalculators.calculateDongguk2027(records, donggukTrackId, profile)
+      }
+    ] : [];
+    const calculationMarkup = records.length
+      ? `${calculations.map(({ label, result }) => `<div class="student-grade-calculation"><span>${label} · ${escapeHtml(result.track.label)}</span>${result.ok
+        ? `<strong>${result.score.toFixed(8)}점</strong><small>${escapeHtml(result.rule.scale.toLocaleString("ko-KR"))}점 기준 · 지원 가능성 판정값 아님</small>`
+        : `<strong class="is-error">계산 확인 필요</strong><small>${escapeHtml(result.errors[0] || "입력값을 확인하세요.")}</small>`}</div>`).join("")}
+        <p class="student-grade-verification">환산 결과는 드림스쿨과 대학의 최신 모집요강에서 반드시 재확인하세요.</p>`
+      : "";
+    byId("studentGradeRecordBody").innerHTML = records.length
+      ? `<div class="student-grade-meta"><span>${escapeHtml(profileText)}</span><strong>${records.length}과목 · ${Number.isInteger(credits) ? credits : credits.toFixed(1)}단위</strong></div>
+        ${calculationMarkup}
+        <div class="student-grade-list">${records.map((record) => `<article><span>${escapeHtml(record.schoolYear)}-${escapeHtml(record.semester)}</span><div><strong>${escapeHtml(record.subjectName)}</strong><small>${escapeHtml(record.subjectGroup || "기타")} · ${escapeHtml(record.courseType === "career" ? "진로선택" : "공통·일반선택")}${record.curriculumCategory === "specialized" ? " · 전문교과" : ""}</small></div><em>${escapeHtml(record.credits ?? "-")}단위</em><b>${escapeHtml(gradeRecordValue(record))}</b></article>`).join("")}</div>`
+      : '<div class="empty-row">학생이 입력한 과목별 성적이 없습니다.</div>';
   }
 
   function renderRevisions() {
@@ -160,20 +240,24 @@
     byId("viewLabel").textContent = state.mode === "teacher" ? "교사 확인본" : "학생 제출 원본";
     byId("viewLabel").className = `source-badge ${state.mode === "teacher" ? "source-teacher" : "source-student"}`;
     byId("planList").innerHTML = items.length ? items.map(renderPlan).join("") : '<div class="empty-row">작성된 지원안이 없습니다.</div>';
+    renderGradeRecords(payload);
     byId("overallOpinion").textContent = clean(payload.overallOpinion) || "작성된 의견이 없습니다.";
     byId("showTeacherView").classList.toggle("is-active", state.mode === "teacher");
     byId("showStudentSource").classList.toggle("is-active", state.mode === "source");
+    byId("exportStudentJson").textContent = state.mode === "teacher" ? "교사 피드백" : "학생 원본";
     renderRevisions();
   }
 
   function downloadCurrentJson() {
     const payload = currentPayload();
-    payload.exportedAt = new Date().toISOString();
-    payload.teacherViewerMode = state.mode;
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const exportedAt = new Date().toISOString();
+    const downloadPayload = state.mode === "teacher"
+      ? window.SusiCardTransfer.createTeacherFeedback(state.student, payload, exportedAt)
+      : { ...payload, exportedAt, teacherViewerMode: state.mode };
+    const blob = new Blob([JSON.stringify(downloadPayload, null, 2)], { type: "application/json;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `수시지원상담카드_${clean(state.student.studentNumber) || "학번미입력"}_${state.mode === "teacher" ? "교사확인본" : "학생원본"}_${fileTimestamp()}.anjwacard`;
+    link.download = `${state.mode === "teacher" ? "교사피드백" : "수시지원상담카드"}_${clean(state.student.studentNumber) || "학번미입력"}_${state.mode === "teacher" ? "확인본" : "학생원본"}_${fileTimestamp()}.anjwacard`;
     document.body.append(link);
     link.click();
     link.remove();

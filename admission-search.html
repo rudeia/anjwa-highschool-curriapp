@@ -4,18 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>수시 입시결과 조회 | 진로진학 플랫폼</title>
-    <link rel="stylesheet" href="./admission-search.css?v=20260719l">
+    <link rel="stylesheet" href="./admission-search.css?v=20260729d">
   </head>
   <body>
     <main class="admission-shell">
       <header class="page-head">
         <div>
-          <p class="eyebrow">고3 수시 준비</p>
+          <p class="eyebrow">안좌고 진로진학 · 입결 탐색</p>
           <h1>수시 입시결과 조회</h1>
           <p class="page-summary">대학어디가 공개 자료를 바탕으로 정리하고, 입학처와 대조된 값은 입학처 자료를 우선 표시합니다.</p>
         </div>
         <div class="page-actions">
-          <a class="card-link" href="./grade3-consultation-card.html">내 상담카드 <span id="cardCount">0</span></a>
+          <a class="card-link" href="./grade3-consultation-card.html">상담카드 <span id="cardCount">0</span></a>
           <a class="home-button" href="./index.html" aria-label="첫 화면으로 돌아가기">첫 화면으로</a>
         </div>
       </header>
@@ -30,11 +30,56 @@
         <a href="./grade3-consultation-card.html">상담카드로 돌아가기</a>
       </section>
 
-      <section class="filter-panel" aria-label="입시결과 검색 조건">
-        <label>
-          학년도
+      <div class="search-mode-switch" role="tablist" aria-label="입시결과 탐색 방식">
+        <button id="regionModeTab" type="button" role="tab" aria-selected="true" aria-controls="regionModePanel">
+          <strong>지역으로 찾기</strong>
+          <span>지도에서 지역과 대학 선택</span>
+        </button>
+        <button id="filterModeTab" type="button" role="tab" aria-selected="false" aria-controls="filterModePanel" tabindex="-1">
+          <strong>조건으로 찾기</strong>
+          <span>대학·학과·전형 조건 검색</span>
+        </button>
+      </div>
+
+      <div class="search-year-control">
+        <label class="search-year-field">
+          조회 학년도
           <select id="yearFilter"></select>
         </label>
+        <div class="reference-grade-field">
+          <label for="referenceGradeInput">내 참고등급</label>
+          <input id="referenceGradeInput" type="number" min="1" max="9" step="0.01" inputmode="decimal" placeholder="예: 3.25" aria-describedby="referenceGradeStatus">
+          <button id="clearReferenceGrade" type="button" hidden>지우기</button>
+        </div>
+        <span id="referenceGradeStatus">선택 입력 · 기기에만 저장되며 합격 가능성을 판정하지 않습니다.</span>
+      </div>
+
+      <section id="regionModePanel" class="region-explorer" role="tabpanel" aria-labelledby="regionModeTab">
+        <div class="region-explorer-head">
+          <div>
+            <p class="region-kicker">지도에서 시작하기</p>
+            <h2 id="regionExplorerTitle">지역을 고르고 대학을 찾아보세요</h2>
+            <p>지역을 선택하면 해당 대학만 모아보고, 대학을 고르면 입결 검색 결과로 바로 이어집니다.</p>
+          </div>
+          <button id="clearMapRegion" type="button" disabled>전국 보기</button>
+        </div>
+        <div class="region-explorer-layout">
+          <div class="region-map-panel">
+            <div id="regionMap" class="region-map" role="group" aria-label="시·도별 대학 탐색"></div>
+            <p>지역 위치는 빠른 탐색을 위한 간략 배치입니다.</p>
+          </div>
+          <div class="region-university-panel">
+            <div class="region-selection-summary">
+              <span id="regionSelectionLabel">전국</span>
+              <strong id="regionUniversityCount">대학 자료를 불러오는 중</strong>
+            </div>
+            <p id="regionSelectionHelp">지도에서 지역을 선택하면 대학 목록이 나타납니다.</p>
+            <div id="regionUniversityList" class="region-university-list" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="filterModePanel" class="filter-panel" role="tabpanel" aria-labelledby="filterModeTab" hidden>
         <label>
           대학
           <select id="universityFilter"><option value="">전체 대학</option></select>
@@ -59,6 +104,13 @@
           대학·전형·학과 검색
           <input id="textFilter" type="search" placeholder="예: 간호학과, 지역인재" autocomplete="off">
         </label>
+        <div class="related-search-control">
+          <label>
+            <input id="relatedDepartmentFilter" type="checkbox">
+            <span>관련 학과까지 함께 찾기</span>
+          </label>
+          <p id="relatedSearchNotice" hidden></p>
+        </div>
         <button id="toggleAdvancedFilters" class="advanced-toggle" type="button" aria-expanded="false" aria-controls="advancedFilters">
           <span>상세 조건 열기</span><b aria-hidden="true">⌄</b>
         </button>
@@ -140,10 +192,29 @@
         <p>등급은 대학별 반영교과와 산출방법이 다릅니다. 대학 간 숫자를 그대로 비교하지 말고 각 행의 공식 원문을 함께 확인하세요.</p>
       </footer>
     </main>
+    <section id="compareDock" class="compare-dock" aria-label="임시 비교함" hidden>
+      <div><strong>임시 비교함 <span id="compareDockCount">0/6</span></strong><small>후보는 이 기기에만 저장됩니다.</small></div>
+      <button id="openCompareDialog" type="button">후보 비교하기</button>
+    </section>
+    <dialog id="compareDialog" class="compare-dialog" aria-labelledby="compareDialogTitle">
+      <div class="compare-dialog-shell">
+        <header>
+          <div><p class="eyebrow">지원 후보 비교</p><h2 id="compareDialogTitle">임시 비교함</h2></div>
+          <button id="closeCompareDialog" type="button" aria-label="비교함 닫기">×</button>
+        </header>
+        <p class="compare-dialog-help">최대 6개 후보의 공개 입결을 나란히 비교합니다. 숫자만으로 지원 가능성을 판단하지 말고 원문과 2027 모집요강을 확인하세요.</p>
+        <div id="compareTable" class="compare-table-wrap"></div>
+        <footer>
+          <button id="clearCompareItems" type="button">비교함 비우기</button>
+          <a href="./grade3-consultation-card.html">상담카드 확인</a>
+        </footer>
+      </div>
+    </dialog>
     <div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden></div>
-    <script src="./consultation-card-store.js?v=20260716p" defer></script>
-    <script src="./admission-data-loader.js?v=20260719l" defer></script>
-    <script src="./admission-search.js?v=20260719l" defer></script>
-    <script src="./site-meta.js?v=1.02.00" defer></script>
+    <script src="./consultation-card-store.js?v=20260727a" defer></script>
+    <script src="./admission-comparison-store.js?v=20260729d" defer></script>
+    <script src="./admission-data-loader.js?v=20260729b" defer></script>
+    <script src="./admission-search.js?v=20260729d" defer></script>
+    <script src="./site-meta.js?v=1.03.00" defer></script>
   </body>
 </html>

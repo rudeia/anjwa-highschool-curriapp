@@ -2,11 +2,17 @@
   "use strict";
 
   const STORAGE_KEY = "anjwa.admissionConsultationCard.v1";
-  const VERSION = 9;
+  const FEEDBACK_BACKUP_KEY = "anjwa.admissionConsultationCard.feedbackBackups.v1";
+  const FEEDBACK_BACKUP_LIMIT = 3;
+  const VERSION = 16;
   const BASE_SLOT_COUNT = 6;
   const MAX_STANDARD_SLOTS = 9;
   const CONSULTATION_COUNT = 3;
   const OVERRIDE_FIELDS = ["quota", "selectionMethod", "minimum"];
+  const SUBJECT_GROUPS = ["국어", "수학", "영어", "사회", "과학", "한국사", "체육", "예술", "기술·가정/정보", "제2외국어/한문", "교양", "기타"];
+  const COURSE_TYPES = ["common-general", "career"];
+  const CURRICULUM_CATEGORIES = ["regular", "specialized"];
+  const ACHIEVEMENTS = ["A", "B", "C", "D", "E"];
   const EXEMPT_UNIVERSITY_ALIASES = [
     ["한국과학기술원", "카이스트", "KAIST"],
     ["광주과학기술원", "지스트", "GIST"],
@@ -90,7 +96,10 @@
       lineageScore: clean(entry.lineageScore),
       lineageCandidateId: clean(entry.lineageCandidateId),
       lineageReviewStatus: clean(entry.lineageReviewStatus),
-      lineageEvidence: lineageEvidence(entry.lineageEvidence)
+      lineageEvidence: lineageEvidence(entry.lineageEvidence),
+      userSelected: Boolean(entry.userSelected),
+      userSelectedAt: clean(entry.userSelectedAt),
+      userSelectionLabel: clean(entry.userSelectionLabel) || (entry.userSelected ? "사용자 선택 참고" : "")
     };
   }
 
@@ -105,6 +114,57 @@
         })).filter((element) => element.name && element.ratio !== null)
         : []
     })).filter((stage) => stage.stage && stage.elements.length);
+  }
+
+  function cleanList(source) {
+    return Array.isArray(source) ? [...new Set(source.map(clean).filter(Boolean))] : [];
+  }
+
+  function similarDepartmentGradeRange(source) {
+    if (!source || typeof source !== "object") return null;
+    const minimum = Number(source.min);
+    const maximum = Number(source.max);
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) return null;
+    const first = Math.min(minimum, maximum);
+    const last = Math.max(minimum, maximum);
+    return {
+      year: clean(source.year),
+      min: Math.max(1, Math.min(9, first)),
+      max: Math.max(1, Math.min(9, last)),
+      count: Math.max(0, Math.round(Number(source.count) || 0))
+    };
+  }
+
+  function similarDepartmentCandidate(source) {
+    const gradeRanges = {};
+    ["all", "subject", "holistic", "essay", "performance"].forEach((key) => {
+      const range = similarDepartmentGradeRange(source?.gradeRanges?.[key]);
+      if (range) gradeRanges[key] = range;
+    });
+    return {
+      universityCode: clean(source?.universityCode),
+      university: clean(source?.university),
+      campus: clean(source?.campus),
+      department: clean(source?.department),
+      region: clean(source?.region),
+      categories: cleanList(source?.categories),
+      fields: cleanList(source?.fields),
+      optionCount: Math.max(0, Math.round(Number(source?.optionCount) || 0)),
+      gradeRanges,
+      note: clean(source?.note).slice(0, 500),
+      savedAt: clean(source?.savedAt) || new Date().toISOString()
+    };
+  }
+
+  function similarDepartmentCandidates(source) {
+    if (!Array.isArray(source)) return [];
+    const seen = new Set();
+    return source.map(similarDepartmentCandidate).filter((candidate) => {
+      const key = `${candidate.universityCode || loose(candidate.university)}|${loose(candidate.department)}`;
+      if (!candidate.university || !candidate.department || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 3);
   }
 
   function normalizeItem(row, resetLegacyTarget = false) {
@@ -155,6 +215,7 @@
       targetAnnouncementDateOverride: shouldResetTarget ? "" : clean(row.targetAnnouncementDateOverride),
       strategy: ["상향", "적정", "안정"].includes(row.strategy) ? row.strategy : "",
       memo: clean(row.memo),
+      similarDepartmentCandidates: similarDepartmentCandidates(row.similarDepartmentCandidates),
       sourceUrl: clean(row.sourceUrl),
       officeSourceUrl: clean(row.officeSourceUrl),
       historyEntityId: shouldResetTarget ? "" : clean(row.historyEntityId),
@@ -166,6 +227,7 @@
       historyApprovalEvidence: shouldResetTarget ? [] : (Array.isArray(row.historyApprovalEvidence) ? row.historyApprovalEvidence.map(lineageEvidence).filter((entry) => entry.sourceUrl || entry.sourceTitle) : []),
       history: shouldResetTarget ? [] : (Array.isArray(row.history) ? row.history.map(historyEntry).filter((entry) => entry.year) : []),
       historySuggestions: shouldResetTarget ? [] : (Array.isArray(row.historySuggestions) ? row.historySuggestions.map(historyEntry).filter((entry) => entry.year) : []),
+      historyUserReferences: shouldResetTarget ? [] : (Array.isArray(row.historyUserReferences) ? row.historyUserReferences.map(historyEntry).filter((entry) => entry.year && entry.userSelected) : []),
       exemptFromSixLimit: isExemptUniversity(row.university),
       addedAt: clean(row.addedAt) || new Date().toISOString()
     };
@@ -220,11 +282,99 @@
     return Array.from({ length: CONSULTATION_COUNT }, (_, index) => normalizeConsultation(entries[index], index));
   }
 
+  function optionalNumber(value, minimum, maximum, integer = false) {
+    if (value === "" || value === null || value === undefined) return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < minimum || number > maximum) return null;
+    if (integer && !Number.isInteger(number)) return null;
+    return number;
+  }
+
+  function normalizeAcademicProfile(source) {
+    const schoolStatus = source?.schoolStatus === "graduated" ? "graduated" : "current";
+    const graduationYear = optionalNumber(source?.graduationYear, 1980, 2100, true);
+    return {
+      schoolStatus,
+      graduationYear
+    };
+  }
+
+  function normalizeGradeRecord(source) {
+    const passFail = Boolean(source?.passFail);
+    const courseType = COURSE_TYPES.includes(source?.courseType) ? source.courseType : "common-general";
+    const curriculumCategory = CURRICULUM_CATEGORIES.includes(source?.curriculumCategory)
+      ? source.curriculumCategory
+      : "regular";
+    const achievement = ACHIEVEMENTS.includes(clean(source?.achievement).toUpperCase())
+      ? clean(source.achievement).toUpperCase()
+      : "";
+    return {
+      id: clean(source?.id) || generatedId("GRADE"),
+      schoolYear: optionalNumber(source?.schoolYear, 1, 3, true) || 1,
+      semester: optionalNumber(source?.semester, 1, 2, true) || 1,
+      subjectGroup: SUBJECT_GROUPS.includes(clean(source?.subjectGroup)) ? clean(source.subjectGroup) : "기타",
+      subjectName: clean(source?.subjectName),
+      courseType,
+      curriculumCategory,
+      credits: optionalNumber(source?.credits, 0.1, 30),
+      rankGrade: passFail ? null : optionalNumber(source?.rankGrade, 1, 9, true),
+      achievement: passFail ? "" : achievement,
+      passFail,
+      note: clean(source?.note),
+      addedAt: clean(source?.addedAt) || new Date().toISOString()
+    };
+  }
+
+  function normalizeGradeRecords(source) {
+    if (!Array.isArray(source)) return [];
+    const ids = new Set();
+    return source.map(normalizeGradeRecord).filter((record) => {
+      if (!record.subjectName || ids.has(record.id)) return false;
+      ids.add(record.id);
+      return true;
+    });
+  }
+
+  function normalizeGradeCalculatorSelections(source) {
+    const activeUniversity = ["sejong", "kookmin", "dongguk"].includes(source?.activeUniversity)
+      ? source.activeUniversity
+      : "sejong";
+    const sejong2027 = ["free", "humanities", "natural", "arts"].includes(source?.sejong2027)
+      ? source.sejong2027
+      : "humanities";
+    const kookmin2027 = ["humanities", "natural", "arts"].includes(source?.kookmin2027)
+      ? source.kookmin2027
+      : "humanities";
+    const dongguk2027 = ["humanities", "natural"].includes(source?.dongguk2027)
+      ? source.dongguk2027
+      : "humanities";
+    return { activeUniversity, sejong2027, kookmin2027, dongguk2027 };
+  }
+
+  function normalizeTeacherFeedbackReceipt(source) {
+    if (!source || typeof source !== "object" || !clean(source.appliedAt)) return null;
+    return {
+      appliedAt: clean(source.appliedAt),
+      exportedAt: clean(source.exportedAt),
+      sourceFileName: clean(source.sourceFileName),
+      revisionLog: Array.isArray(source.revisionLog)
+        ? source.revisionLog.map((entry) => ({
+          editedAt: clean(entry?.editedAt),
+          label: clean(entry?.label)
+        })).filter((entry) => entry.editedAt || entry.label).slice(-50)
+        : []
+    };
+  }
+
   function documentFields(source) {
     return {
       studentNumber: clean(source?.studentNumber),
+      academicProfile: normalizeAcademicProfile(source?.academicProfile),
+      gradeRecords: normalizeGradeRecords(source?.gradeRecords),
+      gradeCalculatorSelections: normalizeGradeCalculatorSelections(source?.gradeCalculatorSelections),
       consultations: normalizeConsultations(source?.consultations),
       overallOpinion: clean(source?.overallOpinion),
+      teacherFeedbackReceipt: normalizeTeacherFeedbackReceipt(source?.teacherFeedbackReceipt),
       lastExportedAt: clean(source?.lastExportedAt),
       lastPrintedAt: clean(source?.lastPrintedAt)
     };
@@ -376,17 +526,60 @@
     return write(state);
   }
 
+  function addGradeRecord(changes) {
+    const state = read();
+    const record = normalizeGradeRecord(changes);
+    if (!record.subjectName) return { added: false, reason: "missing-subject", state };
+    state.gradeRecords.push(record);
+    return { added: true, record, state: write(state) };
+  }
+
+  function updateGradeRecord(id, changes) {
+    const state = read();
+    const index = state.gradeRecords.findIndex((record) => record.id === id);
+    if (index < 0) return { updated: false, reason: "not-found", state };
+    const record = normalizeGradeRecord({ ...state.gradeRecords[index], ...changes, id });
+    if (!record.subjectName) return { updated: false, reason: "missing-subject", state };
+    state.gradeRecords[index] = record;
+    return { updated: true, record, state: write(state) };
+  }
+
+  function removeGradeRecord(id) {
+    const state = read();
+    const next = state.gradeRecords.filter((record) => record.id !== id);
+    if (next.length === state.gradeRecords.length) return state;
+    state.gradeRecords = next;
+    return write(state);
+  }
+
+  function addGradeRecords(records) {
+    const state = read();
+    const normalized = normalizeGradeRecords(records);
+    if (!normalized.length) return { added: 0, state };
+    const existing = new Set(state.gradeRecords.map((record) => record.id));
+    normalized.forEach((record) => {
+      if (existing.has(record.id)) record.id = generatedId("GRADE");
+      existing.add(record.id);
+      state.gradeRecords.push(record);
+    });
+    return { added: normalized.length, state: write(state) };
+  }
+
   function exportData(exportedAt = new Date().toISOString()) {
     const state = read();
     const next = write({ ...state, lastExportedAt: exportedAt });
     return {
       format: "anjwa-consultation-card",
-      schemaVersion: 1,
+      schemaVersion: 5,
       exportedAt,
       version: VERSION,
       studentNumber: next.studentNumber,
+      academicProfile: next.academicProfile,
+      gradeRecords: next.gradeRecords,
+      gradeCalculatorSelections: next.gradeCalculatorSelections,
       consultations: next.consultations,
       overallOpinion: next.overallOpinion,
+      teacherFeedbackReceipt: next.teacherFeedbackReceipt,
       lastExportedAt: exportedAt,
       lastPrintedAt: next.lastPrintedAt,
       updatedAt: next.updatedAt,
@@ -396,11 +589,47 @@
   }
 
   function importData(payload) {
-    if (!payload || typeof payload !== "object") throw new Error("상담카드 파일이 아닙니다.");
+    if (!payload || typeof payload !== "object") throw new Error("수시카드 파일이 아닙니다.");
     const supported = payload.format === "anjwa-consultation-card" || Array.isArray(payload.slots) || Array.isArray(payload.items);
-    if (!supported) throw new Error("이 앱에서 저장한 상담카드 파일이 아닙니다.");
+    if (!supported) throw new Error("이 앱에서 저장한 수시카드 파일이 아닙니다.");
     const normalized = normalizeState(payload);
     return write({ ...normalized, lastExportedAt: clean(payload.exportedAt || payload.lastExportedAt) });
+  }
+
+  function feedbackBackups() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(FEEDBACK_BACKUP_KEY));
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((entry) => entry && typeof entry === "object" && entry.snapshot)
+        .slice(0, FEEDBACK_BACKUP_LIMIT);
+    } catch {
+      return [];
+    }
+  }
+
+  function backupBeforeTeacherFeedback(metadata = {}) {
+    const createdAt = new Date().toISOString();
+    const entry = {
+      id: `FEEDBACK-BACKUP-${Date.now()}`,
+      createdAt,
+      studentNumber: clean(metadata.studentNumber || read().studentNumber),
+      feedbackExportedAt: clean(metadata.feedbackExportedAt),
+      snapshot: read()
+    };
+    const backups = [entry, ...feedbackBackups()].slice(0, FEEDBACK_BACKUP_LIMIT);
+    localStorage.setItem(FEEDBACK_BACKUP_KEY, JSON.stringify(backups));
+    return entry;
+  }
+
+  function restoreFeedbackBackup(id = "") {
+    const backups = feedbackBackups();
+    const entry = id ? backups.find((candidate) => candidate.id === id) : backups[0];
+    if (!entry) return { restored: false, state: read() };
+    return { restored: true, entry, state: write(entry.snapshot) };
+  }
+
+  function clearFeedbackBackups() {
+    localStorage.removeItem(FEEDBACK_BACKUP_KEY);
   }
 
   function markPrinted(printedAt = new Date().toISOString()) {
@@ -431,6 +660,7 @@
 
   function clear() {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(FEEDBACK_BACKUP_KEY);
     const state = emptyState();
     window.dispatchEvent(new CustomEvent("consultation-card-change", { detail: state }));
     return state;
@@ -438,11 +668,16 @@
 
   window.ConsultationCardStore = {
     STORAGE_KEY,
+    FEEDBACK_BACKUP_KEY,
     BASE_SLOT_COUNT,
     MAX_STANDARD_SLOTS,
     EXEMPT_UNIVERSITY_ALIASES,
     CONSULTATION_COUNT,
     OVERRIDE_FIELDS,
+    SUBJECT_GROUPS,
+    COURSE_TYPES,
+    CURRICULUM_CATEGORIES,
+    ACHIEVEMENTS,
     isExemptUniversity,
     read,
     place,
@@ -453,8 +688,16 @@
     update,
     updateDocument,
     updateConsultation,
+    addGradeRecord,
+    addGradeRecords,
+    updateGradeRecord,
+    removeGradeRecord,
     exportData,
     importData,
+    feedbackBackups,
+    backupBeforeTeacherFeedback,
+    restoreFeedbackBackup,
+    clearFeedbackBackups,
     markPrinted,
     move,
     clear

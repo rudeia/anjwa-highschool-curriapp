@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>학생 상담카드 | 교사 상담용</title>
-    <link rel="stylesheet" href="./teacher-student-card.css?v=20260723b">
+    <link rel="stylesheet" href="./teacher-student-card.css?v=20260730a">
   </head>
   <body>
     <main class="viewer-shell">
@@ -15,7 +15,7 @@
           <p id="studentMeta">학생 자료를 불러오는 중입니다.</p>
         </div>
         <div class="head-actions">
-          <button id="exportStudentJson" class="secondary-button" type="button" disabled>현재 카드 JSON</button>
+          <button id="exportStudentJson" class="secondary-button" type="button" disabled>교사 피드백</button>
           <button id="printStudentCard" class="secondary-button" type="button" disabled>A4 PDF</button>
           <button id="backDashboard" class="primary-button" type="button">대시보드로</button>
         </div>
@@ -40,6 +40,13 @@
           <div><span>교사 수정</span><strong id="teacherEditCount">0건</strong></div>
         </div>
 
+        <section id="studentGradeRecords" class="student-grade-records" aria-labelledby="studentGradesTitle">
+          <div class="section-head">
+            <div><span>학생 입력</span><h2 id="studentGradesTitle">학생부 과목별 성적</h2></div>
+          </div>
+          <div id="studentGradeRecordBody"></div>
+        </section>
+
         <section aria-labelledby="plansTitle">
           <div class="section-head">
             <div><span>지원 현황</span><h2 id="plansTitle">수시 지원 상담카드</h2></div>
@@ -60,7 +67,9 @@
       </section>
     </main>
 
-    <script src="./teacher-student-card.js?v=20260723b" defer></script>
-    <script src="./site-meta.js?v=1.02.00" defer></script>
+    <script src="./admission-grade-calculators.js?v=20260729c" defer></script>
+    <script src="./susi-card-transfer.js?v=20260730c" defer></script>
+    <script src="./teacher-student-card.js?v=20260730b" defer></script>
+    <script src="./site-meta.js?v=1.03.00" defer></script>
   </body>
 </html>

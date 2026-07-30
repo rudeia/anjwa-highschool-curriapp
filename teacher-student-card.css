@@ -47,6 +47,24 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .source-teacher { background: var(--blue-soft); color: var(--blue); }
 .source-student { background: var(--green-soft); color: var(--green); }
 
+.student-grade-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding: 10px 12px; background: var(--green-soft); }
+.student-grade-meta span { color: var(--muted); font-size: 13px; }
+.student-grade-meta strong { color: var(--green); font-size: 14px; }
+.student-grade-calculation { display: grid; grid-template-columns: minmax(150px, 1fr) auto; align-items: center; gap: 3px 12px; margin-bottom: 9px; padding: 10px 12px; border-left: 4px solid var(--blue); background: var(--blue-soft); }
+.student-grade-calculation > span { grid-row: 1 / span 2; color: var(--blue); font-size: 13px; font-weight: 800; }
+.student-grade-calculation > strong { font-size: 18px; text-align: right; }
+.student-grade-calculation > strong.is-error { color: #a33f36; font-size: 14px; }
+.student-grade-calculation > small { color: var(--muted); font-size: 11px; text-align: right; }
+.student-grade-verification { margin: 0 0 9px; padding: 9px 11px; border-left: 4px solid #9a5b0a; background: #fff5e8; color: #79510f; font-size: 12px; font-weight: 750; line-height: 1.45; }
+.student-grade-list { display: grid; gap: 6px; }
+.student-grade-list article { min-width: 0; display: grid; grid-template-columns: 52px minmax(160px, 1fr) 70px 100px; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--line); }
+.student-grade-list article > span { color: var(--green); font-weight: 850; text-align: center; }
+.student-grade-list article > div { min-width: 0; display: grid; gap: 2px; }
+.student-grade-list article > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.student-grade-list article > div small { color: var(--muted); font-size: 12px; }
+.student-grade-list article > em { color: var(--muted); font-size: 12px; font-style: normal; text-align: right; }
+.student-grade-list article > b { font-size: 13px; text-align: right; }
+
 .plan-list { display: grid; gap: 10px; }
 .plan-card { border: 1px solid var(--line); }
 .plan-main { display: grid; grid-template-columns: 72px minmax(160px, 1.2fr) minmax(180px, 1fr); gap: 12px; align-items: center; padding: 14px; }
@@ -59,9 +77,21 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .plan-facts div:last-child { border-right: 0; }
 .plan-facts span { color: var(--muted); font-size: 12px; }
 .plan-facts strong { font-size: 14px; overflow-wrap: anywhere; }
+.viewer-similar-candidates { padding: 10px 14px 14px; border-top: 1px solid var(--line); background: var(--green-soft); }
+.viewer-similar-candidates > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.viewer-similar-candidates > header span { color: var(--muted); font-size: 12px; }
+.viewer-similar-candidates > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.viewer-similar-candidates article { min-width: 0; display: grid; gap: 3px; padding: 9px; border: 1px solid #d5e4dc; background: #fff; }
+.viewer-similar-candidates article strong { overflow-wrap: anywhere; font-size: 13px; }
+.viewer-similar-candidates article span, .viewer-similar-candidates article small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.viewer-similar-candidates article em { color: var(--blue); font-size: 11px; font-style: normal; font-weight: 800; }
+.viewer-similar-candidates article p { margin: 4px 0 0; padding-top: 5px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
 .history-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 10px 14px 14px; border-top: 1px solid var(--line); }
 .history-item { padding: 10px; border: 1px solid var(--line); background: #fff; }
 .history-item strong { display: block; margin-bottom: 4px; }
+.history-item strong em { display: inline-block; margin-left: 6px; padding: 2px 5px; border-radius: 3px; background: #fff0d5; color: #855800; font-size: 10px; font-style: normal; vertical-align: 2px; }
+.history-item > small { display: block; margin: -1px 0 5px; color: #806b47; font-size: 11px; line-height: 1.4; }
+.history-item.is-user-reference { border-color: #e2c68f; background: #fffaf0; }
 .history-item span { display: block; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .opinion-panel p { min-height: 72px; margin: 12px 0 0; padding: 14px; background: var(--soft); color: #415048; line-height: 1.7; white-space: pre-wrap; }
 .revision-panel { display: grid; gap: 10px; }
@@ -78,6 +108,14 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .card-summary { grid-template-columns: repeat(2, 1fr); }
   .card-summary div:nth-child(2) { border-right: 0; }
   .card-summary div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .student-grade-meta { align-items: flex-start; display: grid; }
+  .student-grade-calculation { grid-template-columns: 1fr; }
+  .student-grade-calculation > span { grid-row: auto; }
+  .student-grade-calculation > strong, .student-grade-calculation > small { text-align: left; }
+  .viewer-similar-candidates > div { grid-template-columns: 1fr; }
+  .student-grade-list article { grid-template-columns: 42px minmax(0, 1fr) auto; gap: 7px; }
+  .student-grade-list article > em { grid-column: 2; text-align: left; }
+  .student-grade-list article > b { grid-column: 3; grid-row: 1 / span 2; }
   .plan-main { grid-template-columns: 58px minmax(0, 1fr); }
   .plan-admission { grid-column: 2; }
   .plan-facts { grid-template-columns: 1fr; }

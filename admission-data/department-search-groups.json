@@ -1,0 +1,166 @@
+{
+  "version": "2026-07-29.2",
+  "description": "진학좌표 유사학과 확장 검색용 주제어 모음",
+  "groups": [
+    {
+      "id": "computer-ai-data",
+      "label": "컴퓨터·AI·데이터",
+      "keywords": ["컴퓨터", "소프트웨어", "인공지능", "AI", "데이터사이언스", "빅데이터", "정보보호", "사이버보안"]
+    },
+    {
+      "id": "business-accounting",
+      "label": "경영·회계·금융",
+      "keywords": ["경영", "회계", "세무", "금융", "마케팅", "유통", "물류"]
+    },
+    {
+      "id": "economics-trade",
+      "label": "경제·무역·통상",
+      "keywords": ["경제", "무역", "국제통상", "통상", "경제금융"]
+    },
+    {
+      "id": "biology-biotech",
+      "label": "생명과학·바이오",
+      "keywords": ["생명과학", "생명공학", "바이오", "의생명", "농생명", "분자생명", "미생물"]
+    },
+    {
+      "id": "geography-spatial",
+      "label": "지리·공간·도시",
+      "keywords": ["지리", "지리교육", "공간정보", "GIS", "도시계획", "도시공학", "지역개발", "부동산"]
+    },
+    {
+      "id": "nursing",
+      "label": "간호",
+      "keywords": ["간호", "간호학"]
+    },
+    {
+      "id": "health-medical",
+      "label": "보건·의료",
+      "keywords": ["보건", "보건행정", "의료경영", "작업치료", "물리치료", "방사선", "임상병리", "응급구조"]
+    },
+    {
+      "id": "mechanical-mobility",
+      "label": "기계·모빌리티·로봇",
+      "keywords": ["기계", "기계공학", "모빌리티", "자동차", "로봇", "메카트로닉스"]
+    },
+    {
+      "id": "electrical-semiconductor",
+      "label": "전기·전자·반도체",
+      "keywords": ["전기", "전자", "전기전자", "반도체", "디스플레이", "제어"]
+    },
+    {
+      "id": "chemistry-materials",
+      "label": "화학·신소재",
+      "keywords": ["화학", "화학공학", "신소재", "재료공학", "나노", "고분자"]
+    },
+    {
+      "id": "architecture-civil",
+      "label": "건축·건설·토목",
+      "keywords": ["건축", "건축학", "건축공학", "건설", "토목", "도시공학"]
+    },
+    {
+      "id": "education",
+      "label": "교육·아동교육",
+      "keywords": ["교육학", "초등교육", "유아교육", "특수교육", "교육공학"]
+    },
+    {
+      "id": "psychology-welfare",
+      "label": "심리·상담·복지",
+      "keywords": ["심리", "상담", "사회복지", "아동", "가족복지"]
+    },
+    {
+      "id": "media-content",
+      "label": "미디어·콘텐츠·홍보",
+      "keywords": ["미디어", "콘텐츠", "광고홍보", "언론", "영상", "디지털콘텐츠"]
+    },
+    {
+      "id": "environment-energy",
+      "label": "환경·에너지",
+      "keywords": ["환경", "에너지", "원자력", "신재생", "탄소중립"]
+    },
+    {
+      "id": "food-nutrition",
+      "label": "식품·영양",
+      "keywords": ["식품", "식품공학", "식품영양", "영양"]
+    },
+    {
+      "id": "law-public-safety",
+      "label": "법·행정·경찰",
+      "keywords": ["법학", "행정", "경찰", "공공정책", "소방행정"]
+    },
+    {
+      "id": "tourism-hospitality",
+      "label": "관광·호텔·서비스",
+      "keywords": ["관광", "호텔", "항공서비스", "외식", "컨벤션"]
+    },
+    {
+      "id": "statistics-mathematics",
+      "label": "수학·통계",
+      "keywords": ["수학", "응용수학", "통계", "통계학", "수리과학"]
+    },
+    {
+      "id": "korean-literature-writing",
+      "label": "국어·문학·문예창작",
+      "keywords": ["국어국문", "국문", "국어교육", "문예창작", "한국어문", "한국어교육"]
+    },
+    {
+      "id": "foreign-language-literature",
+      "label": "외국어·외국문학",
+      "keywords": ["영어영문", "영문", "영어교육", "일어일문", "일본어", "중어중문", "중국어", "불어불문", "프랑스어", "독어독문", "독일어", "러시아어", "스페인어", "아랍어", "외국어"]
+    },
+    {
+      "id": "history-archaeology-culture",
+      "label": "역사·고고·문화유산",
+      "keywords": ["사학", "역사", "역사교육", "고고", "문화유산", "문화재", "박물관"]
+    },
+    {
+      "id": "philosophy-religion-ethics",
+      "label": "철학·윤리·종교",
+      "keywords": ["철학", "윤리", "윤리교육", "종교", "신학", "불교", "기독교"]
+    },
+    {
+      "id": "politics-diplomacy-international",
+      "label": "정치·외교·국제",
+      "keywords": ["정치", "외교", "국제관계", "국제학", "글로벌학", "국제지역"]
+    },
+    {
+      "id": "sociology-anthropology",
+      "label": "사회·인류·문화",
+      "keywords": ["사회학", "사회과학", "인류학", "문화인류", "사회문화"]
+    },
+    {
+      "id": "physics-astronomy",
+      "label": "물리·천문",
+      "keywords": ["물리", "물리학", "물리교육", "천문", "우주과학"]
+    },
+    {
+      "id": "earth-ocean-science",
+      "label": "지구·해양과학",
+      "keywords": ["지구과학", "지질", "해양학", "해양과학", "대기과학", "기상", "기후"]
+    },
+    {
+      "id": "agriculture-forestry-animal",
+      "label": "농업·산림·동물",
+      "keywords": ["농학", "농업", "원예", "산림", "임학", "축산", "동물자원", "식물자원", "스마트팜"]
+    },
+    {
+      "id": "medicine-pharmacy-veterinary",
+      "label": "의학·약학·수의학",
+      "keywords": ["의예", "의학", "치의예", "치의학", "한의예", "한의학", "약학", "제약", "수의예", "수의학"]
+    },
+    {
+      "id": "art-design-fashion",
+      "label": "미술·디자인·패션",
+      "keywords": ["미술", "회화", "조소", "디자인", "시각디자인", "산업디자인", "패션", "의류", "공예"]
+    },
+    {
+      "id": "music-performance",
+      "label": "음악·공연예술",
+      "keywords": ["음악", "성악", "기악", "작곡", "국악", "연극", "뮤지컬", "공연예술", "무용"]
+    },
+    {
+      "id": "sports-physical-education",
+      "label": "체육·스포츠",
+      "keywords": ["체육", "스포츠", "운동", "레저", "태권도"]
+    }
+  ]
+}

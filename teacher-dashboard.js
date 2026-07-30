@@ -1,7 +1,8 @@
 (function teacherDashboardModule() {
   "use strict";
 
-  const PASSWORD = "72727272";
+  const PASSWORD_HASH = "116345b63a9ddada441b3bcf09fec1ae3f29ecfbb2dbb2a57d6b97abef6db7e3";
+  const PASSWORD_HASH_PREFIX = "anjwa-highschool-curriapp:";
   const SESSION_KEY = "anjwa.teacherDashboard.unlocked";
   const DB_NAME = "anjwa-teacher-dashboard";
   const DB_VERSION = 1;
@@ -30,6 +31,17 @@
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const nowIso = () => new Date().toISOString();
   const uid = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  async function hashPassword(value) {
+    const bytes = new TextEncoder().encode(`${PASSWORD_HASH_PREFIX}${value}`);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function passwordMatches(value) {
+    if (!globalThis.crypto?.subtle) return false;
+    return (await hashPassword(value)) === PASSWORD_HASH;
+  }
 
   function escapeHtml(value) {
     return clean(value).replace(/[&<>'"]/g, (character) => ({
@@ -129,20 +141,8 @@
   }
 
   function normalizePayload(payload) {
-    if (!payload || typeof payload !== "object") throw new Error("상담카드 파일 형식이 아닙니다.");
-    if (payload.format !== "anjwa-consultation-card" && !Array.isArray(payload.slots) && !Array.isArray(payload.items)) {
-      throw new Error("이 플랫폼에서 저장한 상담카드 파일이 아닙니다.");
-    }
-    const normalized = clone(payload);
-    normalized.format = "anjwa-consultation-card";
-    normalized.schemaVersion = Number(normalized.schemaVersion || 1);
-    normalized.studentNumber = clean(normalized.studentNumber);
-    normalized.slots = Array.isArray(normalized.slots) ? normalized.slots : [];
-    normalized.exemptItems = Array.isArray(normalized.exemptItems) ? normalized.exemptItems : [];
-    if (!normalized.slots.length && Array.isArray(normalized.items)) {
-      normalized.slots = normalized.items.slice(0, 9).map((item, index) => ({ slot: index + 1, item }));
-    }
-    return normalized;
+    if (!window.SusiCardTransfer) throw new Error("수시카드 전달 형식을 불러오지 못했습니다.");
+    return window.SusiCardTransfer.normalizeTeacherPayload(payload);
   }
 
   function payloadItems(payload) {
@@ -172,6 +172,7 @@
       if (Object.prototype.hasOwnProperty.call(patch.fields || {}, "targetAnnouncementDateOverride")) addOverrideField(item, "announcementDate");
     });
     addedItems.forEach((item) => {
+      if (itemById(payload, item.id)) return;
       if (item.exemptFromSixLimit) payload.exemptItems.push(item);
       else {
         let slot = payload.slots.find((candidate) => !candidate.item);
@@ -229,6 +230,77 @@
     return state.students.find((student) => student.id === state.studentId) || null;
   }
 
+  function teacherFeedbackSignature(student) {
+    return JSON.stringify({
+      patches: student.teacherPatches || [],
+      addedItems: student.teacherAddedItems || []
+    });
+  }
+
+  function feedbackState(student) {
+    const delivery = student.feedbackDelivery;
+    if (!delivery?.exportedAt || !delivery.reviewedSnapshot) {
+      return {
+        key: "none",
+        label: "피드백 미발송",
+        title: "아직 학생에게 저장한 교사 피드백이 없습니다.",
+        meta: "교사 피드백 파일을 저장하면 학생의 재제출 여부를 이 기기에서 확인할 수 있습니다.",
+        comparison: null
+      };
+    }
+    if (delivery.teacherFeedbackSignature !== teacherFeedbackSignature(student)) {
+      return {
+        key: "pending",
+        label: "확인 전",
+        title: "피드백 저장 뒤 교사 수정이 추가되었습니다.",
+        meta: "최신 내용을 반영한 교사 피드백 파일을 다시 저장해 학생에게 전달하세요.",
+        comparison: null
+      };
+    }
+    const receipt = student.sourcePayload?.teacherFeedbackReceipt;
+    if (!receipt || clean(receipt.exportedAt) !== clean(delivery.exportedAt)) {
+      return {
+        key: "pending",
+        label: "확인 전",
+        title: "학생의 피드백 적용 재제출을 기다리고 있습니다.",
+        meta: `피드백 저장 ${localDateTime(delivery.exportedAt)}${receipt?.exportedAt ? " · 이전 피드백 적용 기록은 있으나 최신 확인본과 다릅니다." : ""}`,
+        comparison: null
+      };
+    }
+    const comparison = window.SusiCardTransfer.compareStudentReturn(delivery.reviewedSnapshot, student.sourcePayload);
+    if (comparison.hasChanges) {
+      return {
+        key: "review",
+        label: "재검토 필요",
+        title: "피드백 적용 뒤 학생이 내용을 변경했습니다.",
+        meta: `학생 재제출 ${localDateTime(student.importedAt)} · 피드백 적용 ${localDateTime(receipt.appliedAt)}`,
+        comparison
+      };
+    }
+    return {
+      key: "applied",
+      label: "적용 완료",
+      title: "학생이 교사 피드백을 적용해 다시 제출했습니다.",
+      meta: `학생 재제출 ${localDateTime(student.importedAt)} · 피드백 적용 ${localDateTime(receipt.appliedAt)}`,
+      comparison
+    };
+  }
+
+  function reconcileFeedbackDelivery(student, payload, importedAt) {
+    const delivery = student?.feedbackDelivery;
+    if (!delivery?.exportedAt || !delivery.reviewedSnapshot) return delivery;
+    const receipt = payload.teacherFeedbackReceipt;
+    if (!receipt || clean(receipt.exportedAt) !== clean(delivery.exportedAt)) return delivery;
+    const comparison = window.SusiCardTransfer.compareStudentReturn(delivery.reviewedSnapshot, payload);
+    return {
+      ...delivery,
+      status: comparison.hasChanges ? "review" : "applied",
+      returnedAt: importedAt,
+      appliedAt: clean(receipt.appliedAt),
+      comparison
+    };
+  }
+
   function renderClassSelect() {
     byId("classSelect").innerHTML = state.classes.map((record) => `<option value="${escapeHtml(record.id)}"${record.id === state.classId ? " selected" : ""}>${escapeHtml(record.name)}</option>`).join("");
     byId("studentListTitle").textContent = state.classes.find((record) => record.id === state.classId)?.name || "반을 선택하세요";
@@ -236,9 +308,13 @@
 
   function renderSummary() {
     const payloads = state.students.map(applyPatches);
+    const feedbackStates = state.students.map(feedbackState);
     byId("classStudentCount").textContent = `${state.students.length}명`;
     byId("classPlanCount").textContent = `${payloads.reduce((sum, payload) => sum + payloadItems(payload).length, 0)}개`;
     byId("classReviewCount").textContent = `${state.students.filter((student) => student.teacherPatches?.length || student.teacherAddedItems?.length).length}명`;
+    byId("classFeedbackPendingCount").textContent = feedbackStates.filter((status) => status.key === "pending").length;
+    byId("classFeedbackAppliedCount").textContent = feedbackStates.filter((status) => status.key === "applied").length;
+    byId("classFeedbackReviewCount").textContent = feedbackStates.filter((status) => status.key === "review").length;
     ["printClass", "exportClassCsv", "backupClass"].forEach((id) => { byId(id).disabled = !state.students.length; });
   }
 
@@ -247,10 +323,11 @@
     const visible = state.students.filter((student) => !query || student.studentNumber.toLocaleLowerCase("ko").includes(query));
     byId("studentList").innerHTML = visible.length ? visible.map((student) => {
       const payload = applyPatches(student);
+      const status = feedbackState(student);
       return `<button class="student-row${student.id === state.studentId ? " is-active" : ""}" type="button" data-student-id="${escapeHtml(student.id)}">
         <strong>${escapeHtml(student.studentNumber || "미입력")}</strong>
-        <span>지원안 ${payloadItems(payload).length}개</span>
-        <em>${student.teacherPatches?.length ? `수정 ${student.teacherPatches.length}` : "제출본"}</em>
+        <span>지원안 ${payloadItems(payload).length}개 · 성적 ${Array.isArray(payload.gradeRecords) ? payload.gradeRecords.length : 0}과목</span>
+        <em class="feedback-status is-${escapeHtml(status.key)}">${escapeHtml(status.label)}</em>
       </button>`;
     }).join("") : '<p class="student-list-empty">불러온 학생이 없습니다.</p>';
   }
@@ -285,6 +362,32 @@
     return `${entry.year}학년도${rate ? ` · 경쟁률 ${rate}:1` : ""}${grades.length ? ` · ${grades.map(([label, value]) => `${label} ${clean(value)}`).join(" · ")}` : ""}`;
   }
 
+  function similarCandidateGradeText(candidate) {
+    const ranges = candidate?.gradeRanges || {};
+    const range = ranges.all || ranges.subject || ranges.holistic || ranges.essay || ranges.performance;
+    if (!range) return "동일 명칭 공개 입결 없음";
+    const minimum = Number(range.min);
+    const maximum = Number(range.max);
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) return "동일 명칭 공개 입결 없음";
+    const grades = minimum === maximum ? minimum.toFixed(2) : `${minimum.toFixed(2)}~${maximum.toFixed(2)}`;
+    return `${clean(range.year) || "최근"}학년도 ${grades}등급`;
+  }
+
+  function renderSimilarCandidates(item) {
+    const candidates = Array.isArray(item.similarDepartmentCandidates) ? item.similarDepartmentCandidates.slice(0, 3) : [];
+    if (!candidates.length) return "";
+    return `<section class="teacher-similar-candidates">
+      <header><strong>학생이 검토 중인 유사학과</strong><span>${candidates.length}/3개 · 학생 제출본</span></header>
+      <div>${candidates.map((candidate) => `<article>
+        <strong>${escapeHtml(candidate.university)}${candidate.campus ? ` · ${escapeHtml(candidate.campus)}` : ""}</strong>
+        <span>${escapeHtml(candidate.department)}</span>
+        <small>${escapeHtml(candidate.region || "지역 확인")} · ${escapeHtml((candidate.categories || []).join(" · ") || "전형 확인")}</small>
+        <em>${escapeHtml(similarCandidateGradeText(candidate))}</em>
+        ${candidate.note ? `<p>${escapeHtml(candidate.note)}</p>` : ""}
+      </article>`).join("")}</div>
+    </section>`;
+  }
+
   function renderPlan(item, rank, exempt) {
     const edits = currentStudent()?.teacherPatches?.filter((patch) => patch.itemId === item.id).length || 0;
     return `<details class="support-plan" data-item-id="${escapeHtml(item.id)}">
@@ -301,6 +404,7 @@
           <div><span>수능최저</span><strong>${escapeHtml(effectiveValue(item, "minimum"))}</strong></div>
           <div><span>최종 합격자 발표일</span><strong>${escapeHtml(effectiveValue(item, "announcementDate"))}</strong></div>
         </div>
+        ${renderSimilarCandidates(item)}
         <div class="plan-edit-grid">
           <label>대학<input data-item-field="university" value="${escapeHtml(item.university)}"></label>
           <label>캠퍼스<input data-item-field="campus" value="${escapeHtml(item.campus)}"></label>
@@ -318,6 +422,55 @@
     </details>`;
   }
 
+  function gradeRecordValue(record) {
+    if (record.passFail) return "P/F";
+    if (record.courseType === "career") {
+      return [
+        record.achievement ? `성취도 ${record.achievement}` : "성취도 미입력",
+        record.rankGrade ? `${record.rankGrade}등급` : ""
+      ].filter(Boolean).join(" · ");
+    }
+    return record.rankGrade ? `${record.rankGrade}등급` : "석차등급 미입력";
+  }
+
+  function renderStudentGradeRecords(payload) {
+    const records = Array.isArray(payload.gradeRecords) ? payload.gradeRecords : [];
+    const credits = records.reduce((sum, record) => sum + (Number(record.credits) || 0), 0);
+    const career = records.filter((record) => record.courseType === "career").length;
+    const profile = payload.academicProfile || {};
+    const profileText = `${profile.schoolStatus === "graduated" ? "졸업생" : "재학생"}${profile.graduationYear ? ` · ${profile.graduationYear}년 졸업${profile.schoolStatus === "graduated" ? "" : " 예정"}` : ""}`;
+    const sejongTrackId = payload.gradeCalculatorSelections?.sejong2027 || "humanities";
+    const kookminTrackId = payload.gradeCalculatorSelections?.kookmin2027 || "humanities";
+    const donggukTrackId = payload.gradeCalculatorSelections?.dongguk2027 || "humanities";
+    const calculations = window.AdmissionGradeCalculators ? [
+      {
+        label: "세종대 2027",
+        source: "공식 모집요강 22쪽",
+        result: window.AdmissionGradeCalculators.calculateSejong2027(records, sejongTrackId)
+      },
+      {
+        label: "국민대 2027",
+        source: "학생부위주전형 가이드북 10~11쪽",
+        result: window.AdmissionGradeCalculators.calculateKookmin2027(records, kookminTrackId, profile)
+      },
+      {
+        label: "동국대(서울) 2027",
+        source: "공식 모집요강 44·85~86쪽",
+        result: window.AdmissionGradeCalculators.calculateDongguk2027(records, donggukTrackId, profile)
+      }
+    ] : [];
+    const calculationMarkup = records.length
+      ? `${calculations.map(({ label, source, result }) => `<div class="teacher-grade-calculation"><span>${label} · ${escapeHtml(result.track.label)}</span>${result.ok
+        ? `<strong>${result.score.toFixed(8)}점</strong><small>${escapeHtml(result.rule.scale.toLocaleString("ko-KR"))}점 기준 · ${source}</small>`
+        : `<strong class="is-error">계산 확인 필요</strong><small>${escapeHtml(result.errors[0] || "입력값을 확인하세요.")}</small>`}</div>`).join("")}
+        <p class="teacher-grade-verification">환산 결과는 드림스쿨과 대학의 최신 모집요강에서 반드시 재확인하세요.</p>`
+      : "";
+    byId("studentGradeRecords").innerHTML = `<details${records.length ? "" : " class=\"is-empty\""}>
+      <summary><span><strong>학생부 과목별 성적</strong><small>${escapeHtml(profileText)}</small></span><em>${records.length}과목 · 진로선택 ${career} · ${Number.isInteger(credits) ? credits : credits.toFixed(1)}단위</em></summary>
+      ${records.length ? `${calculationMarkup}<div class="teacher-grade-list">${records.map((record) => `<span><b>${escapeHtml(record.schoolYear)}-${escapeHtml(record.semester)}</b><strong>${escapeHtml(record.subjectName)}</strong><small>${escapeHtml(record.subjectGroup || "기타")} · ${record.curriculumCategory === "specialized" ? "전문교과 · " : ""}${escapeHtml(record.credits ?? "-")}단위 · ${escapeHtml(gradeRecordValue(record))}</small></span>`).join("")}</div>` : '<p>학생이 입력한 과목별 성적이 없습니다.</p>'}
+    </details>`;
+  }
+
   function renderDetail() {
     const student = currentStudent();
     byId("openSelectedStudentCard").disabled = !student;
@@ -328,6 +481,8 @@
     byId("detailStudentNumber").textContent = `${student.studentNumber || "학번 미입력"} 학생`;
     byId("detailTimestamp").textContent = `최근 제출 ${localDateTime(student.importedAt)} · 마지막 변경 ${localDateTime(student.updatedAt)}`;
     byId("teacherOverallOpinion").value = clean(payload.overallOpinion);
+    renderFeedbackReturn(student);
+    renderStudentGradeRecords(payload);
     const standard = (payload.slots || []).map((slot) => slot?.item).filter(Boolean);
     const exempt = payload.exemptItems || [];
     byId("supportPlans").innerHTML = [
@@ -336,6 +491,22 @@
     ].join("") || '<p class="student-list-empty">저장된 지원안이 없습니다. 위 조회 영역에서 지원안을 추가할 수 있습니다.</p>';
     renderLookupTarget(payload);
     renderRevisions(student);
+  }
+
+  function renderFeedbackReturn(student) {
+    const panel = byId("feedbackReturnPanel");
+    const status = feedbackState(student);
+    panel.hidden = status.key === "none";
+    if (panel.hidden) return;
+    const badge = byId("feedbackReturnBadge");
+    badge.className = `feedback-status is-${status.key}`;
+    badge.textContent = status.label;
+    byId("feedbackReturnTitle").textContent = status.title;
+    byId("feedbackReturnMeta").textContent = status.meta;
+    const changes = status.comparison?.changes || [];
+    const changePanel = byId("feedbackReturnChanges");
+    changePanel.hidden = !changes.length;
+    changePanel.innerHTML = changes.slice(0, 8).map((entry) => `<span>${escapeHtml(entry.label)}</span>`).join("");
   }
 
   function renderLookupTarget(payload) {
@@ -376,19 +547,34 @@
         if (!studentNumber) throw new Error("학번이 없습니다.");
         const existing = existingByNumber.get(studentNumber);
         if (!existing && state.students.length + inserted >= MAX_STUDENTS) throw new Error(`반별 최대 ${MAX_STUDENTS}명까지 저장할 수 있습니다.`);
+        const importedAt = nowIso();
+        const feedbackDelivery = reconcileFeedbackDelivery(existing, payload, importedAt);
+        const returnedFeedback = Boolean(
+          existing?.feedbackDelivery?.exportedAt
+          && clean(payload.teacherFeedbackReceipt?.exportedAt) === clean(existing.feedbackDelivery.exportedAt)
+        );
+        const returnComparison = returnedFeedback
+          ? window.SusiCardTransfer.compareStudentReturn(existing.feedbackDelivery.reviewedSnapshot, payload)
+          : null;
+        const revisionLabel = returnedFeedback
+          ? returnComparison.hasChanges
+            ? `학생이 교사 피드백을 적용한 뒤 ${returnComparison.total}개 내용을 변경해 다시 제출했습니다. 재검토가 필요합니다.`
+            : "학생이 교사 피드백을 적용한 상담카드를 다시 제출했습니다."
+          : "학생이 다시 제출한 상담카드 원본을 갱신했습니다. 기존 교사 수정값은 유지했습니다.";
         const record = existing ? {
           ...existing,
           sourcePayload: payload,
           sourceFileName: file.name,
-          importedAt: nowIso(),
-          revisionLog: [...(existing.revisionLog || []), { editedAt: nowIso(), label: "학생이 다시 제출한 상담카드 원본을 갱신했습니다. 기존 교사 수정값은 유지했습니다." }]
+          importedAt,
+          feedbackDelivery,
+          revisionLog: [...(existing.revisionLog || []), { editedAt: importedAt, label: revisionLabel }]
         } : {
           id: `${state.classId}:${studentNumber}`,
           classId: state.classId,
           studentNumber,
           sourcePayload: payload,
           sourceFileName: file.name,
-          importedAt: nowIso(),
+          importedAt,
           teacherPatches: [],
           teacherAddedItems: [],
           revisionLog: []
@@ -623,24 +809,45 @@
     window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
-  function exportStudentJson() {
+  async function exportStudentJson() {
     const student = currentStudent();
     if (!student) return;
-    const payload = applyPatches(student);
-    payload.exportedAt = nowIso();
-    downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }), `수시지원상담카드_${safeFilePart(student.studentNumber, "학번미입력")}_${fileTimestamp()}.anjwacard`);
+    const exportedAt = nowIso();
+    const reviewedSnapshot = applyPatches(student);
+    const feedback = window.SusiCardTransfer.createTeacherFeedback(student, reviewedSnapshot, exportedAt);
+    student.feedbackDelivery = {
+      exportedAt,
+      reviewedSnapshot: clone(reviewedSnapshot),
+      teacherFeedbackSignature: teacherFeedbackSignature(student),
+      status: "pending",
+      returnedAt: "",
+      appliedAt: "",
+      comparison: null
+    };
+    student.revisionLog = [
+      ...(student.revisionLog || []),
+      { editedAt: exportedAt, label: "학생에게 전달할 교사 피드백 확인본을 저장했습니다." }
+    ];
+    await saveStudent(student);
+    downloadBlob(
+      new Blob([JSON.stringify(feedback, null, 2)], { type: "application/json;charset=utf-8" }),
+      `교사피드백_${safeFilePart(student.studentNumber, "학번미입력")}_${fileTimestamp(exportedAt)}.anjwacard`
+    );
+    await refreshStudents(student.id);
+    showToast("학생에게 전달할 교사 피드백 확인본을 저장했습니다.");
   }
 
   function printableStudent(student) {
     const payload = applyPatches(student);
     const items = payloadItems(payload);
-    return `<section class="print-student"><header><h1>${escapeHtml(student.studentNumber || "학번 미입력")} 수시 지원 상담카드</h1><p>출력 ${escapeHtml(localDateTime(nowIso()))}</p></header><table><thead><tr><th>순위</th><th>대학·캠퍼스</th><th>학과·모집단위</th><th>전형</th><th>모집</th><th>수능최저</th><th>최종 발표일</th><th>판단</th></tr></thead><tbody>${items.map((item, index) => `<tr><td>${item.exemptFromSixLimit ? "별도" : index + 1}</td><td>${escapeHtml(item.university)} ${escapeHtml(item.campus)}</td><td>${escapeHtml(item.targetDepartment || item.department)}</td><td>${escapeHtml(item.targetAdmission || item.admission)}</td><td>${escapeHtml(effectiveValue(item, "quota"))}</td><td>${escapeHtml(effectiveValue(item, "minimum"))}</td><td>${escapeHtml(effectiveValue(item, "announcementDate"))}</td><td>${escapeHtml(item.strategy || "")}</td></tr>`).join("")}</tbody></table><h2>담임교사 종합 의견</h2><p class="opinion">${escapeHtml(payload.overallOpinion || "")}</p></section>`;
+    const comparisons = items.filter((item) => item.similarDepartmentCandidates?.length).map((item) => `<div><strong>${escapeHtml(item.university)} · ${escapeHtml(item.targetDepartment || item.department)}</strong><span>${item.similarDepartmentCandidates.map((candidate) => `${escapeHtml(candidate.university)} ${escapeHtml(candidate.department)}${candidate.note ? ` — ${escapeHtml(candidate.note)}` : ""}`).join("<br>")}</span></div>`).join("");
+    return `<section class="print-student"><header><h1>${escapeHtml(student.studentNumber || "학번 미입력")} 수시 지원 상담카드</h1><p>출력 ${escapeHtml(localDateTime(nowIso()))}</p></header><table><thead><tr><th>순위</th><th>대학·캠퍼스</th><th>학과·모집단위</th><th>전형</th><th>모집</th><th>수능최저</th><th>최종 발표일</th><th>판단</th></tr></thead><tbody>${items.map((item, index) => `<tr><td>${item.exemptFromSixLimit ? "별도" : index + 1}</td><td>${escapeHtml(item.university)} ${escapeHtml(item.campus)}</td><td>${escapeHtml(item.targetDepartment || item.department)}</td><td>${escapeHtml(item.targetAdmission || item.admission)}</td><td>${escapeHtml(effectiveValue(item, "quota"))}</td><td>${escapeHtml(effectiveValue(item, "minimum"))}</td><td>${escapeHtml(effectiveValue(item, "announcementDate"))}</td><td>${escapeHtml(item.strategy || "")}</td></tr>`).join("")}</tbody></table>${comparisons ? `<h2>검토 중인 유사학과</h2><div class="print-comparisons">${comparisons}</div>` : ""}<h2>담임교사 종합 의견</h2><p class="opinion">${escapeHtml(payload.overallOpinion || "")}</p></section>`;
   }
 
   function openPrintDocument(students, title) {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return showToast("팝업 차단을 해제한 뒤 다시 시도하세요.");
-    printWindow.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo",sans-serif;color:#17211c;margin:0}.print-student{page-break-after:always}.print-student:last-child{page-break-after:auto}header{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #17211c;margin-bottom:12px}h1{font-size:24px}header p{font-size:12px;color:#66736d}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccd6d0;padding:7px;text-align:left;vertical-align:top}th{background:#eef3f0}h2{font-size:15px;margin:14px 0 5px}.opinion{min-height:50px;border:1px solid #ccd6d0;padding:8px;white-space:pre-wrap}</style></head><body>${students.map(printableStudent).join("")}<script>window.onload=()=>setTimeout(()=>window.print(),200)<\/script></body></html>`);
+    printWindow.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:"Apple SD Gothic Neo",sans-serif;color:#17211c;margin:0}.print-student{page-break-after:always}.print-student:last-child{page-break-after:auto}header{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #17211c;margin-bottom:12px}h1{font-size:24px}header p{font-size:12px;color:#66736d}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccd6d0;padding:7px;text-align:left;vertical-align:top}th{background:#eef3f0}h2{font-size:15px;margin:14px 0 5px}.print-comparisons{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.print-comparisons>div{display:grid;gap:2px;padding:6px;border:1px solid #ccd6d0;font-size:10px}.print-comparisons span{line-height:1.45}.opinion{min-height:50px;border:1px solid #ccd6d0;padding:8px;white-space:pre-wrap}</style></head><body>${students.map(printableStudent).join("")}<script>window.onload=()=>setTimeout(()=>window.print(),200)<\/script></body></html>`);
     printWindow.document.close();
   }
 
@@ -650,10 +857,12 @@
 
   function exportClassCsv() {
     const className = state.classes.find((item) => item.id === state.classId)?.name || "반";
-    const rows = [["반", "학번", "순위", "대학", "캠퍼스", "학과·모집단위", "전형", "2027 모집인원", "수능최저", "최종 합격자 발표일", "최근 입결", "지원 판단", "상담 메모", "교사 수정 수"]];
+    const rows = [["반", "학번", "순위", "대학", "캠퍼스", "학과·모집단위", "전형", "2027 모집인원", "수능최저", "최종 합격자 발표일", "최근 입결", "지원 판단", "상담 메모", "검토 중인 유사학과", "교사 수정 수", "피드백 상태", "피드백 이후 학생 변경"]];
     state.students.forEach((student) => {
       const payload = applyPatches(student);
-      payloadItems(payload).forEach((item, index) => rows.push([className, student.studentNumber, item.exemptFromSixLimit ? "별도" : index + 1, item.university, item.campus, item.targetDepartment || item.department, item.targetAdmission || item.admission, effectiveValue(item, "quota"), effectiveValue(item, "minimum"), effectiveValue(item, "announcementDate"), recentResultText(item), item.strategy, item.memo, student.teacherPatches?.length || 0]));
+      const status = feedbackState(student);
+      const returnChanges = (status.comparison?.changes || []).map((entry) => entry.label).join(" / ");
+      payloadItems(payload).forEach((item, index) => rows.push([className, student.studentNumber, item.exemptFromSixLimit ? "별도" : index + 1, item.university, item.campus, item.targetDepartment || item.department, item.targetAdmission || item.admission, effectiveValue(item, "quota"), effectiveValue(item, "minimum"), effectiveValue(item, "announcementDate"), recentResultText(item), item.strategy, item.memo, (item.similarDepartmentCandidates || []).map((candidate) => `${candidate.university} ${candidate.department}${candidate.note ? ` (${candidate.note})` : ""}`).join(" / "), student.teacherPatches?.length || 0, status.label, returnChanges]));
     });
     const csv = "\ufeff" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${safeFilePart(className, "반")}_수시상담요약_${fileTimestamp()}.csv`);
@@ -661,7 +870,7 @@
 
   function backupClass() {
     const classRecord = state.classes.find((item) => item.id === state.classId);
-    const payload = { format: "anjwa-teacher-dashboard-class", schemaVersion: 1, exportedAt: nowIso(), class: classRecord, students: state.students };
+    const payload = { format: "anjwa-teacher-dashboard-class", schemaVersion: 2, exportedAt: nowIso(), class: classRecord, students: state.students };
     downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }), `${safeFilePart(classRecord?.name, "반")}_상담대시보드백업_${fileTimestamp()}.json`);
   }
 
@@ -674,15 +883,20 @@
 
   byId("teacherGateForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (byId("teacherPassword").value !== PASSWORD) {
+    const submitButton = event.submitter;
+    if (submitButton) submitButton.disabled = true;
+    const matched = await passwordMatches(byId("teacherPassword").value);
+    if (!matched) {
       byId("gateError").textContent = "비밀번호가 맞지 않습니다.";
       byId("gateError").hidden = false;
+      if (submitButton) submitButton.disabled = false;
       return;
     }
     sessionStorage.setItem(SESSION_KEY, "1");
     byId("teacherGate").hidden = true;
     byId("teacherApp").hidden = false;
     await initializeApp();
+    if (submitButton) submitButton.disabled = false;
   });
 
   byId("lockDashboard").addEventListener("click", () => {

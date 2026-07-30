@@ -7,9 +7,12 @@ const state = {
   lineageOptionsByHistoryId: new Map(),
   lineageLoadedCodes: new Set(),
   searchAliases: new Map(),
+  departmentSearchGroups: [],
   historyLoadedCodes: new Set(),
   rows: [],
   filtered: [],
+  universitiesByRegion: new Map(),
+  referenceGrade: null,
   selectedYear: "",
   visibleCount: RESULTS_PER_PAGE,
   targetSlot: 0,
@@ -19,6 +22,35 @@ const byId = (id) => document.getElementById(id);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 })[char]);
+const SEARCH_MODE_STORAGE_KEY = "anjwa.admissionSearch.mode";
+const REFERENCE_GRADE_STORAGE_KEY = "anjwa.admissionSearch.referenceGrade";
+
+function readSearchModePreference() {
+  try {
+    const value = localStorage.getItem(SEARCH_MODE_STORAGE_KEY);
+    return value === "filter" ? "filter" : "region";
+  } catch {
+    return "region";
+  }
+}
+
+function setSearchMode(mode, remember = true) {
+  const selectedMode = mode === "filter" ? "filter" : "region";
+  const regionSelected = selectedMode === "region";
+  byId("regionModePanel").hidden = !regionSelected;
+  byId("filterModePanel").hidden = regionSelected;
+  byId("regionModeTab").setAttribute("aria-selected", String(regionSelected));
+  byId("filterModeTab").setAttribute("aria-selected", String(!regionSelected));
+  byId("regionModeTab").tabIndex = regionSelected ? 0 : -1;
+  byId("filterModeTab").tabIndex = regionSelected ? -1 : 0;
+  if (remember) {
+    try {
+      localStorage.setItem(SEARCH_MODE_STORAGE_KEY, selectedMode);
+    } catch {
+      // 브라우저 저장소를 사용할 수 없어도 모드 전환 자체는 유지한다.
+    }
+  }
+}
 
 function cleanAdmissionName(value) {
   const text = String(value ?? "").trim();
@@ -47,6 +79,26 @@ const SPECIAL_UNIVERSITY_ALIASES = {
   "한국에너지공과대학교": "KENTECH·켄텍",
   "한국전통문화대학교": "한국전통문화대"
 };
+
+const REGION_MAP_LAYOUT = [
+  { name: "인천", column: 1, row: 2 },
+  { name: "서울", column: 2, row: 2 },
+  { name: "경기", column: 2, row: 3 },
+  { name: "강원", column: 4, row: 2 },
+  { name: "충남", column: 2, row: 4 },
+  { name: "충북", column: 3, row: 4 },
+  { name: "세종", column: 2, row: 5 },
+  { name: "대전", column: 3, row: 5 },
+  { name: "경북", column: 4, row: 4 },
+  { name: "대구", column: 4, row: 5 },
+  { name: "전북", column: 2, row: 6 },
+  { name: "경남", column: 4, row: 6 },
+  { name: "울산", column: 5, row: 5 },
+  { name: "부산", column: 5, row: 6 },
+  { name: "광주", column: 2, row: 7 },
+  { name: "전남", column: 3, row: 7 },
+  { name: "제주", column: 1, row: 8 }
+];
 
 function specialUniversities() {
   return state.manifest?.specialUniversities || [];
@@ -83,6 +135,61 @@ function numericValue(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function validReferenceGrade(value) {
+  return value !== null && value >= 1 && value <= 9;
+}
+
+function persistReferenceGrade(value) {
+  try {
+    if (validReferenceGrade(value)) {
+      localStorage.setItem(REFERENCE_GRADE_STORAGE_KEY, value.toFixed(2));
+    } else {
+      localStorage.removeItem(REFERENCE_GRADE_STORAGE_KEY);
+    }
+  } catch {
+    // 로컬 저장이 막혀 있어도 현재 화면의 비교 기능은 유지한다.
+  }
+}
+
+function syncReferenceGradeControl(error = false) {
+  const input = byId("referenceGradeInput");
+  const status = byId("referenceGradeStatus");
+  const hasInput = input.value.trim() !== "";
+  input.setAttribute("aria-invalid", String(error));
+  byId("clearReferenceGrade").hidden = !hasInput;
+  status.classList.toggle("is-error", error);
+  if (error) {
+    status.textContent = "1.00부터 9.00 사이의 등급을 입력해주세요.";
+  } else if (validReferenceGrade(state.referenceGrade)) {
+    status.textContent = `${state.referenceGrade.toFixed(2)}등급을 50%·70% CUT과 단순 비교합니다. 입력값은 이 기기에만 저장됩니다.`;
+  } else {
+    status.textContent = "선택 입력 · 기기에만 저장되며 합격 가능성을 판정하지 않습니다.";
+  }
+}
+
+function restoreReferenceGrade() {
+  let stored = "";
+  try {
+    stored = localStorage.getItem(REFERENCE_GRADE_STORAGE_KEY) || "";
+  } catch {
+    stored = "";
+  }
+  const value = numericValue(stored);
+  state.referenceGrade = validReferenceGrade(value) ? value : null;
+  byId("referenceGradeInput").value = state.referenceGrade === null ? "" : state.referenceGrade.toFixed(2);
+  syncReferenceGradeControl();
+}
+
+function updateReferenceGradeFromInput() {
+  const input = byId("referenceGradeInput");
+  const raw = input.value.trim();
+  const value = numericValue(raw);
+  const error = raw !== "" && !validReferenceGrade(value);
+  state.referenceGrade = error || raw === "" ? null : value;
+  persistReferenceGrade(state.referenceGrade);
+  syncReferenceGradeControl(error);
+}
+
 const AUTO_GRADE_FIELDS = ["result_70", "result_50", "result_90", "result_85", "result_80", "result_75", "result_mean"];
 
 function gradeMetricValue(row) {
@@ -99,8 +206,147 @@ function hasPublishedGrade(row) {
   return ALL_GRADE_FIELDS.some((field) => numericValue(row[field]) !== null);
 }
 
+function normalizeDepartmentSearch(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .toLocaleLowerCase("ko")
+    .replace(/[^0-9a-z가-힣]/g, "");
+}
+
+function matchingDepartmentGroups(query) {
+  const normalizedQuery = normalizeDepartmentSearch(query);
+  if (normalizedQuery.length < 2) return [];
+  return state.departmentSearchGroups.filter((group) => (group.keywords || []).some((keyword) => {
+    const normalizedKeyword = normalizeDepartmentSearch(keyword);
+    return normalizedKeyword === normalizedQuery
+      || normalizedKeyword.startsWith(normalizedQuery)
+      || normalizedQuery.includes(normalizedKeyword);
+  }));
+}
+
+function departmentMatchesGroups(row, groups) {
+  if (!groups.length) return false;
+  const department = normalizeDepartmentSearch(row.department);
+  return groups.some((group) => (group.keywords || []).some((keyword) => {
+    const normalizedKeyword = normalizeDepartmentSearch(keyword);
+    return normalizedKeyword && department.includes(normalizedKeyword);
+  }));
+}
+
+function syncRelatedSearchNotice(groups) {
+  const notice = byId("relatedSearchNotice");
+  if (!groups.length) {
+    notice.hidden = true;
+    notice.textContent = "";
+    return;
+  }
+  notice.hidden = false;
+  notice.textContent = `관련 학과 범위: ${groups.map((group) => group.label).join(", ")}`;
+}
+
 function selectedRegions() {
   return new Set([...document.querySelectorAll('input[name="regionFilter"]:checked')].map((input) => input.value));
+}
+
+function indexRegionUniversities() {
+  const index = new Map((state.manifest?.regions || []).map((region) => [region, new Set()]));
+  state.rows.forEach((row) => {
+    if (!row.region || !row.university) return;
+    if (!index.has(row.region)) index.set(row.region, new Set());
+    index.get(row.region).add(row.university);
+  });
+  specialUniversities().forEach((item) => {
+    if (!item.region || !item.name) return;
+    if (!index.has(item.region)) index.set(item.region, new Set());
+    index.get(item.region).add(item.name);
+  });
+  state.universitiesByRegion = new Map([...index].map(([region, universities]) => [
+    region,
+    [...universities].sort((a, b) => a.localeCompare(b, "ko"))
+  ]));
+}
+
+function renderRegionMap() {
+  const availableRegions = new Set(state.manifest?.regions || []);
+  const layout = REGION_MAP_LAYOUT.filter((item) => availableRegions.has(item.name));
+  byId("regionMap").innerHTML = layout.map((item) => `
+    <button
+      class="region-map-button"
+      type="button"
+      data-map-region="${escapeHtml(item.name)}"
+      style="--map-column:${item.column};--map-row:${item.row}"
+      aria-pressed="false"
+      aria-label="${escapeHtml(item.name)} 지역 대학 보기"
+    >
+      <strong>${escapeHtml(item.name)}</strong>
+      <span data-region-count>0개교</span>
+    </button>
+  `).join("");
+}
+
+function selectedRegionUniversities(regions) {
+  return [...new Set([...regions].flatMap((region) => state.universitiesByRegion.get(region) || []))]
+    .sort((a, b) => a.localeCompare(b, "ko"));
+}
+
+function syncRegionExplorer() {
+  const regions = selectedRegions();
+  const orderedRegions = (state.manifest?.regions || []).filter((region) => regions.has(region));
+  const universities = selectedRegionUniversities(regions);
+  const allUniversities = [...new Set(state.rows.map((row) => row.university).filter(Boolean))];
+  const selectedUniversity = byId("universityFilter").value;
+
+  document.querySelectorAll("[data-map-region]").forEach((button) => {
+    const region = button.dataset.mapRegion;
+    const selected = regions.has(region);
+    const count = state.universitiesByRegion.get(region)?.length || 0;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-label", `${region} 지역 대학 ${count}개교 보기`);
+    button.querySelector("[data-region-count]").textContent = `${count}개교`;
+  });
+
+  byId("clearMapRegion").disabled = regions.size === 0;
+  byId("regionSelectionLabel").textContent = orderedRegions.length
+    ? orderedRegions.length <= 3 ? orderedRegions.join(" · ") : `${orderedRegions.length}개 지역`
+    : "전국";
+  byId("regionUniversityCount").textContent = regions.size
+    ? `${universities.length.toLocaleString("ko-KR")}개 대학`
+    : `${allUniversities.length.toLocaleString("ko-KR")}개 대학`;
+  byId("regionSelectionHelp").textContent = regions.size
+    ? "대학을 선택하면 아래 입시결과가 해당 대학으로 좁혀집니다."
+    : "지도에서 지역을 선택하면 해당 지역의 대학 목록이 나타납니다.";
+  byId("regionUniversityList").innerHTML = regions.size
+    ? universities.map((university) => `
+      <button type="button" data-map-university="${escapeHtml(university)}" class="${university === selectedUniversity ? "is-selected" : ""}">
+        ${escapeHtml(university)}
+      </button>
+    `).join("") || '<p class="region-university-empty">선택한 지역에서 조회할 수 있는 대학이 없습니다.</p>'
+    : '<p class="region-university-empty">지도에서 지역을 먼저 선택해주세요.</p>';
+}
+
+function setMapRegion(region) {
+  const current = selectedRegions();
+  const clearSelection = current.size === 1 && current.has(region);
+  document.querySelectorAll('input[name="regionFilter"]').forEach((input) => {
+    input.checked = !clearSelection && input.value === region;
+  });
+  if (!clearSelection) {
+    const universities = new Set(state.universitiesByRegion.get(region) || []);
+    if (byId("universityFilter").value && !universities.has(byId("universityFilter").value)) {
+      byId("universityFilter").value = "";
+    }
+  }
+  syncRegionExplorer();
+  render(true);
+}
+
+function reconcileUniversityWithRegions() {
+  const regions = selectedRegions();
+  const selectedUniversity = byId("universityFilter").value;
+  if (!regions.size || !selectedUniversity) return;
+  const universities = new Set(selectedRegionUniversities(regions));
+  if (!universities.has(selectedUniversity)) byId("universityFilter").value = "";
 }
 
 function coverageScore(row) {
@@ -275,6 +521,122 @@ function showToast(message) {
   showToast.timer = setTimeout(() => { toast.hidden = true; }, 1800);
 }
 
+function cardActionLabel() {
+  return state.targetBucket === "exempt"
+    ? "별도 지원에 담기"
+    : state.targetSlot
+      ? `${slotLabel(state.targetSlot)}에 담기`
+      : "상담카드에 추가";
+}
+
+function comparisonGradeText(item) {
+  const cuts = FIXED_CUTS.map(({ field, label }) => {
+    const value = numericValue(item[field]);
+    return validReferenceGrade(value) ? `${label} ${value.toFixed(2)}` : `${label} -`;
+  });
+  return cuts.join(" · ");
+}
+
+function comparisonReferenceText(item) {
+  if (!validReferenceGrade(state.referenceGrade)) return "-";
+  const cuts = FIXED_CUTS.map(({ field, label }) => ({
+    label,
+    value: numericValue(item[field])
+  })).filter((entry) => validReferenceGrade(entry.value));
+  if (!cuts.length) return "비교 가능한 CUT 없음";
+  return cuts.map((entry) => `${entry.label} ${gradeDifference(entry.value).text.replace("숫자상 ", "")}`).join(" · ");
+}
+
+function comparisonAdditionalText(item) {
+  const info = additionalMetricInfo(item);
+  return `${info.label} ${info.value}`;
+}
+
+function comparisonTableRow(label, items, renderCell) {
+  return `<tr><th scope="row">${escapeHtml(label)}</th>${items.map((item) => `<td>${renderCell(item)}</td>`).join("")}</tr>`;
+}
+
+function renderComparisonUI() {
+  const items = AdmissionComparisonStore.read();
+  const cardIds = savedIds();
+  const dock = byId("compareDock");
+  dock.hidden = items.length === 0;
+  document.body.classList.toggle("has-compare-dock", items.length > 0);
+  byId("compareDockCount").textContent = `${items.length}/${AdmissionComparisonStore.MAX_ITEMS}`;
+  byId("clearCompareItems").disabled = items.length === 0;
+
+  if (!items.length) {
+    byId("compareTable").innerHTML = '<p class="compare-dialog-empty">입결 검색 결과에서 비교할 후보를 담아주세요.</p>';
+    return;
+  }
+
+  const rows = [
+    comparisonTableRow("학년도·지역", items, (item) => `${escapeHtml(item.year)}학년도<br>${escapeHtml(item.region || "지역 미확인")}`),
+    comparisonTableRow("전형", items, (item) => escapeHtml(cleanAdmissionName(item.admission) || "-")),
+    comparisonTableRow("분류", items, (item) => `${escapeHtml(item.category || "-")}<br>${escapeHtml(item.admissionType || "세부 유형 미분류")}`),
+    comparisonTableRow("모집인원", items, (item) => escapeHtml(countWithUnit(item.quota, "명"))),
+    comparisonTableRow("경쟁률", items, (item) => escapeHtml(competitionSummary(item))),
+    comparisonTableRow("학생부 CUT", items, (item) => escapeHtml(comparisonGradeText(item))),
+    comparisonTableRow("추합·충원", items, (item) => escapeHtml(comparisonAdditionalText(item))),
+    comparisonTableRow("원문", items, (item) => {
+      const sourceUrl = item.officeSourceUrl || item.sourceUrl;
+      return sourceUrl
+        ? `<a class="compare-source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">원문 확인</a>`
+        : "연결 없음";
+    }),
+    ...(validReferenceGrade(state.referenceGrade)
+      ? [comparisonTableRow(`내 ${state.referenceGrade.toFixed(2)}`, items, (item) => `<span class="compare-reference-cell">${escapeHtml(comparisonReferenceText(item))}</span>`)]
+      : []),
+    comparisonTableRow("후보 관리", items, (item) => `<div class="compare-table-actions">
+      <button type="button" data-compare-card-id="${escapeHtml(item.id)}" ${cardIds.has(item.id) ? "disabled" : ""}>${cardIds.has(item.id) ? "상담카드에 추가됨" : escapeHtml(cardActionLabel())}</button>
+      <button type="button" data-remove-comparison="${escapeHtml(item.id)}">비교함에서 삭제</button>
+    </div>`)
+  ].join("");
+
+  byId("compareTable").innerHTML = `<table class="compare-table" style="min-width:${106 + items.length * 170}px">
+    <thead><tr><th scope="col">비교 항목</th>${items.map((item) => `<th scope="col"><div class="compare-table-candidate"><strong>${escapeHtml(item.university)}</strong><span>${escapeHtml(item.department)}</span></div></th>`).join("")}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+async function addRowToConsultationCard(row, button) {
+  if (state.targetBucket === "exempt" && !ConsultationCardStore.isExemptUniversity(row.university)) {
+    showToast("현재 이 대학은 지원 횟수 제한 제외 목록으로 분류되지 않았습니다.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "3개년 자료 확인 중";
+  try {
+    await ensureUniversityHistory(row);
+  } catch {
+    button.disabled = false;
+    button.textContent = cardActionLabel();
+    showToast("3개년 자료를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+    return;
+  }
+  const history = trendRows(row).filter((entry) => entry.id);
+  const result = ConsultationCardStore.place({ ...row, history }, state.targetSlot || undefined);
+  if (!result.added) {
+    button.disabled = false;
+    button.textContent = cardActionLabel();
+  }
+  if (result.added) {
+    updateCardCount();
+    render();
+    const destination = result.bucket === "exempt" ? "별도 지원" : slotLabel(result.slot);
+    showToast(`${destination}에 ${row.university} ${row.department}을 담았습니다.`);
+    if (state.targetSlot || state.targetBucket) setTimeout(() => { window.location.href = "./grade3-consultation-card.html"; }, 550);
+  } else if (result.reason === "duplicate") {
+    showToast("이미 상담카드에 추가한 전형입니다.");
+  } else if (result.reason === "occupied") {
+    showToast("해당 칸에 이미 지원안이 있습니다. 먼저 삭제해주세요.");
+  } else if (result.reason === "full") {
+    showToast("일반 지원 9개가 모두 찼습니다. 기존 지원안을 삭제한 뒤 추가하세요.");
+  } else if (result.reason === "locked") {
+    showToast("앞 순위 지원안을 먼저 채우면 이 예비 칸이 열립니다.");
+  }
+}
+
 function detailMetric(label, value, suppressed = false) {
   const text = value || (suppressed ? "미공개" : "-");
   return `<div><dt>${label}</dt><dd>${escapeHtml(text)}</dd></div>`;
@@ -379,6 +741,50 @@ function gradeCutMetric(row) {
   }).join("")}</span>`;
 
   return `<dl class="metric metric-primary grade-cut-metric"><dt>학생부 성적 CUT</dt><dd>${content}</dd></dl>`;
+}
+
+function gradeScalePosition(value) {
+  return Math.max(0, Math.min(100, ((value - 1) / 8) * 100));
+}
+
+function gradeDifference(cut) {
+  const difference = state.referenceGrade - cut;
+  const absolute = Math.abs(difference);
+  if (absolute < 0.05) return { text: "숫자상 거의 같음", className: "is-near" };
+  if (difference < 0) return { text: `숫자상 ${absolute.toFixed(2)}등급 앞`, className: "is-ahead" };
+  return { text: `숫자상 ${absolute.toFixed(2)}등급 뒤`, className: "is-behind" };
+}
+
+function referenceGradeComparison(row) {
+  if (!validReferenceGrade(state.referenceGrade)) return "";
+  const cuts = FIXED_CUTS.map(({ field, label }) => ({
+    label,
+    value: numericValue(row[field])
+  })).filter((item) => validReferenceGrade(item.value));
+  const myPosition = gradeScalePosition(state.referenceGrade);
+  const ariaSummary = cuts.length
+    ? cuts.map((item) => `${item.label} 컷 ${item.value.toFixed(2)}`).join(", ")
+    : "50%와 70% 컷 미공개";
+
+  return `<section class="reference-grade-comparison" aria-label="내 참고등급 ${state.referenceGrade.toFixed(2)}, ${escapeHtml(ariaSummary)}">
+    <header><strong>내 참고등급 ${state.referenceGrade.toFixed(2)}</strong><span>단순 등급 위치</span></header>
+    ${cuts.length ? `
+      <div class="reference-position-track" aria-hidden="true">
+        <div class="reference-position-axis"><span>1등급</span><span>5등급</span><span>9등급</span></div>
+        <div class="reference-position-line">
+          <i class="reference-position-marker is-mine" style="left:${myPosition}%"><b>나</b></i>
+          ${cuts.map((item) => `<i class="reference-position-marker" style="left:${gradeScalePosition(item.value)}%"><b>${escapeHtml(item.label)}</b></i>`).join("")}
+        </div>
+      </div>
+      <div class="reference-comparison-list">
+        ${cuts.map((item) => {
+          const difference = gradeDifference(item.value);
+          return `<span class="${difference.className}"><b>${escapeHtml(item.label)} ${item.value.toFixed(2)}</b> · ${escapeHtml(difference.text)}</span>`;
+        }).join("")}
+      </div>
+    ` : '<p class="reference-grade-empty">비교할 50%·70% CUT이 공개되지 않았습니다.</p>'}
+    <p>대학별 반영교과와 산출방법이 달라 같은 등급도 결과가 달라질 수 있습니다. 지원 판단이 아닌 원문 확인용 참고값입니다.</p>
+  </section>`;
 }
 
 function countWithUnit(value, unit) {
@@ -665,12 +1071,17 @@ function displayPair(first, second, suppressed) {
 }
 
 function renderGradeTrack(rows) {
-  const points = rows.map((row) => ({ year: row.year, value: Number(gradeValue(row)) })).filter((point) => Number.isFinite(point.value) && point.value > 0);
+  const points = rows.map((row) => ({ year: row.year, value: numericValue(gradeValue(row)) }))
+    .filter((point) => validReferenceGrade(point.value));
   if (points.length < 2) return '<p class="trend-help">등급 수치가 2개년 이상 확인되면 추이 그래프가 나타납니다.</p>';
-  return `<div class="grade-track" aria-label="등급 추이 그래프">
+  const referenceRow = validReferenceGrade(state.referenceGrade)
+    ? `<div class="grade-row is-reference"><strong>나</strong><div><i style="left:${gradeScalePosition(state.referenceGrade)}%"></i></div><span>${state.referenceGrade.toFixed(2)}</span></div>`
+    : "";
+  return `<div class="grade-track" aria-label="등급 추이 그래프${referenceRow ? `와 내 참고등급 ${state.referenceGrade.toFixed(2)}` : ""}">
     <div class="grade-axis"><span>1등급</span><span>5등급</span><span>9등급</span></div>
+    ${referenceRow}
     ${points.map((point) => {
-      const position = Math.max(0, Math.min(100, ((point.value - 1) / 8) * 100));
+      const position = gradeScalePosition(point.value);
       return `<div class="grade-row"><strong>${point.year}</strong><div><i style="left:${position}%"></i></div><span>${point.value.toFixed(2)}</span></div>`;
     }).join("")}
   </div>`;
@@ -682,7 +1093,12 @@ function render(resetLimit = false) {
   const category = byId("categoryFilter").value;
   const admissionType = byId("admissionTypeFilter").value;
   const group = byId("groupFilter").value;
-  const query = byId("textFilter").value.trim().toLocaleLowerCase("ko");
+  const rawQuery = byId("textFilter").value.trim();
+  const query = rawQuery.toLocaleLowerCase("ko");
+  const relatedGroups = byId("relatedDepartmentFilter").checked
+    ? matchingDepartmentGroups(rawQuery)
+    : [];
+  syncRelatedSearchNotice(relatedGroups);
   const ownership = byId("ownershipFilter").value;
   const regions = selectedRegions();
   const gradeMin = numericValue(byId("gradeMinFilter").value);
@@ -705,7 +1121,7 @@ function render(resetLimit = false) {
     }
     if (query) {
       const haystack = `${row.university} ${row.admission} ${row.admissionType} ${row.department} ${row.departmentGroup} ${row.region} ${row.ownershipGroup} ${aliasText(row)}`.toLocaleLowerCase("ko");
-      if (!haystack.includes(query)) return false;
+      if (!haystack.includes(query) && !departmentMatchesGroups(row, relatedGroups)) return false;
     }
     return true;
   });
@@ -716,15 +1132,13 @@ function render(resetLimit = false) {
     ? `<strong>${escapeHtml(special.name)}</strong><span>표준화된 3개년 입결 자료가 없어 임의의 등급 행을 만들지 않았습니다. 2027학년도 공식 모집요강을 확인해 상담카드에 직접 작성하세요.</span><a href="./grade3-consultation-card.html?bucket=exempt">상담카드 별도 지원란에서 작성</a>`
     : "조건에 맞는 결과가 없습니다.";
   const cardIds = savedIds();
+  const comparisonIds = new Set(AdmissionComparisonStore.read().map((item) => item.id));
   const visibleRows = state.filtered.slice(0, state.visibleCount);
   byId("resultList").innerHTML = visibleRows.map((row) => {
     const isSaved = cardIds.has(row.id);
+    const isCompared = comparisonIds.has(row.id);
     const admissionName = cleanAdmissionName(row.admission);
-    const buttonText = state.targetBucket === "exempt"
-      ? "별도 지원에 담기"
-      : state.targetSlot
-        ? `${slotLabel(state.targetSlot)}에 담기`
-        : "상담카드에 추가";
+    const buttonText = cardActionLabel();
     const sourceNote = verificationNote(row);
     const sourceLinkLabel = row.verification === "adiga_reference_snapshot" ? "대학어디가 대학 정보" : "대학어디가 원문";
     const volume = admissionVolume(row);
@@ -750,6 +1164,7 @@ function render(resetLimit = false) {
         ${metric("경쟁률", competitionSummary(row))}
         ${metric(volume.label, volume.value)}
       </div>
+      ${referenceGradeComparison(row)}
       <div class="result-controls">
         <details class="result-detail" data-history-id="${escapeHtml(row.id)}">
           <summary>3개년·상세 보기</summary>
@@ -783,9 +1198,14 @@ function render(resetLimit = false) {
             ${row.officeSourceUrl ? `<a href="${escapeHtml(row.officeSourceUrl)}" target="_blank" rel="noopener noreferrer">대학 입학처 원문</a>` : ""}
           </div>
         </details>
-        <button class="add-card-button${isSaved ? " is-saved" : ""}" type="button" data-card-id="${escapeHtml(row.id)}" ${isSaved ? "disabled" : ""}>
-          ${isSaved ? "상담카드에 추가됨" : buttonText}
-        </button>
+        <div class="result-action-buttons">
+          <button class="compare-toggle-button${isCompared ? " is-selected" : ""}" type="button" data-compare-id="${escapeHtml(row.id)}">
+            ${isCompared ? "비교함에서 빼기" : "비교함에 담기"}
+          </button>
+          <button class="add-card-button${isSaved ? " is-saved" : ""}" type="button" data-card-id="${escapeHtml(row.id)}" ${isSaved ? "disabled" : ""}>
+            ${isSaved ? "상담카드에 추가됨" : buttonText}
+          </button>
+        </div>
       </div>
     </article>`;
   }).join("");
@@ -795,6 +1215,7 @@ function render(resetLimit = false) {
   loadMore.textContent = remaining
     ? `다음 ${Math.min(RESULTS_PER_PAGE, remaining)}개 보기 · ${visibleRows.length.toLocaleString("ko-KR")}/${state.filtered.length.toLocaleString("ko-KR")}`
     : "";
+  renderComparisonUI();
 }
 
 byId("resultList").addEventListener("toggle", async (event) => {
@@ -816,49 +1237,28 @@ byId("resultList").addEventListener("toggle", async (event) => {
 }, true);
 
 byId("resultList").addEventListener("click", async (event) => {
+  const compareButton = event.target.closest("[data-compare-id]");
+  if (compareButton) {
+    const row = state.rows.find((item) => item.id === compareButton.dataset.compareId);
+    if (!row) return;
+    const compared = AdmissionComparisonStore.read().some((item) => item.id === row.id);
+    const result = compared
+      ? AdmissionComparisonStore.remove(row.id)
+      : AdmissionComparisonStore.add(row);
+    if (result.reason === "full") {
+      showToast(`비교함에는 최대 ${AdmissionComparisonStore.MAX_ITEMS}개까지 담을 수 있습니다.`);
+    } else if (result.reason === "storage") {
+      showToast("비교함을 현재 기기에 저장하지 못했습니다.");
+    } else {
+      showToast(compared ? `${row.university} 후보를 비교함에서 뺐습니다.` : `${row.university} 후보를 비교함에 담았습니다.`);
+    }
+    return;
+  }
   const button = event.target.closest("[data-card-id]");
   if (!button) return;
   const row = state.rows.find((item) => item.id === button.dataset.cardId);
   if (!row) return;
-  if (state.targetBucket === "exempt" && !ConsultationCardStore.isExemptUniversity(row.university)) {
-    showToast("현재 이 대학은 지원 횟수 제한 제외 목록으로 분류되지 않았습니다.");
-    return;
-  }
-  button.disabled = true;
-  button.textContent = "3개년 자료 확인 중";
-  try {
-    await ensureUniversityHistory(row);
-  } catch (error) {
-    button.disabled = false;
-    button.textContent = "상담카드에 추가";
-    showToast("3개년 자료를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
-    return;
-  }
-  const history = trendRows(row).filter((entry) => entry.id);
-  const result = ConsultationCardStore.place({ ...row, history }, state.targetSlot || undefined);
-  if (!result.added) {
-    button.disabled = false;
-    button.textContent = state.targetBucket === "exempt"
-      ? "별도 지원에 담기"
-      : state.targetSlot
-        ? `${slotLabel(state.targetSlot)}에 담기`
-        : "상담카드에 추가";
-  }
-  if (result.added) {
-    updateCardCount();
-    render();
-    const destination = result.bucket === "exempt" ? "별도 지원" : slotLabel(result.slot);
-    showToast(`${destination}에 ${row.university} ${row.department}을 담았습니다.`);
-    if (state.targetSlot || state.targetBucket) setTimeout(() => { window.location.href = "./grade3-consultation-card.html"; }, 550);
-  } else if (result.reason === "duplicate") {
-    showToast("이미 상담카드에 추가한 전형입니다.");
-  } else if (result.reason === "occupied") {
-    showToast("해당 칸에 이미 지원안이 있습니다. 먼저 삭제해주세요.");
-  } else if (result.reason === "full") {
-    showToast("일반 지원 9개가 모두 찼습니다. 기존 지원안을 삭제한 뒤 추가하세요.");
-  } else if (result.reason === "locked") {
-    showToast("앞 순위 지원안을 먼저 채우면 이 예비 칸이 열립니다.");
-  }
+  await addRowToConsultationCard(row, button);
 });
 
 function coverageRow(year, coverage) {
@@ -893,6 +1293,8 @@ function renderAdvancedMetadata() {
     const alias = SPECIAL_UNIVERSITY_ALIASES[item.name];
     return `<button type="button" data-special-university="${escapeHtml(item.name)}">${escapeHtml(alias || item.name)} · ${escapeHtml(item.region)}</button>`;
   }).join("");
+  renderRegionMap();
+  syncRegionExplorer();
   renderCoverageSummary();
 }
 
@@ -907,6 +1309,7 @@ async function selectYear(year) {
     const searchAlias = state.searchAliases.get(row.id);
     return searchAlias ? { ...row, searchAlias } : row;
   });
+  indexRegionUniversities();
   indexTrendRows(state.rows);
   fillUniversitySelect();
   fillSelect(byId("admissionTypeFilter"), uniqueValues("admissionType"), "전체 세부 유형");
@@ -915,6 +1318,7 @@ async function selectYear(year) {
   const coverage = entry.coverage || state.manifest.yearCoverage?.[year] || AdmissionDataLoader.coverage(state.rows);
   byId("dataScope").textContent = `${entry.universities.length}개 대학 · 성적 공개 ${coverage.gradePercent}% · 경쟁률 공개 ${coverage.competitionPercent}% · 상세에서 대학별 3개년 확인`;
   byId("disclosureLegend").hidden = !state.rows.some((row) => row.suppressedFields?.length);
+  syncRegionExplorer();
   render(true);
 }
 
@@ -933,9 +1337,15 @@ async function init() {
     } else {
       state.targetSlot = 0;
     }
+    setSearchMode(state.targetBucket || state.targetSlot ? "filter" : readSearchModePreference(), false);
+    restoreReferenceGrade();
     state.manifest = await AdmissionDataLoader.loadManifest();
-    const aliasPayload = await AdmissionDataLoader.loadSearchAliases(state.manifest.generatedAt || "current");
+    const [aliasPayload, departmentPayload] = await Promise.all([
+      AdmissionDataLoader.loadSearchAliases(state.manifest.generatedAt || "current"),
+      AdmissionDataLoader.loadDepartmentSearchGroups(state.manifest.generatedAt || "current")
+    ]);
     state.searchAliases = new Map(Object.entries(aliasPayload.historyAliases || {}));
+    state.departmentSearchGroups = Array.isArray(departmentPayload.groups) ? departmentPayload.groups : [];
     const years = [...state.manifest.years].sort((a, b) => b.year.localeCompare(a.year));
     byId("yearFilter").innerHTML = years.map((item) => `<option value="${item.year}">${item.year}학년도 입결</option>`).join("");
     renderAdvancedMetadata();
@@ -952,16 +1362,101 @@ byId("yearFilter").addEventListener("change", async (event) => {
     byId("resultList").innerHTML = `<div class="empty-state">${escapeHtml(error.message)} 잠시 후 다시 시도해주세요.</div>`;
   }
 });
-["universityFilter", "categoryFilter", "admissionTypeFilter", "groupFilter", "sortFilter", "gradeMetricFilter", "ownershipFilter", "publishedGradeFilter"].forEach((id) => byId(id).addEventListener("change", () => render(true)));
+["categoryFilter", "admissionTypeFilter", "groupFilter", "sortFilter", "gradeMetricFilter", "ownershipFilter", "publishedGradeFilter"].forEach((id) => byId(id).addEventListener("change", () => render(true)));
+byId("universityFilter").addEventListener("change", () => {
+  syncRegionExplorer();
+  render(true);
+});
 ["gradeMinFilter", "gradeMaxFilter"].forEach((id) => byId(id).addEventListener("input", () => render(true)));
 byId("textFilter").addEventListener("input", () => render(true));
-byId("regionOptions").addEventListener("change", () => render(true));
+byId("relatedDepartmentFilter").addEventListener("change", () => render(true));
+byId("referenceGradeInput").addEventListener("input", () => {
+  updateReferenceGradeFromInput();
+  render();
+});
+byId("clearReferenceGrade").addEventListener("click", () => {
+  byId("referenceGradeInput").value = "";
+  updateReferenceGradeFromInput();
+  render();
+  byId("referenceGradeInput").focus();
+});
+byId("openCompareDialog").addEventListener("click", () => {
+  renderComparisonUI();
+  const dialog = byId("compareDialog");
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+});
+byId("closeCompareDialog").addEventListener("click", () => {
+  const dialog = byId("compareDialog");
+  if (typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+});
+byId("compareDialog").addEventListener("click", (event) => {
+  if (event.target !== byId("compareDialog")) return;
+  byId("closeCompareDialog").click();
+});
+byId("compareTable").addEventListener("click", async (event) => {
+  const removeButton = event.target.closest("[data-remove-comparison]");
+  if (removeButton) {
+    const item = AdmissionComparisonStore.read().find((candidate) => candidate.id === removeButton.dataset.removeComparison);
+    const result = AdmissionComparisonStore.remove(removeButton.dataset.removeComparison);
+    if (result.removed) showToast(`${item?.university || "선택한"} 후보를 비교함에서 삭제했습니다.`);
+    else if (result.reason === "storage") showToast("비교함을 현재 기기에 저장하지 못했습니다.");
+    return;
+  }
+  const cardButton = event.target.closest("[data-compare-card-id]");
+  if (!cardButton) return;
+  const item = AdmissionComparisonStore.read().find((candidate) => candidate.id === cardButton.dataset.compareCardId);
+  if (!item) return;
+  await addRowToConsultationCard(item, cardButton);
+});
+byId("clearCompareItems").addEventListener("click", () => {
+  const items = AdmissionComparisonStore.read();
+  if (!items.length) return;
+  if (!window.confirm(`임시 비교 후보 ${items.length}개를 모두 삭제할까요?`)) return;
+  const result = AdmissionComparisonStore.clear();
+  showToast(result.cleared ? "임시 비교함을 비웠습니다." : "비교함을 현재 기기에서 지우지 못했습니다.");
+});
+["regionModeTab", "filterModeTab"].forEach((id) => {
+  byId(id).addEventListener("click", () => setSearchMode(id === "filterModeTab" ? "filter" : "region"));
+  byId(id).addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    const nextMode = id === "filterModeTab" ? "region" : "filter";
+    setSearchMode(nextMode);
+    byId(nextMode === "filter" ? "filterModeTab" : "regionModeTab").focus();
+  });
+});
+byId("regionOptions").addEventListener("change", () => {
+  reconcileUniversityWithRegions();
+  syncRegionExplorer();
+  render(true);
+});
+byId("regionMap").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-map-region]");
+  if (!button) return;
+  setMapRegion(button.dataset.mapRegion);
+});
+byId("regionUniversityList").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-map-university]");
+  if (!button) return;
+  byId("universityFilter").value = button.dataset.mapUniversity;
+  syncRegionExplorer();
+  render(true);
+  byId("resultCount").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+byId("clearMapRegion").addEventListener("click", () => {
+  document.querySelectorAll('input[name="regionFilter"]').forEach((input) => { input.checked = false; });
+  syncRegionExplorer();
+  render(true);
+});
 byId("loadMoreResults").addEventListener("click", () => {
   state.visibleCount += RESULTS_PER_PAGE;
   render();
 });
 byId("clearRegions").addEventListener("click", () => {
   document.querySelectorAll('input[name="regionFilter"]').forEach((input) => { input.checked = false; });
+  syncRegionExplorer();
   render(true);
 });
 byId("toggleAdvancedFilters").addEventListener("click", () => {
@@ -975,6 +1470,7 @@ byId("specialUniversityList").addEventListener("click", (event) => {
   const button = event.target.closest("[data-special-university]");
   if (!button) return;
   byId("universityFilter").value = button.dataset.specialUniversity;
+  syncRegionExplorer();
   render(true);
   byId("resultCount").scrollIntoView({ behavior: "smooth", block: "center" });
 });
@@ -983,13 +1479,24 @@ byId("resetFilters").addEventListener("click", () => {
   byId("sortFilter").value = "default";
   byId("gradeMetricFilter").value = "auto";
   byId("publishedGradeFilter").checked = false;
+  byId("relatedDepartmentFilter").checked = false;
   document.querySelectorAll('input[name="regionFilter"]').forEach((input) => { input.checked = false; });
+  syncRegionExplorer();
   render(true);
 });
 window.addEventListener("consultation-card-change", () => {
   updateCardCount();
   render();
 });
-window.addEventListener("storage", updateCardCount);
+window.addEventListener("admission-comparison-change", () => render());
+window.addEventListener("storage", (event) => {
+  updateCardCount();
+  if (event.key === REFERENCE_GRADE_STORAGE_KEY) {
+    restoreReferenceGrade();
+    render();
+  }
+  if (event.key === AdmissionComparisonStore.STORAGE_KEY) render();
+});
 updateCardCount();
+renderComparisonUI();
 init();

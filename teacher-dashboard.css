@@ -53,9 +53,10 @@ select, input[type="search"], textarea { width: 100%; border: 1px solid var(--li
 select, input[type="search"] { min-height: 44px; padding: 9px 12px; }
 textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55; }
 
-.class-summary { display: grid; grid-template-columns: repeat(3, minmax(100px, 160px)) 1fr; align-items: center; gap: 1px; margin: 12px 0 18px; background: var(--line); border: 1px solid var(--line); }
+.class-summary { display: grid; grid-template-columns: repeat(4, minmax(100px, 160px)) 1fr; align-items: center; gap: 1px; margin: 12px 0 18px; background: var(--line); border: 1px solid var(--line); }
 .class-summary > div { min-height: 74px; padding: 13px 16px; background: white; display: flex; flex-direction: column; justify-content: center; }
 .class-summary strong { font-size: 23px; }
+.class-summary strong b { font: inherit; }
 .class-summary span { color: var(--muted); font-size: 13px; }
 .class-summary .class-export-actions { flex-direction: row; justify-content: flex-end; align-items: center; }
 
@@ -69,7 +70,7 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
 .student-row:hover, .student-row.is-active { background: var(--green-soft); border-color: #bcdcca; }
 .student-row strong { font-size: 16px; }
 .student-row span { color: var(--muted); font-size: 13px; }
-.student-row em { color: var(--green); font-size: 12px; font-style: normal; font-weight: 800; }
+.student-row em { font-size: 12px; font-style: normal; font-weight: 800; }
 .student-list-empty { padding: 22px 12px; color: var(--muted); text-align: center; }
 
 .detail-pane { padding: 20px; }
@@ -85,6 +86,42 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
 .provenance-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px 0; }
 .provenance-panel > div { padding: 12px; background: var(--soft); }
 .provenance-panel p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.feedback-status { display: inline-flex; align-items: center; width: fit-content; min-height: 26px; padding: 3px 8px; border-radius: 4px; color: var(--muted); background: var(--soft); font-size: 12px; font-style: normal; font-weight: 850; white-space: nowrap; }
+.feedback-status.is-pending { color: var(--amber); background: var(--amber-soft); }
+.feedback-status.is-applied { color: var(--green); background: var(--green-soft); }
+.feedback-status.is-review { color: var(--red); background: var(--red-soft); }
+.feedback-status.is-none { color: var(--muted); background: var(--soft); }
+.feedback-return-panel { margin: 0 0 18px; padding: 14px; border: 1px solid var(--line); background: #fbfcfb; }
+.feedback-return-panel > header { display: flex; align-items: flex-start; gap: 12px; }
+.feedback-return-panel > header div { min-width: 0; }
+.feedback-return-panel strong { display: block; }
+.feedback-return-panel p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.feedback-return-changes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.feedback-return-changes span { padding: 5px 8px; border: 1px solid #ecc6c1; border-radius: 4px; background: white; color: var(--red); font-size: 12px; font-weight: 750; }
+
+.student-grade-records { margin: 0 0 18px; border: 1px solid var(--line); background: white; }
+.student-grade-records details > summary { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; cursor: pointer; list-style: none; }
+.student-grade-records details > summary::-webkit-details-marker { display: none; }
+.student-grade-records details > summary span { display: grid; gap: 2px; }
+.student-grade-records details > summary strong { font-size: 16px; }
+.student-grade-records details > summary small { color: var(--muted); font-size: 12px; }
+.student-grade-records details > summary em { color: var(--green); font-size: 13px; font-style: normal; font-weight: 800; text-align: right; }
+.student-grade-records details > summary::after { content: "+"; color: var(--muted); font-size: 18px; }
+.student-grade-records details[open] > summary { border-bottom: 1px solid var(--line); background: var(--green-soft); }
+.student-grade-records details[open] > summary::after { content: "−"; }
+.student-grade-records details.is-empty > summary::after { content: ""; }
+.student-grade-records details > p { margin: 0; padding: 16px; color: var(--muted); }
+.teacher-grade-calculation { display: grid; grid-template-columns: minmax(150px, 1fr) auto; align-items: center; gap: 2px 12px; margin: 12px 12px 0; padding: 10px 12px; border-left: 4px solid var(--blue); background: var(--blue-soft); }
+.teacher-grade-calculation span { grid-row: 1 / span 2; color: var(--blue); font-size: 13px; font-weight: 800; }
+.teacher-grade-calculation strong { font-size: 18px; text-align: right; }
+.teacher-grade-calculation strong.is-error { color: var(--red); font-size: 14px; }
+.teacher-grade-calculation small { color: var(--muted); font-size: 11px; text-align: right; }
+.teacher-grade-verification { margin: 8px 12px 0 !important; padding: 9px 11px !important; border-left: 4px solid var(--amber); background: var(--amber-soft); color: #79510f !important; font-size: 12px; font-weight: 750; }
+.teacher-grade-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 12px; }
+.teacher-grade-list > span { min-width: 0; display: grid; gap: 3px; padding: 10px; border: 1px solid var(--line); background: #fbfcfb; }
+.teacher-grade-list b { color: var(--green); font-size: 11px; }
+.teacher-grade-list strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.teacher-grade-list small { color: var(--muted); font-size: 11px; line-height: 1.4; }
 
 .official-lookup { margin: 8px 0 18px; padding: 16px; border: 1px solid #cbdceb; background: #f8fbff; }
 .official-lookup header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
@@ -107,6 +144,15 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
 .plan-facts div { min-height: 76px; padding: 12px; background: var(--soft); }
 .plan-facts span { display: block; color: var(--muted); font-size: 13px; }
 .plan-facts strong { display: block; margin-top: 6px; line-height: 1.4; }
+.teacher-similar-candidates { margin: 0 0 14px; padding: 12px; border: 1px solid #bdd7c9; background: var(--green-soft); }
+.teacher-similar-candidates > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.teacher-similar-candidates > header span { color: var(--muted); font-size: 12px; }
+.teacher-similar-candidates > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.teacher-similar-candidates article { min-width: 0; display: grid; gap: 3px; padding: 9px; border: 1px solid #d5e4dc; background: #fff; }
+.teacher-similar-candidates article strong { overflow-wrap: anywhere; font-size: 13px; }
+.teacher-similar-candidates article span, .teacher-similar-candidates article small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.teacher-similar-candidates article em { color: var(--blue); font-size: 11px; font-style: normal; font-weight: 800; }
+.teacher-similar-candidates article p { margin: 4px 0 0; padding-top: 5px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
 .plan-edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .plan-edit-grid label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; font-weight: 750; }
 .plan-edit-grid input { min-height: 42px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; }
@@ -129,10 +175,12 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
 @media (max-width: 1000px) {
   .class-toolbar { grid-template-columns: repeat(2, 1fr); }
   .class-toolbar label { grid-column: 1 / -1; }
-  .class-summary { grid-template-columns: repeat(3, 1fr); }
+  .class-summary { grid-template-columns: repeat(4, 1fr); }
   .class-summary .class-export-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .dashboard-grid { grid-template-columns: 240px minmax(0, 1fr); }
   .provenance-panel { grid-template-columns: 1fr; }
+  .teacher-grade-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teacher-similar-candidates > div { grid-template-columns: 1fr; }
   .support-plan summary { grid-template-columns: 52px 1fr auto; }
   .plan-admission { grid-column: 2 / -1; }
 }
@@ -146,7 +194,7 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
   .storage-note span { display: block; margin-top: 6px; }
   .class-toolbar { grid-template-columns: 1fr 1fr; }
   .class-toolbar .primary-button { grid-column: 1 / -1; }
-  .class-summary { grid-template-columns: repeat(3, 1fr); }
+  .class-summary { grid-template-columns: repeat(2, 1fr); }
   .class-summary > div { padding: 10px; }
   .class-summary strong { font-size: 19px; }
   .class-summary .class-export-actions { display: grid; grid-template-columns: 1fr; }
@@ -157,6 +205,12 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
   .student-row em { grid-column: 2; }
   .detail-pane { padding: 14px; }
   .lookup-grid, .plan-edit-grid { grid-template-columns: 1fr; }
+  .student-grade-records details > summary { align-items: flex-start; display: grid; }
+  .student-grade-records details > summary em { text-align: left; }
+  .teacher-grade-calculation { grid-template-columns: 1fr; }
+  .teacher-grade-calculation span { grid-row: auto; }
+  .teacher-grade-calculation strong, .teacher-grade-calculation small { text-align: left; }
+  .teacher-grade-list { grid-template-columns: 1fr; }
   .plan-edit-grid .wide { grid-column: auto; }
   .support-plan summary { grid-template-columns: 48px 1fr; gap: 8px; }
   .plan-admission { grid-column: 2; }
@@ -172,4 +226,6 @@ textarea { min-height: 92px; padding: 12px; resize: vertical; line-height: 1.55;
   .dashboard-grid { display: block; }
   .detail-pane { border: 0; padding: 0; }
   .support-plan { break-inside: avoid; }
+  .student-grade-records details > summary::after { display: none; }
+  .student-grade-records details > .teacher-grade-list { display: grid !important; }
 }

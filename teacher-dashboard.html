@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>교사 상담용 대시보드 | 진로진학 플랫폼</title>
-    <link rel="stylesheet" href="./teacher-dashboard.css?v=20260723c">
+    <link rel="stylesheet" href="./teacher-dashboard.css?v=20260730b">
   </head>
   <body>
     <div id="teacherGate" class="teacher-gate">
@@ -49,7 +49,7 @@
         <button id="addClass" class="secondary-button" type="button">반 추가</button>
         <button id="renameClass" class="secondary-button" type="button">반 이름 수정</button>
         <button id="deleteClass" class="danger-button" type="button">현재 반 삭제</button>
-        <button id="importStudents" class="primary-button" type="button">상담카드 불러오기</button>
+        <button id="importStudents" class="primary-button" type="button">수시카드 불러오기</button>
         <input id="studentFiles" type="file" accept=".anjwacard,.json,application/json" multiple hidden>
       </section>
 
@@ -57,6 +57,10 @@
         <div><strong id="classStudentCount">0명</strong><span>저장 학생</span></div>
         <div><strong id="classPlanCount">0개</strong><span>전체 지원안</span></div>
         <div><strong id="classReviewCount">0명</strong><span>교사 검토 학생</span></div>
+        <div class="class-feedback-counts">
+          <strong><b id="classFeedbackPendingCount">0</b> · <b id="classFeedbackAppliedCount">0</b> · <b id="classFeedbackReviewCount">0</b></strong>
+          <span>확인 전 · 완료 · 재검토</span>
+        </div>
         <div class="class-export-actions">
           <button id="printClass" class="secondary-button" type="button">반 전체 PDF</button>
           <button id="exportClassCsv" class="secondary-button" type="button">반 요약 엑셀(.csv)</button>
@@ -90,7 +94,7 @@
                 <p id="detailTimestamp"></p>
               </div>
               <div class="detail-actions">
-                <button id="exportStudent" class="secondary-button" type="button">학생 JSON</button>
+                <button id="exportStudent" class="secondary-button" type="button">교사 피드백 파일</button>
                 <button id="printStudent" class="secondary-button" type="button">학생 PDF</button>
                 <button id="deleteStudent" class="danger-button" type="button">학생 삭제</button>
               </div>
@@ -101,6 +105,19 @@
               <div><span class="source-badge source-teacher">교사 수정</span><p>학생 제출본 위에 별도로 적용되며 다시 불러와도 유지됩니다.</p></div>
               <div><span class="source-badge source-official">공식자료 확인</span><p>대학별 자료를 선택할 때만 불러와 상담카드에 적용합니다.</p></div>
             </section>
+
+            <section id="feedbackReturnPanel" class="feedback-return-panel" hidden>
+              <header>
+                <span id="feedbackReturnBadge" class="feedback-status"></span>
+                <div>
+                  <strong id="feedbackReturnTitle"></strong>
+                  <p id="feedbackReturnMeta"></p>
+                </div>
+              </header>
+              <div id="feedbackReturnChanges" class="feedback-return-changes"></div>
+            </section>
+
+            <section id="studentGradeRecords" class="student-grade-records" aria-label="학생부 과목별 성적"></section>
 
             <section class="official-lookup" aria-labelledby="officialLookupTitle">
               <header>
@@ -142,7 +159,9 @@
     </main>
 
     <script src="./admission-data-loader.js?v=20260723a" defer></script>
-    <script src="./teacher-dashboard.js?v=20260723d" defer></script>
-    <script src="./site-meta.js?v=1.02.00" defer></script>
+    <script src="./admission-grade-calculators.js?v=20260729c" defer></script>
+    <script src="./susi-card-transfer.js?v=20260730d" defer></script>
+    <script src="./teacher-dashboard.js?v=20260730c" defer></script>
+    <script src="./site-meta.js?v=1.03.00" defer></script>
   </body>
 </html>
