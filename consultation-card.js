@@ -1575,23 +1575,30 @@ function scheduleDocumentSave() {
   documentSaveTimer = setTimeout(persistDocumentForm, 280);
 }
 
-function downloadCardFile() {
+async function downloadCardFile() {
   persistDocumentForm();
   const exportedAt = new Date();
-  const payload = ConsultationCardStore.exportData(exportedAt.toISOString());
+  const payload = ConsultationCardStore.exportData(exportedAt.toISOString(), { recordExport: false });
   const studentNumber = safeFilenamePart(payload.studentNumber, "학번미입력");
   const filename = `수시지원상담카드_${studentNumber}_${filenameTimestamp(exportedAt)}.anjwacard`;
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  updateDocumentStatus(ConsultationCardStore.read());
-  showToast(`${filename} 파일을 저장했습니다.`);
+  const result = await window.FileSaveUtils.saveBlob({
+    blob,
+    filename,
+    description: "안좌고 수시 지원 상담카드",
+    accept: { "application/json": [".anjwacard", ".json"] }
+  });
+  if (!result.saved) {
+    showToast("상담카드 저장을 취소했습니다.");
+    return;
+  }
+  const state = ConsultationCardStore.updateDocument({ lastExportedAt: exportedAt.toISOString() });
+  updateDocumentStatus(state);
+  if (result.method === "download") {
+    showToast("브라우저 다운로드 폴더에 저장했습니다.");
+  } else {
+    showToast("선택한 위치에 상담카드를 저장했습니다.");
+  }
 }
 
 const FEEDBACK_ITEM_FIELDS = Object.freeze({
@@ -1830,7 +1837,8 @@ function printConsultationCard() {
     details.forEach((entry, index) => { entry.open = openStates[index]; });
   };
   window.addEventListener("afterprint", restore, { once: true });
-  requestAnimationFrame(() => window.print());
+  showToast("인쇄 창에서 ‘PDF로 저장’을 선택한 뒤 저장 위치를 지정하세요.");
+  window.setTimeout(() => window.print(), 120);
 }
 
 async function loadOptionIndex() {

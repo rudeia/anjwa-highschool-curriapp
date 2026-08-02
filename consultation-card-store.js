@@ -565,9 +565,11 @@
     return { added: normalized.length, state: write(state) };
   }
 
-  function exportData(exportedAt = new Date().toISOString()) {
+  function exportData(exportedAt = new Date().toISOString(), options = {}) {
     const state = read();
-    const next = write({ ...state, lastExportedAt: exportedAt });
+    const next = options.recordExport === false
+      ? state
+      : write({ ...state, lastExportedAt: exportedAt });
     return {
       format: "anjwa-consultation-card",
       schemaVersion: 5,
