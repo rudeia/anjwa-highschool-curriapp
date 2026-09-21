@@ -18,6 +18,12 @@ const curriculumPlanLabels = {
   incoming2025: "2학년(2025학년도 신입생)",
   incoming2024: "3학년(2024학년도 신입생)"
 };
+const currentCurriculumGradeByPlan = {
+  incoming2027: "1",
+  incoming2026: "1",
+  incoming2025: "2",
+  incoming2024: "3"
+};
 const choiceGroupStartOverrides = {
   incoming2024: {
     "3-1": [58]
@@ -2719,6 +2725,8 @@ function getInitialViewFromHash() {
 function bindControls() {
   $("#curriculumPlan").addEventListener("change", (event) => {
     state.activeCurriculumPlan = event.target.value;
+    const currentGrade = currentCurriculumGradeByPlan[state.activeCurriculumPlan];
+    if (currentGrade) $("#curriculumGrade").value = currentGrade;
     saveState(false);
     renderCurriculum();
   });
@@ -3348,6 +3356,8 @@ function renderCurriculumPlanOptions() {
     state.activeCurriculumPlan = curriculumPlanOrder.find((key) => curriculumData.plans[key]) || "";
   }
   select.value = state.activeCurriculumPlan;
+  const currentGrade = currentCurriculumGradeByPlan[state.activeCurriculumPlan];
+  if (currentGrade) $("#curriculumGrade").value = currentGrade;
 }
 
 function renderPlannerPlanOptions() {

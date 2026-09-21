@@ -1,4 +1,4 @@
-const CACHE_NAME = "anjwa-career-shell-v1.06.00";
+const CACHE_NAME = "anjwa-career-shell-v1.06.01";
 const DATA_CACHE_NAME = "anjwa-career-data-v1";
 const OFFLINE_URL = "./index.html";
 const APP_SHELL = [
@@ -93,6 +93,11 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.includes("/admission-data/")) {
     event.respondWith(networkFirst(request, DATA_CACHE_NAME));
+    return;
+  }
+
+  if (["/app.js", "/curriculum-data.js", "/site-meta.js"].some((path) => url.pathname.endsWith(path))) {
+    event.respondWith(networkFirst(request, CACHE_NAME));
     return;
   }
 
