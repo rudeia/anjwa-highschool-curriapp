@@ -5118,9 +5118,9 @@ function renderCurriculumSummary(plan, semesterKeys, semesterCourses) {
   const jointCount = semesterCourses.filter((course) => course.section.includes("공동교육")).length;
   const totalLabel = semesterKeys.length === 1 ? "학기 총학점" : "범위 총학점";
   $("#curriculumSummary").innerHTML = `
-    <span><b>${summary.courseCredits || "-"}</b>교과 이수학점</span>
-    <span><b>${summary.creativeCredits || "3"}</b>창체</span>
-    <span><b>${summary.totalCredits || "-"}</b>${totalLabel}</span>
+    <span><b>${summary.courseCredits ?? "-"}</b>교과 이수학점</span>
+    <span><b>${summary.creativeCredits ?? "-"}</b>창체</span>
+    <span><b>${summary.totalCredits ?? "-"}</b>${totalLabel}</span>
     <span><b>${semesterKeys.length}</b>조회 학기</span>
     <span><b>${semesterCourses.length}</b>표시 과목</span>
     <span><b>${fixedCount}/${choiceCount}/${jointCount}</b>지정·선택·공동</span>
@@ -5394,6 +5394,7 @@ function updateCurriculumScopeControls(scope) {
 }
 
 function getCurriculumSummaryForScope(plan, semesterKeys) {
+  if (!plan.summary) return {};
   if (semesterKeys.length === 1) return plan.summary[semesterKeys[0]] || {};
   return semesterKeys.reduce(
     (total, semesterKey) => {
