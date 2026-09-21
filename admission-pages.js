@@ -427,7 +427,7 @@ window.ANJWA_ADMISSION_PAGES = {
               <label class="recommendation-subject-control">과목으로 찾기<select id="subjectRecommendationSelect"></select></label>
               <label class="recommendation-university-control">대학명 검색<input id="universityRecommendationSearch" type="search" placeholder="예: 서울대, 부산대, 국민대" /></label>
               <label class="recommendation-university-control">학과명 검색<input id="universityMajorSearch" type="search" placeholder="예: 간호, 경영, 기계, 교육" /></label>
-              <label class="recommendation-plan-control">교육과정 기준<select id="recommendationPlanFilter"><option value="all">전체 학년</option><option value="incoming2026">1학년(2026 신입)</option><option value="incoming2025">2학년(2025 신입)</option><option value="incoming2024">3학년(2024 신입)</option></select></label>
+              <label class="recommendation-plan-control">교육과정 기준<select id="recommendationPlanFilter"><option value="all">전체 학년</option><option value="incoming2027">2027 신입생(예정)</option><option value="incoming2026">1학년(2026 신입)</option><option value="incoming2025">2학년(2025 신입)</option><option value="incoming2024">3학년(2024 신입)</option></select></label>
             </div>
             <div class="quick-major-row" id="quickMajorButtons"></div>
             <div class="recommendation-results" id="majorRecommendationResults"></div>

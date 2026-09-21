@@ -9,26 +9,22 @@ const universityRecommendationData = window.ANJWA_UNIVERSITY_RECOMMENDATION_DATA
 const topicData = window.ANJWA_TOPIC_DATA || { topics: [] };
 const subjectGuideData = window.ANJWA_SUBJECT_GUIDE || { areaProfiles: {}, groupProfiles: {} };
 const courseDesignerData = window.ANJWA_COURSE_DESIGNER || { interests: [], optionProfiles: [] };
-const curriculumPlanOrder = ["current2026", "incoming2026", "incoming2025", "incoming2024"];
-const plannerPlanOrder = ["incoming2026", "incoming2025", "incoming2024"];
+const curriculumPlanOrder = ["current2026", "incoming2027", "incoming2026", "incoming2025", "incoming2024"];
+const plannerPlanOrder = ["incoming2027", "incoming2026", "incoming2025", "incoming2024"];
 const curriculumPlanLabels = {
   current2026: "전체 학년(2026학년도 현재)",
+  incoming2027: "2027학년도 신입생(예정)",
   incoming2026: "1학년(2026학년도 신입생)",
   incoming2025: "2학년(2025학년도 신입생)",
   incoming2024: "3학년(2024학년도 신입생)"
 };
 const choiceGroupStartOverrides = {
-  incoming2026: {
-    "3-1": [75]
-  },
-  incoming2025: {
-    "3-1": [76]
-  },
   incoming2024: {
     "3-1": [58]
   }
 };
 const recommendationCurriculumPlans = [
+  { key: "incoming2027", label: "2027 신입생(예정)", shortLabel: "27신입", standard: "2022", className: "grade-1" },
   { key: "incoming2026", label: "1학년(2026 신입)", shortLabel: "26신입", standard: "2022", className: "grade-1" },
   { key: "incoming2025", label: "2학년(2025 신입)", shortLabel: "25신입", standard: "2022", className: "grade-2" },
   { key: "incoming2024", label: "3학년(2024 신입)", shortLabel: "24신입", standard: "2015", className: "grade-3" }
@@ -4757,8 +4753,11 @@ function renderCourseDesignerAdditionalCourses(candidates, grade) {
 }
 
 function getCourseDesignerGradeStage(grade) {
+  if (state.courseDesignerPlan === "incoming2027") {
+    return { label: "입학 후 배우는 과목", description: "3개년 교육과정 미리 살펴보기" };
+  }
   const currentGradeByPlan = { incoming2026: 1, incoming2025: 2, incoming2024: 3 };
-  const currentGrade = currentGradeByPlan[state.courseDesignerPlan] || 1;
+  const currentGrade = currentGradeByPlan[state.courseDesignerPlan];
   const numericGrade = Number(grade);
   if (numericGrade < currentGrade) {
     return { label: "이미 배운 과목", description: "진로와 이어진 배움 돌아보기" };
@@ -6612,7 +6611,7 @@ function getFirstPlanOrder(plans) {
 function getMissingSubjectLabel() {
   const selectedPlan = $("#recommendationPlanFilter")?.value || "all";
   if (selectedPlan === "incoming2024") return "미개설(15)";
-  if (selectedPlan === "incoming2025" || selectedPlan === "incoming2026") return "미개설(22)";
+  if (selectedPlan === "incoming2027" || selectedPlan === "incoming2025" || selectedPlan === "incoming2026") return "미개설(22)";
   return "미개설(22·15)";
 }
 
